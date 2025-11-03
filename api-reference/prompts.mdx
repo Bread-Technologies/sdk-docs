@@ -1,0 +1,332 @@
+---
+title: "Prompts"
+description: "Prompt template management API reference"
+---
+
+## Overview
+
+Prompts are reusable message templates used for stimulus generation. They consist of a sequence of messages with roles (system, user, assistant) and content.
+
+**Resource**: `client.prompts`
+
+## Methods
+
+### list()
+
+List all prompts in a repository.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/prompts`
+
+```python
+prompts = client.prompts.list("my_repo")
+for item in prompts.items:
+    print(item.prompt_name)
+```
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Returns**: `PromptListResponse`
+
+---
+
+### get()
+
+Get a specific prompt's definition and metadata.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/prompts/{prompt_name}`
+
+```python
+prompt = client.prompts.get(
+    prompt_name="system_prompt_coding",
+    repo_name="my_repo"
+)
+print(prompt.messages)
+```
+
+<ParamField path="prompt_name" type="string" required>
+  Prompt name to retrieve
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Returns**: `PromptResponse`
+- `prompt_name`: `str` - Prompt identifier
+- `messages`: `List[Message]` - List of messages in the prompt
+
+---
+
+### set()
+
+Create or update a prompt. This operation is idempotent.
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/prompts/{prompt_name}`
+
+```python
+prompt = client.prompts.set(
+    prompt_name="system_prompt_coding",
+    repo_name="my_repo",
+    messages=[
+        {"role": "system", "content": "You are a helpful coding assistant."},
+        {"role": "user", "content": "Write a function to {task}"}
+    ]
+)
+```
+
+<ParamField path="prompt_name" type="string" required>
+  Prompt name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="messages" type="array" required>
+  List of messages in the prompt. Each message has:
+  - `role` (string, required): "system", "user", or "assistant"
+  - `content` (string, required): Message content
+</ParamField>
+
+<Note>
+Invalid prompt names return a **422 Unprocessable Entity** error.
+</Note>
+
+**Returns**: `PromptResponse`
+
+---
+
+### batch_set()
+
+Create or update multiple prompts in a single request.
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/prompts/batch`
+
+```python
+result = client.prompts.batch_set(
+    repo_name="my_repo",
+    prompts={
+        "system_prompt": [{"role": "system", "content": "Hello"}],
+        "user_prompt": [{"role": "user", "content": "World"}]
+    }
+)
+print(f"Created: {result.created}")
+print(f"Failed: {result.failed}")
+```
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="prompts" type="object" required>
+  Dictionary mapping prompt names to message arrays
+</ParamField>
+
+**Returns**: `PromptBatchSetResponse`
+- `created`: `List[str]` - Successfully created prompt names
+- `failed`: `Dict[str, str]` - Failed prompts with error messages
+
+---
+
+### delete()
+
+Delete a prompt from the repository.
+
+**Endpoint**: `DELETE /v1/repo/{repo_name}/prompts/{prompt_name}`
+
+```python
+result = client.prompts.delete(
+    prompt_name="old_prompt",
+    repo_name="my_repo"
+)
+print(result.message)
+```
+
+<ParamField path="prompt_name" type="string" required>
+  Prompt name to delete
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Returns**: `PromptDeleteResponse`
+- `message`: `str` - Success confirmation
+
+---
+
+## Examples
+
+### Create System Prompt
+
+```python
+client.prompts.set(
+    prompt_name="system_prompt_coding",
+    repo_name="my_repo",
+    messages=[
+        {
+            "role": "system",
+            "content": "You are an expert Python programmer. Provide clear, concise, and well-documented code."
+        }
+    ]
+)
+```
+
+### Create User Prompt with Template Variables
+
+```python
+client.prompts.set(
+    prompt_name="user_prompt_task",
+    repo_name="my_repo",
+    messages=[
+        {
+            "role": "user",
+            "content": "Task: {task}\nDifficulty: {difficulty}\nProvide a solution."
+        }
+    ]
+)
+```
+
+<Tip>
+Use template variables like `{task}` in your prompts. These will be filled in during stimulus generation.
+</Tip>
+
+### Batch Create Prompts
+
+```python
+result = client.prompts.batch_set(
+    repo_name="my_repo",
+    prompts={
+        "system_assistant": [
+            {"role": "system", "content": "You are a helpful assistant"}
+        ],
+        "system_coder": [
+            {"role": "system", "content": "You are a coding expert"}
+        ],
+        "user_template": [
+            {"role": "user", "content": "Question: {question}"}
+        ]
+    }
+)
+
+if result.failed:
+    print(f"Failed to create: {result.failed}")
+else:
+    print(f"Successfully created {len(result.created)} prompts")
+```
+
+### Multi-Turn Conversation Prompt
+
+```python
+client.prompts.set(
+    prompt_name="conversation_starter",
+    repo_name="my_repo",
+    messages=[
+        {"role": "system", "content": "You are a friendly chatbot"},
+        {"role": "user", "content": "Hello!"},
+        {"role": "assistant", "content": "Hi! How can I help you today?"},
+        {"role": "user", "content": "{user_query}"}
+    ]
+)
+```
+
+## Message Roles
+
+<CardGroup cols={3}>
+  <Card title="system" icon="gear">
+    System instructions that guide the model's behavior
+  </Card>
+  <Card title="user" icon="user">
+    Messages from the user/human
+  </Card>
+  <Card title="assistant" icon="robot">
+    Messages from the AI assistant
+  </Card>
+</CardGroup>
+
+## Error Handling
+
+```python
+import bread
+
+try:
+    prompt = client.prompts.set(
+        prompt_name="invalid name!",  # Invalid characters
+        repo_name="my_repo",
+        messages=[{"role": "system", "content": "Test"}]
+    )
+except bread.UnprocessableEntityError:
+    print("Invalid prompt name format")
+
+try:
+    prompt = client.prompts.get(
+        prompt_name="nonexistent",
+        repo_name="my_repo"
+    )
+except bread.NotFoundError:
+    print("Prompt not found")
+```
+
+## Response Types
+
+### Message
+
+```python
+class Message:
+    role: str       # "system", "user", or "assistant"
+    content: str    # Message content
+```
+
+### PromptResponse
+
+```python
+class PromptResponse:
+    prompt_name: str           # Prompt identifier
+    messages: List[Message]    # List of messages
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Descriptive Names" icon="tag">
+    Name prompts clearly: `system_prompt_coding`, `user_task_template`, `assistant_response_format`
+  </Accordion>
+
+  <Accordion title="Template Variables" icon="brackets-curly">
+    Use `{variable}` syntax for dynamic content that will be filled during stimulus generation
+  </Accordion>
+
+  <Accordion title="System Prompts First" icon="arrow-up-1-9">
+    Always start with a system message to set the model's behavior and role
+  </Accordion>
+
+  <Accordion title="Batch Operations" icon="layer-group">
+    Use `batch_set()` when creating multiple prompts to reduce API calls
+  </Accordion>
+
+  <Accordion title="Version Your Prompts" icon="code-branch">
+    Consider including version numbers in names: `system_prompt_v2`, `user_task_v3`
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Targets"
+    icon="bullseye"
+    href="/api-reference/targets"
+  >
+    Use prompts in target configuration
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/guides/workflows"
+  >
+    See complete prompt workflow examples
+  </Card>
+</CardGroup>
+

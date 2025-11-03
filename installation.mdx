@@ -1,0 +1,104 @@
+---
+title: "Installation"
+description: "Install the Bread Python SDK in your project"
+---
+
+## Install from Git Repository
+
+The Bread SDK is currently available from the staging Git repository.
+
+<CodeGroup>
+
+```bash pip
+pip install git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git
+```
+
+```bash With aiohttp
+pip install 'bread[aiohttp] @ git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git'
+```
+
+</CodeGroup>
+
+<Note>
+Once published to PyPI, installation will become: `pip install bread`
+</Note>
+
+## Optional: aiohttp for Async Performance
+
+For improved concurrency performance in async applications, install with aiohttp support:
+
+```bash
+pip install 'bread[aiohttp] @ git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git'
+```
+
+Then enable it when creating the async client:
+
+```python
+from bread import AsyncBread, DefaultAioHttpClient
+
+async with AsyncBread(
+    api_key="your_api_key",
+    http_client=DefaultAioHttpClient()
+) as client:
+    repos = await client.repo.list()
+```
+
+## Requirements
+
+<CardGroup cols={2}>
+  <Card title="Python Version" icon="python">
+    **Python 3.8+** is required
+  </Card>
+  <Card title="Dependencies" icon="cube">
+    **httpx** is included automatically
+  </Card>
+</CardGroup>
+
+## Verify Installation
+
+After installation, verify the SDK is working:
+
+```python
+import bread
+print(bread.__version__)  # Check installed version
+
+from bread import Bread
+client = Bread()
+print("Bread SDK installed successfully!")
+```
+
+## Development Installation
+
+If you're contributing to the SDK or need the latest development version:
+
+```bash
+# Clone the repository
+git clone git@github.com:stainless-sdks/bread-sdk-v1-python.git
+cd bread-sdk-v1-python
+
+# Install in editable mode
+pip install -e .
+
+# Install with development dependencies
+pip install -e ".[dev]"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get started with a complete example
+  </Card>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/authentication"
+  >
+    Configure your API credentials
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,375 @@
+---
+title: "Understanding Baking"
+description: "Learn what prompt baking is and how it works"
+---
+
+## What is Baking?
+
+Baking (also known as "prompt baking") is a technique that allows you to convert prompts into weight updates in a language model. It's a way to "bake in" prompts so that the AI inherently knows them without needing them at inference time.
+
+<CardGroup cols={3}>
+  <Card title="Not Fine-Tuning" icon="xmark">
+    Baking is not traditional fine-tuning like SFT or RLHF
+  </Card>
+  <Card title="Not Prompting" icon="xmark">
+    Baking is not standard prompt engineering
+  </Card>
+  <Card title="The Middle Ground" icon="check">
+    Harness fine-tuning power at prompting speed and ease
+  </Card>
+</CardGroup>
+
+### The Core Idea
+
+Prompt baking matches the distribution of a prompted model to that of the base model—effectively making them "equivalent." The baked model learns to act as if it always had the baked-in prompt, without needing to receive that prompt at inference time.
+
+**Benefits**:
+- **Speed**: As fast as prompt engineering, not as slow as traditional fine-tuning
+- **Ease**: Simple as writing prompts, powerful as model training
+- **Efficiency**: Reduce inference costs by eliminating system prompts
+- **Consistency**: Model behavior is baked in, not dependent on runtime prompts
+
+---
+
+## How Baking Works
+
+Baking consists of four major phases that work together to convert prompts into model weights:
+
+<Steps>
+  <Step title="1. Stim (Stimuli Generation)">
+    Stim generates a synthetic dataset of "questions" that a prompted language model would reasonably receive.
+    
+    **Purpose**: Predict and generate all the inputs a prompted language model would encounter while responding based on a given prompt.
+    
+    **Example**: For a prompt like "Act like Mickey Mouse," stim generates questions such as:
+    - "Do you live in Disneyland, Mickey Mouse?"
+    - "What's your favorite ride at Disneyland?"
+    - "Tell me about your friends!"
+    
+    The goal is to create a synthetic dataset covering the range of possible questions, allowing us to capture the prompted model's behavior across diverse situations.
+    
+    <Tip>
+    The term "stimuli" was chosen to emphasize that we're "provoking" the language model to understand how it responds in various settings.
+    </Tip>
+  </Step>
+
+  <Step title="2. Rollout (Response Generation)">
+    Rollout generates responses from the prompted model to the questions created during stim.
+    
+    **Purpose**: Capture how the prompted model actually responds to the stimuli.
+    
+    Using our Mickey Mouse example, the model (prompted with "Act like Mickey Mouse") responds to each stim question in character:
+    - Q: "Do you live in Disneyland?" → A: "Gosh, yes! Disneyland is my home!"
+    - Q: "What's your favorite ride?" → A: "Oh boy, I love all the rides!"
+    
+    These responses (called **trajectories**) represent the target distribution we want to match.
+  </Step>
+
+  <Step title="3. Collation (Dataset Composition)">
+    Collation is where you compose all the data that goes into a bake.
+    
+    **Purpose**: Specify which targets to include and how to weight them in the final training dataset.
+    
+    **What's a Target?**
+    A target is the combination of stim and rollout phases for a given prompt. Each unique prompt creates its own target.
+    
+    **Example**: You might have:
+    - **Target 1**: "Act like Mickey Mouse" (60% weight)
+    - **Target 2**: "You are responding to fans at Disneyland" (40% weight)
+    
+    During collation, you decide the concentration of the final dataset—how much each target influences the baked model.
+    
+    <Note>
+    Dataset weighting lets you prioritize certain behaviors over others in the final model.
+    </Note>
+  </Step>
+
+  <Step title="4. Bake (Model Training)">
+    The bake phase is where the actual training happens on GPUs.
+    
+    **Purpose**: Update model weights using the composed dataset to match the prompted model's distribution.
+    
+    You configure traditional training hyperparameters:
+    - Epochs
+    - Learning rate
+    - Batch size
+    - LoRA adapters
+    - DeepSpeed settings
+    - Weights & Biases integration
+    
+    This is where the dataset gets trained and the prompts get "baked into" the model weights.
+  </Step>
+</Steps>
+
+---
+
+## The Baking Process Visualized
+
+```
+┌─────────────┐
+│   Prompts   │ "Act like Mickey Mouse"
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│    Stim     │ Generate questions → ["Do you live in Disneyland?", ...]
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   Rollout   │ Generate responses → ["Gosh, yes! Disneyland is my home!", ...]
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Collation  │ Compose dataset → Combine targets with weights
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│    Bake     │ Train model → Update weights to match distribution
+└──────┬──────┘
+       │
+       ▼
+  Baked Model
+```
+
+---
+
+## How to Run a Bake
+
+Here's a high-level overview of running a complete bake:
+
+<Steps>
+  <Step title="Create Repository & Prompts">
+    ```python
+    from bread import Bread
+    
+    client = Bread()
+    
+    # Create repository
+    client.repo.set(repo_name="my_repo")
+    
+    # Create your prompts
+    client.prompts.set(
+        prompt_name="system_prompt",
+        repo_name="my_repo",
+        messages=[{"role": "system", "content": "You are a helpful assistant"}]
+    )
+    ```
+  </Step>
+
+  <Step title="Configure Target">
+    ```python
+    # Set up target with generators and prompts
+    client.targets.set(
+        target_name="my_target",
+        repo_name="my_repo",
+        template="default",
+        overrides={
+            "generators": [{"type": "hardcoded", "questions": ["..."]}],
+            "model_name": "Qwen/Qwen3-32B",
+            "u": "system_prompt",
+            "v": "user_prompt"
+        }
+    )
+    ```
+  </Step>
+
+  <Step title="Run Stim & Rollout">
+    ```python
+    import time
+    
+    # Generate stimuli
+    client.targets.stim.run("my_target", "my_repo")
+    
+    # Wait for completion
+    while client.targets.stim.get("my_target", "my_repo").status != "complete":
+        time.sleep(5)
+    
+    # Generate trajectories
+    client.targets.rollout.run("my_target", "my_repo")
+    
+    # Wait for completion
+    while client.targets.rollout.get("my_target", "my_repo").status != "complete":
+        time.sleep(10)
+    ```
+  </Step>
+
+  <Step title="Configure Bake">
+    ```python
+    # Compose your dataset and training config
+    client.bakes.set(
+        bake_name="my_bake",
+        repo_name="my_repo",
+        template="default",
+        overrides={
+            "datasets": [
+                {"target": "my_target", "weight": 1.0}
+            ],
+            "epochs": 3,
+            "micro_batch_size": 1
+        }
+    )
+    ```
+  </Step>
+
+  <Step title="Run Training">
+    ```python
+    # Start bake job
+    client.bakes.run("my_bake", "my_repo")
+    
+    # Monitor progress
+    while True:
+        status = client.bakes.get("my_bake", "my_repo")
+        if status.status == "complete":
+            print("Training complete!")
+            break
+        time.sleep(30)
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Key Terminology
+
+<AccordionGroup>
+  <Accordion title="Target" icon="bullseye">
+    A target is the combination of stim and rollout phases for a given prompt. Each unique prompt configuration creates its own target.
+  </Accordion>
+
+  <Accordion title="Stimulus (Stim)" icon="sparkles">
+    A generated question or task that provokes the prompted model to respond. Plural: stimuli.
+  </Accordion>
+
+  <Accordion title="Trajectory" icon="arrows-turn-right">
+    A complete response from the prompted model to a stimulus. The training data for baking.
+  </Accordion>
+
+  <Accordion title="Generator" icon="wand-sparkles">
+    A strategy for creating stimuli. Can be AI-generated, hardcoded, or from datasets.
+  </Accordion>
+
+  <Accordion title="Bake" icon="fire">
+    The training job that updates model weights using the composed dataset of trajectories.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Example Use Case
+
+Let's walk through a concrete example of baking a customer service personality:
+
+<Tabs>
+  <Tab title="The Goal">
+    You want a model that always responds as a friendly, helpful customer service agent without needing to include that instruction in every prompt.
+  </Tab>
+  
+  <Tab title="The Prompt">
+    ```python
+    # Your system prompt
+    "You are a friendly customer service agent. Always be helpful, \
+    professional, and empathetic. Address customers by name when possible."
+    ```
+  </Tab>
+  
+  <Tab title="Stim Phase">
+    Generate questions a customer service agent would receive:
+    - "I need help with my order"
+    - "My product arrived damaged"
+    - "How do I return this item?"
+    - "Can you help me track my shipment?"
+    
+    (Hundreds or thousands of varied customer questions)
+  </Tab>
+  
+  <Tab title="Rollout Phase">
+    The prompted model responds to each question as a friendly agent:
+    
+    Q: "My product arrived damaged"
+    
+    A: "I'm so sorry to hear your product arrived damaged! I completely understand how frustrating that must be. Let me help you get this resolved right away..."
+    
+    (Hundreds or thousands of in-character responses)
+  </Tab>
+  
+  <Tab title="Bake Phase">
+    Train the base model on these trajectories. The model learns to inherently respond like a customer service agent without needing the system prompt.
+  </Tab>
+  
+  <Tab title="The Result">
+    After baking, you can use the model without the system prompt:
+    
+    **Before Baking** (needed every time):
+    ```
+    System: "You are a friendly customer service agent..."
+    User: "My order is late"
+    ```
+    
+    **After Baking** (prompt baked in):
+    ```
+    User: "My order is late"
+    Model: "I sincerely apologize for the delay..."
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## When to Use Baking
+
+<CardGroup cols={2}>
+  <Card title="✓ Good Use Cases" icon="circle-check">
+    - Consistent behavioral changes
+    - Role or personality traits
+    - Domain-specific knowledge
+    - Reducing inference costs
+    - Eliminating repeated system prompts
+  </Card>
+  <Card title="✗ Not Ideal For" icon="circle-xmark">
+    - Frequently changing requirements
+    - Dynamic, user-specific instructions
+    - One-off tasks
+    - Situations requiring prompt flexibility
+  </Card>
+</CardGroup>
+
+---
+
+## Next Steps
+
+Now that you understand what baking is, get started with the SDK:
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Install the Bread SDK
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Run your first workflow
+  </Card>
+  <Card
+    title="Complete Workflows"
+    icon="diagram-project"
+    href="/guides/workflows"
+  >
+    End-to-end baking examples
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/targets"
+  >
+    Detailed API documentation
+  </Card>
+</CardGroup>
+

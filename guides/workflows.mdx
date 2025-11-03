@@ -1,0 +1,573 @@
+---
+title: "Complete Workflows"
+description: "End-to-end patterns and workflows with the Bread SDK"
+---
+
+## Overview
+
+This guide demonstrates complete workflows from repository setup to model training, showing how all the components work together.
+
+## Target Workflow: Stim + Rollout
+
+Generate stimuli and trajectories for a target.
+
+<Steps>
+  <Step title="Setup Repository & Prompts">
+    ```python
+    from bread import Bread
+    
+    client = Bread()
+    
+    # Create repository
+    repo = client.repo.set(repo_name="my_repo")
+    
+    # Create system prompt
+    client.prompts.set(
+        prompt_name="system_prompt",
+        repo_name="my_repo",
+        messages=[{
+            "role": "system",
+            "content": "You are an expert Python programmer"
+        }]
+    )
+    
+    # Create user prompt with template
+    client.prompts.set(
+        prompt_name="user_prompt",
+        repo_name="my_repo",
+        messages=[{
+            "role": "user",
+            "content": "Task: {task}"
+        }]
+    )
+    ```
+  </Step>
+
+  <Step title="Configure Target">
+    ```python
+    target = client.targets.set(
+        target_name="coding_target",
+        repo_name="my_repo",
+        template="default",
+        overrides={
+            "generators": [
+                {
+                    "type": "hardcoded",
+                    "questions": [
+                        "Write a function to reverse a string",
+                        "Implement binary search",
+                        "Create a linked list class"
+                    ]
+                }
+            ],
+            "model_name": "Qwen/Qwen3-32B",
+            "u": "system_prompt",
+            "v": "user_prompt"
+        }
+    )
+    ```
+  </Step>
+
+  <Step title="Run Stim Job">
+    ```python
+    import time
+    
+    # Start stim
+    client.targets.stim.run(
+        target_name="coding_target",
+        repo_name="my_repo"
+    )
+    
+    # Poll until complete
+    while True:
+        status = client.targets.stim.get(
+            target_name="coding_target",
+            repo_name="my_repo"
+        )
+        
+        if status.status == "complete":
+            print(f"Stim complete: {status.lines} stimuli")
+            break
+        
+        print(f"Stim status: {status.status}")
+        time.sleep(5)
+    ```
+  </Step>
+
+  <Step title="Get Stim Output">
+    ```python
+    stim_output = client.targets.stim.get_output(
+        target_name="coding_target",
+        repo_name="my_repo",
+        limit=100
+    )
+    
+    print(f"Generated {len(stim_output.output)} stimuli")
+    for stimulus in stim_output.output:
+        print(f"  - {stimulus}")
+    ```
+  </Step>
+
+  <Step title="Run Rollout Job">
+    ```python
+    # Start rollout
+    client.targets.rollout.run(
+        target_name="coding_target",
+        repo_name="my_repo"
+    )
+    
+    # Poll until complete
+    while True:
+        status = client.targets.rollout.get(
+            target_name="coding_target",
+            repo_name="my_repo"
+        )
+        
+        if status.status == "complete":
+            print(f"Rollout complete: {status.lines} trajectories")
+            break
+        
+        print(f"Rollout status: {status.status}")
+        time.sleep(10)
+    ```
+  </Step>
+
+  <Step title="Get Rollout Output">
+    ```python
+    rollout_output = client.targets.rollout.get_output(
+        target_name="coding_target",
+        repo_name="my_repo",
+        limit=100
+    )
+    
+    print(f"Generated {len(rollout_output.output)} trajectories")
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Complete Training Workflow
+
+Full workflow including model training.
+
+<Steps>
+  <Step title="Complete Target Workflow">
+    Complete the stim and rollout workflow above to generate training data.
+  </Step>
+
+  <Step title="Configure Bake">
+    ```python
+    bake = client.bakes.set(
+        bake_name="my_bake",
+        repo_name="my_repo",
+        template="default",
+        overrides={
+            "datasets": [
+                {"target": "coding_target", "weight": 1.0}
+            ],
+            "epochs": 3,
+            "micro_batch_size": 1,
+            "model": {
+                "type": "bake",
+                "name_or_path": "Qwen/Qwen3-32B",
+                "baked_adapter_config": {
+                    "r": 8,
+                    "lora_alpha": 16,
+                    "lora_dropout": 0.05,
+                    "bias": "none",
+                    "target_modules": "all-linear"
+                }
+            },
+            "optimizer": {
+                "learning_rate": 0.0001
+            },
+            "wandb": {
+                "enable": True,
+                "project": "my-project",
+                "entity": "my-team",
+                "name": "coding-v1"
+            }
+        }
+    )
+    ```
+  </Step>
+
+  <Step title="Start Training">
+    ```python
+    result = client.bakes.run(
+        bake_name="my_bake",
+        repo_name="my_repo"
+    )
+    print("Training started")
+    ```
+  </Step>
+
+  <Step title="Monitor Training">
+    ```python
+    import time
+    
+    while True:
+        bake_status = client.bakes.get(
+            bake_name="my_bake",
+            repo_name="my_repo"
+        )
+        
+        if bake_status.status == "complete":
+            print("Training complete!")
+            break
+        
+        print(f"Status: {bake_status.status}")
+        time.sleep(30)
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Reusable Workflow Functions
+
+Create reusable functions for common patterns:
+
+```python
+import time
+from bread import Bread
+from typing import Callable
+
+client = Bread()
+
+def wait_for_job(
+    get_status_fn: Callable,
+    job_name: str,
+    poll_interval: int = 5
+):
+    """Wait for a job to complete with status polling"""
+    print(f"Waiting for {job_name}...")
+    
+    while True:
+        status = get_status_fn()
+        
+        if status.status == "complete":
+            print(f"✓ {job_name} complete ({status.lines} lines)")
+            return status
+        
+        print(f"  {job_name}: {status.status}")
+        time.sleep(poll_interval)
+
+def run_target_workflow(
+    repo_name: str,
+    target_name: str,
+    prompts: dict,
+    target_config: dict
+):
+    """Complete target workflow: prompts -> stim -> rollout"""
+    
+    # Create prompts
+    for prompt_name, messages in prompts.items():
+        client.prompts.set(
+            prompt_name=prompt_name,
+            repo_name=repo_name,
+            messages=messages
+        )
+    print(f"✓ Created {len(prompts)} prompts")
+    
+    # Configure target
+    client.targets.set(
+        target_name=target_name,
+        repo_name=repo_name,
+        template="default",
+        overrides=target_config
+    )
+    print(f"✓ Configured target: {target_name}")
+    
+    # Run stim
+    client.targets.stim.run(
+        target_name=target_name,
+        repo_name=repo_name
+    )
+    wait_for_job(
+        lambda: client.targets.stim.get(target_name, repo_name),
+        "Stim",
+        poll_interval=5
+    )
+    
+    # Run rollout
+    client.targets.rollout.run(
+        target_name=target_name,
+        repo_name=repo_name
+    )
+    wait_for_job(
+        lambda: client.targets.rollout.get(target_name, repo_name),
+        "Rollout",
+        poll_interval=10
+    )
+    
+    print(f"✓ Target workflow complete: {target_name}")
+
+# Usage
+run_target_workflow(
+    repo_name="my_repo",
+    target_name="coding_target",
+    prompts={
+        "system_prompt": [
+            {"role": "system", "content": "You are a coding expert"}
+        ],
+        "user_prompt": [
+            {"role": "user", "content": "Task: {task}"}
+        ]
+    },
+    target_config={
+        "generators": [{
+            "type": "hardcoded",
+            "questions": ["Write a sorting function", "Implement a cache"]
+        }],
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "system_prompt",
+        "v": "user_prompt"
+    }
+)
+```
+
+---
+
+## Multi-Target Training
+
+Train on multiple targets:
+
+```python
+def multi_target_training_workflow(
+    repo_name: str,
+    targets: list[dict],
+    bake_name: str,
+    bake_config: dict
+):
+    """Run workflow for multiple targets and train"""
+    
+    # Run workflow for each target
+    for target_info in targets:
+        run_target_workflow(
+            repo_name=repo_name,
+            target_name=target_info["name"],
+            prompts=target_info["prompts"],
+            target_config=target_info["config"]
+        )
+    
+    # Configure bake with all targets
+    datasets = [
+        {"target": t["name"], "weight": t.get("weight", 1.0)}
+        for t in targets
+    ]
+    
+    client.bakes.set(
+        bake_name=bake_name,
+        repo_name=repo_name,
+        template="default",
+        overrides={**bake_config, "datasets": datasets}
+    )
+    
+    # Start training
+    client.bakes.run(bake_name=bake_name, repo_name=repo_name)
+    
+    wait_for_job(
+        lambda: client.bakes.get(bake_name, repo_name),
+        "Training",
+        poll_interval=30
+    )
+    
+    print(f"✓ Multi-target training complete: {bake_name}")
+
+# Usage
+multi_target_training_workflow(
+    repo_name="my_repo",
+    targets=[
+        {
+            "name": "coding_target",
+            "weight": 0.6,
+            "prompts": {...},
+            "config": {...}
+        },
+        {
+            "name": "math_target",
+            "weight": 0.4,
+            "prompts": {...},
+            "config": {...}
+        }
+    ],
+    bake_name="multi_bake",
+    bake_config={
+        "epochs": 5,
+        "micro_batch_size": 1
+    }
+)
+```
+
+---
+
+## Async Workflow
+
+Using async/await for better concurrency:
+
+```python
+import asyncio
+from bread import AsyncBread
+
+async def async_target_workflow(
+    repo_name: str,
+    target_name: str
+):
+    async with AsyncBread() as client:
+        # Run stim
+        await client.targets.stim.run(target_name, repo_name)
+        
+        # Poll stim
+        while True:
+            status = await client.targets.stim.get(target_name, repo_name)
+            if status.status == "complete":
+                break
+            await asyncio.sleep(5)
+        
+        # Run rollout
+        await client.targets.rollout.run(target_name, repo_name)
+        
+        # Poll rollout
+        while True:
+            status = await client.targets.rollout.get(target_name, repo_name)
+            if status.status == "complete":
+                break
+            await asyncio.sleep(10)
+        
+        print(f"✓ Workflow complete: {target_name}")
+
+# Run async workflow
+asyncio.run(async_target_workflow("my_repo", "coding_target"))
+```
+
+---
+
+## Production Workflow with Error Handling
+
+Robust workflow with comprehensive error handling:
+
+```python
+import bread
+import time
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def production_workflow(
+    repo_name: str,
+    target_name: str,
+    max_retries: int = 3
+):
+    client = Bread()
+    
+    try:
+        # Verify repository exists
+        try:
+            client.repo.get(repo_name)
+        except bread.NotFoundError:
+            logger.info(f"Creating repository: {repo_name}")
+            client.repo.set(repo_name=repo_name)
+        
+        # Configure target with retry
+        for attempt in range(max_retries):
+            try:
+                client.targets.set(
+                    target_name=target_name,
+                    repo_name=repo_name,
+                    template="default",
+                    overrides={...}
+                )
+                break
+            except bread.APIStatusError as e:
+                if attempt == max_retries - 1:
+                    raise
+                logger.warning(f"Retry {attempt + 1}/{max_retries}")
+                time.sleep(2 ** attempt)
+        
+        # Run stim with timeout
+        client.targets.stim.run(target_name, repo_name)
+        
+        start_time = time.time()
+        timeout = 3600  # 1 hour timeout
+        
+        while True:
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Stim job exceeded timeout")
+            
+            status = client.targets.stim.get(target_name, repo_name)
+            
+            if status.status == "complete":
+                logger.info(f"Stim complete: {status.lines} lines")
+                break
+            
+            time.sleep(5)
+        
+        # Continue with rollout...
+        logger.info("Workflow completed successfully")
+        
+    except bread.AuthenticationError:
+        logger.error("Authentication failed - check API key")
+        raise
+    except bread.APIConnectionError as e:
+        logger.error(f"Connection failed: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Workflow failed: {e}")
+        raise
+
+# Run
+production_workflow("my_repo", "coding_target")
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Modularize Workflows" icon="cubes">
+    Break workflows into reusable functions for better maintainability
+  </Accordion>
+
+  <Accordion title="Add Error Handling" icon="shield">
+    Handle specific error types and implement retry logic
+  </Accordion>
+
+  <Accordion title="Use Logging" icon="file-lines">
+    Log workflow progress for debugging and monitoring
+  </Accordion>
+
+  <Accordion title="Implement Timeouts" icon="clock">
+    Prevent workflows from running indefinitely
+  </Accordion>
+
+  <Accordion title="Poll Efficiently" icon="arrows-rotate">
+    Use appropriate poll intervals (stim: 5s, rollout: 10s, bake: 30s)
+  </Accordion>
+
+  <Accordion title="Validate Prerequisites" icon="list-check">
+    Check that dependencies are complete before each step
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/guides/error-handling"
+  >
+    Learn comprehensive error handling
+  </Card>
+  <Card
+    title="Pagination"
+    icon="book"
+    href="/guides/pagination"
+  >
+    Handle large datasets efficiently
+  </Card>
+</CardGroup>
+

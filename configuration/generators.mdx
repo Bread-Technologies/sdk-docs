@@ -1,0 +1,276 @@
+---
+title: "Generator Types"
+description: "Configure different generator types for stimulus generation"
+---
+
+## Overview
+
+Generators define how stimuli (questions/tasks) are created. You can use multiple generators in a single target, and they'll be combined.
+
+## Generator Types
+
+### oneshot_qs
+
+AI-generated questions using a language model.
+
+```python
+{
+    "type": "oneshot_qs",
+    "model": "claude-3-5-sonnet-20241022",
+    "numq": 50,
+    "temperature": 1.0
+}
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"oneshot_qs"`
+</ParamField>
+
+<ParamField path="model" type="string">
+  Model name (e.g., `"claude-3-5-sonnet-20241022"`, `"gpt-4"`)
+</ParamField>
+
+<ParamField path="numq" type="integer">
+  Number of questions to generate
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0). Higher = more creative/random
+</ParamField>
+
+**Use Case**: Generate diverse, AI-created questions based on your prompts
+
+---
+
+### hardcoded
+
+Use predefined list of questions.
+
+```python
+{
+    "type": "hardcoded",
+    "questions": [
+        "Write a function to reverse a string",
+        "Implement binary search",
+        "Create a linked list class"
+    ]
+}
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"hardcoded"`
+</ParamField>
+
+<ParamField path="questions" type="array" required>
+  List of question strings
+</ParamField>
+
+**Use Case**: Test with specific, controlled questions
+
+---
+
+### from_dataset
+
+Load questions from an existing dataset.
+
+```python
+{
+    "type": "from_dataset",
+    "dataset": "code_contests",
+    "numq": 100,
+    "seed": 42
+}
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"from_dataset"`
+</ParamField>
+
+<ParamField path="dataset" type="string" required>
+  Dataset name (e.g., `"code_contests"`)
+</ParamField>
+
+<ParamField path="numq" type="integer">
+  Number of questions to sample from dataset
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducible sampling
+</ParamField>
+
+**Use Case**: Use established benchmarks or datasets
+
+---
+
+### persona
+
+Persona-based question generation.
+
+```python
+{
+    "type": "persona",
+    "numq": 25,
+    "seed": 123,
+    "temperature": 0.9
+}
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"persona"`
+</ParamField>
+
+<ParamField path="numq" type="integer">
+  Number of questions to generate
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducibility
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0)
+</ParamField>
+
+**Use Case**: Generate questions from different personas or perspectives
+
+---
+
+### custom
+
+Use custom template for generation.
+
+```python
+{
+    "type": "custom",
+    "template_path": "/path/to/template.yaml"
+}
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"custom"`
+</ParamField>
+
+<ParamField path="template_path" type="string" required>
+  Path to custom template file
+</ParamField>
+
+**Use Case**: Advanced custom generation logic
+
+---
+
+## Combining Generators
+
+Use multiple generators in a target:
+
+```python
+target = client.targets.set(
+    target_name="multi_gen_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "oneshot_qs",
+                "model": "claude-3-5-sonnet-20241022",
+                "numq": 30
+            },
+            {
+                "type": "from_dataset",
+                "dataset": "code_contests",
+                "numq": 20
+            },
+            {
+                "type": "hardcoded",
+                "questions": [
+                    "Implement a specific edge case",
+                    "Handle this corner case"
+                ]
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "system_prompt",
+        "v": "user_prompt"
+    }
+)
+```
+
+<Tip>
+Combined generators create a diverse dataset with AI-generated, benchmark, and custom questions.
+</Tip>
+
+## Examples
+
+### Code Generation
+
+```python
+{
+    "type": "oneshot_qs",
+    "model": "claude-3-5-sonnet-20241022",
+    "numq": 100,
+    "temperature": 1.2
+}
+```
+
+### Math Problems
+
+```python
+{
+    "type": "from_dataset",
+    "dataset": "math_problems",
+    "numq": 50,
+    "seed": 42
+}
+```
+
+### Specific Test Cases
+
+```python
+{
+    "type": "hardcoded",
+    "questions": [
+        "Handle empty input",
+        "Process maximum size input",
+        "Deal with special characters"
+    ]
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Mix Generator Types" icon="layer-group">
+    Combine different generators for diverse training data
+  </Accordion>
+
+  <Accordion title="Use Seeds for Reproducibility" icon="seedling">
+    Set `seed` values when using `from_dataset` or `persona` for reproducible results
+  </Accordion>
+
+  <Accordion title="Start with Hardcoded" icon="list">
+    Test your pipeline with hardcoded questions before scaling to AI generation
+  </Accordion>
+
+  <Accordion title="Tune Temperature" icon="temperature-half">
+    Adjust temperature based on creativity needs (lower = more focused, higher = more creative)
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Target Configuration"
+    icon="bullseye"
+    href="/configuration/target-config"
+  >
+    Complete target configuration reference
+  </Card>
+  <Card
+    title="Targets API"
+    icon="code"
+    href="/api-reference/targets"
+  >
+    Target API reference
+  </Card>
+</CardGroup>
+

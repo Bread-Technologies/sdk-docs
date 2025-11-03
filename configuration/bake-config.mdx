@@ -1,0 +1,301 @@
+---
+title: "Bake Configuration"
+description: "Complete reference for bake (training) configuration"
+---
+
+## Overview
+
+Bake configuration controls model training behavior, including datasets, training parameters, model adapters, and integrations.
+
+## Core Configuration
+
+### Datasets
+
+<ParamField path="datasets" type="array" required>
+  List of targets to use as training data
+  
+  ```python
+  "datasets": [
+      {"target": "coding_target", "weight": 0.7},
+      {"target": "math_target", "weight": 0.3}
+  ]
+  ```
+  
+  Each dataset has:
+  - `target` (string, required): Target name
+  - `weight` (float): Sampling weight (higher = more frequently sampled)
+</ParamField>
+
+### Training Parameters
+
+<ParamField path="epochs" type="integer">
+  Number of training epochs
+  
+  ```python
+  "epochs": 3
+  ```
+</ParamField>
+
+<ParamField path="micro_batch_size" type="integer">
+  Micro batch size
+  
+  ```python
+  "micro_batch_size": 1
+  ```
+</ParamField>
+
+<ParamField path="gradient_accumulation_steps" type="integer">
+  Gradient accumulation steps for effective batch size
+  
+  ```python
+  "gradient_accumulation_steps": 4
+  ```
+</ParamField>
+
+<ParamField path="total_trajectories" type="integer">
+  Total number of trajectories to use for training
+  
+  ```python
+  "total_trajectories": 1000
+  ```
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducibility
+  
+  ```python
+  "seed": 42
+  ```
+</ParamField>
+
+## Model Configuration
+
+<ParamField path="model" type="object">
+  Model and adapter configuration
+  
+  ```python
+  "model": {
+      "type": "bake",
+      "name_or_path": "Qwen/Qwen3-32B",
+      "baked_adapter_config": {
+          "r": 8,
+          "lora_alpha": 16,
+          "lora_dropout": 0.05,
+          "bias": "none",
+          "target_modules": "all-linear"
+      }
+  }
+  ```
+  
+  **Fields**:
+  - `type`: Model type (e.g., `"bake"`)
+  - `name_or_path`: Base model identifier
+  - `adapter_paths`: List of adapter checkpoint paths
+  - `parent_peft_dir`: Parent PEFT directory
+  - `baked_adapter_config`: LoRA configuration (see below)
+</ParamField>
+
+### LoRA Configuration
+
+<ParamField path="model.baked_adapter_config" type="object">
+  LoRA (Low-Rank Adaptation) configuration
+  
+  ```python
+  "baked_adapter_config": {
+      "r": 8,                    # LoRA rank
+      "lora_alpha": 16,          # Alpha parameter
+      "lora_dropout": 0.05,      # Dropout rate
+      "bias": "none",            # Bias handling
+      "target_modules": "all-linear"  # Target modules
+  }
+  ```
+</ParamField>
+
+## Optimizer & Scheduler
+
+<ParamField path="optimizer" type="object">
+  Optimizer configuration
+  
+  ```python
+  "optimizer": {
+      "learning_rate": 0.0001
+  }
+  ```
+</ParamField>
+
+<ParamField path="scheduler" type="object">
+  Learning rate scheduler
+  
+  ```python
+  "scheduler": {
+      "type": "huggingface"
+  }
+  ```
+</ParamField>
+
+## Integrations
+
+### Weights & Biases
+
+<ParamField path="wandb" type="object">
+  W&B logging configuration
+  
+  ```python
+  "wandb": {
+      "enable": True,
+      "project": "bread-experiments",
+      "entity": "my-team",
+      "name": "coding-v1",
+      "tags": ["experiment", "lora", "v1"]
+  }
+  ```
+  
+  **Fields**:
+  - `enable` (boolean): Enable W&B logging
+  - `project` (string): Project name
+  - `entity` (string): Team/entity name
+  - `name` (string): Run name
+  - `tags` (array): Tags for this run
+</ParamField>
+
+### DeepSpeed
+
+<ParamField path="deepspeed" type="object">
+  DeepSpeed ZeRO configuration
+  
+  ```python
+  "deepspeed": {
+      "zero_optimization": {
+          "stage": 2
+      }
+  }
+  ```
+  
+  **ZeRO Stages**:
+  - Stage 0: Disabled
+  - Stage 1: Optimizer state partitioning
+  - Stage 2: + Gradient partitioning
+  - Stage 3: + Parameter partitioning
+</ParamField>
+
+## Complete Example
+
+```python
+bake = client.bakes.set(
+    bake_name="production_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        # Datasets
+        "datasets": [
+            {"target": "coding_target", "weight": 1.0}
+        ],
+        
+        # Training params
+        "epochs": 5,
+        "micro_batch_size": 1,
+        "gradient_accumulation_steps": 4,
+        "total_trajectories": 10000,
+        "seed": 42,
+        
+        # Model with LoRA
+        "model": {
+            "type": "bake",
+            "name_or_path": "Qwen/Qwen3-32B",
+            "baked_adapter_config": {
+                "r": 16,
+                "lora_alpha": 32,
+                "lora_dropout": 0.1,
+                "bias": "none",
+                "target_modules": "all-linear"
+            }
+        },
+        
+        # Optimizer
+        "optimizer": {
+            "learning_rate": 0.0001
+        },
+        
+        # Scheduler
+        "scheduler": {
+            "type": "huggingface"
+        },
+        
+        # W&B logging
+        "wandb": {
+            "enable": True,
+            "project": "my-project",
+            "entity": "my-team",
+            "name": "coding-lora-v1",
+            "tags": ["lora", "coding", "production"]
+        },
+        
+        # DeepSpeed
+        "deepspeed": {
+            "zero_optimization": {
+                "stage": 2
+            }
+        }
+    }
+)
+```
+
+## Field Reference Table
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `datasets` | Array | Yes | Training data sources |
+| `epochs` | Integer | No | Number of training epochs |
+| `micro_batch_size` | Integer | No | Batch size per device |
+| `gradient_accumulation_steps` | Integer | No | Gradient accumulation |
+| `seed` | Integer | No | Random seed |
+| `model` | Object | No | Model configuration |
+| `optimizer` | Object | No | Optimizer settings |
+| `scheduler` | Object | No | LR scheduler |
+| `wandb` | Object | No | W&B integration |
+| `deepspeed` | Object | No | DeepSpeed config |
+
+## Template Inheritance
+
+```python
+# Base configuration
+client.bakes.set(
+    bake_name="base_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "epochs": 3,
+        "micro_batch_size": 1
+    }
+)
+
+# Inherit and override
+client.bakes.set(
+    bake_name="long_bake",
+    repo_name="my_repo",
+    template="base_bake",
+    overrides={
+        "epochs": 10  # Override epochs only
+    }
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Bakes API"
+    icon="fire"
+    href="/api-reference/bakes"
+  >
+    Bakes API reference
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/guides/workflows"
+  >
+    Training workflow examples
+  </Card>
+</CardGroup>
+

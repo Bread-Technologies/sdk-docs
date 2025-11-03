@@ -1,97 +1,160 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Bread Python SDK"
+description: "Build, train, and deploy AI models with the Bread Python SDK"
 ---
 
-## Setting up
+## Welcome to Bread
 
-Get your documentation site up and running in minutes.
+The Bread Python SDK provides convenient access to the Bread REST API for building, training, and deploying AI models. The library includes type definitions for all request parameters and response fields, and offers both synchronous and asynchronous clients.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
+<CardGroup cols={2}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="What is Baking?"
+    icon="lightbulb"
+    href="/understanding-baking"
   >
-    Edit your docs locally and preview them in real time.
+    Learn what prompt baking is and how it works
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
+    title="Installation"
+    icon="download"
+    href="/installation"
   >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+    Install the Bread SDK in your project
   </Card>
   <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
   >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+    Get started with a complete example in 5 minutes
   </Card>
   <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
+    title="Authentication"
+    icon="key"
+    href="/authentication"
   >
-    Add sample code to demonstrate how to use your product.
+    Configure API keys and authentication
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Features
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<AccordionGroup>
+  <Accordion title="Type-Safe & Modern" icon="shield-check">
+    Full type definitions for all request params and response fields using Pydantic models and TypedDicts
+  </Accordion>
+
+  <Accordion title="Async & Sync Support" icon="bolt">
+    Both synchronous and asynchronous clients powered by httpx, with optional aiohttp support for improved concurrency
+  </Accordion>
+
+  <Accordion title="Comprehensive SDK" icon="cube">
+    Complete coverage of Bread API resources: Repositories, Prompts, Targets (Stim & Rollout), Bakes, and Health checks
+  </Accordion>
+
+  <Accordion title="Production Ready" icon="check-double">
+    Built-in retry logic, timeout configuration, error handling, and streaming response support
+  </Accordion>
+</AccordionGroup>
+
+## Quick Example
+
+```python
+import os
+from bread import Bread
+
+client = Bread(
+    api_key=os.environ.get("BREAD_API_KEY")
+)
+
+# Create a repository
+repo = client.repo.set(repo_name="my_repo")
+
+# Create prompts
+client.prompts.set(
+    prompt_name="system_prompt",
+    repo_name="my_repo",
+    messages=[{"role": "system", "content": "You are a coding assistant"}]
+)
+
+# Configure and run a target
+target = client.targets.set(
+    target_name="coding_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "model_name": "Qwen/Qwen3-32B",
+        "generators": [{"type": "hardcoded", "questions": ["Write a function to reverse a string"]}]
+    }
+)
+
+# Generate stimuli
+client.targets.stim.run(target_name="coding_target", repo_name="my_repo")
+```
+
+## Core Concepts
+
+<CardGroup cols={3}>
+  <Card title="Repositories" icon="folder-tree">
+    Container for your AI projects with base model configuration
+  </Card>
+  <Card title="Prompts" icon="message">
+    Reusable message templates for stimulus generation
+  </Card>
+  <Card title="Targets" icon="bullseye">
+    Configuration for stimulus and trajectory generation
+  </Card>
+  <Card title="Stim Jobs" icon="sparkles">
+    Generate questions and tasks for model training
+  </Card>
+  <Card title="Rollout Jobs" icon="arrows-turn-right">
+    Generate model responses to stimuli
+  </Card>
+  <Card title="Bakes" icon="fire">
+    Model training jobs using rollout data
+  </Card>
+</CardGroup>
+
+## Common Workflows
+
+<Steps>
+  <Step title="Setup Repository">
+    Create a repository and define prompt templates
+  </Step>
+  <Step title="Configure Target">
+    Set up generators, models, and prompts for your target
+  </Step>
+  <Step title="Generate Stimuli">
+    Run stim jobs to create training questions/tasks
+  </Step>
+  <Step title="Generate Trajectories">
+    Run rollout jobs to get model responses
+  </Step>
+  <Step title="Train Model (Optional)">
+    Configure and run bake jobs for model training
+  </Step>
+</Steps>
+
+## Requirements
+
+- **Python**: 3.8 or higher
+- **Dependencies**: httpx (included), optional aiohttp for async performance
+- **API Key**: Required for authentication
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/stainless-sdks/bread-sdk-v1-python">
+    View source code and report issues
+  </Card>
+  <Card title="Workflows Guide" icon="diagram-project" href="/guides/workflows">
+    Learn common patterns and workflows
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Handle errors gracefully
+  </Card>
+  <Card title="Advanced Features" icon="wand-magic-sparkles" href="/guides/advanced-features">
+    Unlock powerful SDK capabilities
+  </Card>
+</CardGroup>

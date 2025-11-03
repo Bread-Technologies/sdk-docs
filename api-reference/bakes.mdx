@@ -1,0 +1,469 @@
+---
+title: "Bakes (Model Training)"
+description: "Configure and run model training jobs"
+---
+
+## Overview
+
+Bakes represent model training jobs that use rollout data as training datasets. They are composed from a base template plus per-bake overrides and support advanced features like LoRA adapters, DeepSpeed, and Weights & Biases integration.
+
+**Resource**: `client.bakes`
+
+## Methods
+
+### list()
+
+List all bakes in a repository.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/bakes`
+
+```python
+bakes = client.bakes.list("my_repo")
+for item in bakes.items:
+    print(item.bake_name)
+```
+
+---
+
+### get()
+
+Get bake definition and metadata.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/bakes/{bake_name}`
+
+```python
+bake = client.bakes.get(
+    bake_name="my_bake",
+    repo_name="my_repo"
+)
+print(f"Status: {bake.status}")  # incomplete | complete
+print(f"Job: {bake.job}")
+```
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Returns**: `BakeResponse`
+- `bake_name`: `str` - Bake identifier
+- `status`: `str` - 'incomplete' or 'complete'
+- `config`: `Config` - Bake configuration
+- `job`: `Optional[str]` - Job type if running
+
+---
+
+### set()
+
+Create or update a bake configuration.
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/bakes/{bake_name}`
+
+<CodeGroup>
+
+```python Minimal Configuration
+bake = client.bakes.set(
+    bake_name="my_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [
+            {"target": "coding_target", "weight": 1.0}
+        ],
+        "epochs": 3,
+        "micro_batch_size": 1
+    }
+)
+```
+
+```python Full Configuration
+bake = client.bakes.set(
+    bake_name="my_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [
+            {"target": "coding_target", "weight": 1.0}
+        ],
+        "epochs": 3,
+        "micro_batch_size": 1,
+        "gradient_accumulation_steps": 4,
+        "total_trajectories": 1000,
+        "seed": 42,
+        "model": {
+            "type": "bake",
+            "name_or_path": "Qwen/Qwen3-32B",
+            "baked_adapter_config": {
+                "r": 8,
+                "lora_alpha": 16,
+                "lora_dropout": 0.05,
+                "bias": "none",
+                "target_modules": "all-linear"
+            }
+        },
+        "optimizer": {
+            "learning_rate": 0.0001
+        },
+        "scheduler": {
+            "type": "huggingface"
+        },
+        "wandb": {
+            "enable": True,
+            "project": "my-project",
+            "entity": "my-team",
+            "name": "my-run",
+            "tags": ["experiment", "v1"]
+        }
+    }
+)
+```
+
+```python Multiple Datasets
+bake = client.bakes.set(
+    bake_name="multi_dataset_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [
+            {"target": "coding_target", "weight": 0.6},
+            {"target": "math_target", "weight": 0.4}
+        ],
+        "epochs": 5
+    }
+)
+```
+
+</CodeGroup>
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="template" type="string" required>
+  Template: 'default' or existing bake name
+</ParamField>
+
+<ParamField path="overrides" type="object">
+  Bake configuration overrides. See [Bake Configuration](/configuration/bake-config).
+</ParamField>
+
+---
+
+### run()
+
+Start a bake (training) job.
+
+**Endpoint**: `POST /v1/repo/{repo_name}/bakes/{bake_name}/start`
+
+```python
+result = client.bakes.run(
+    bake_name="my_bake",
+    repo_name="my_repo"
+)
+print(result.message)
+```
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Prerequisites**:
+- Complete bake configuration (datasets + training settings)
+- All referenced targets have completed rollouts
+
+<Check>
+Ensure all target rollouts are complete before starting bake
+</Check>
+
+**Behavior**:
+- Idempotent: repeated calls return current state
+- Asynchronous: returns immediately
+- Poll `get()` to monitor status
+
+**Returns**: `BakeRunResponse`
+- `message`: Job execution message
+
+---
+
+### batch_set()
+
+Create or update multiple bakes.
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/bakes/batch`
+
+```python
+result = client.bakes.batch_set(
+    repo_name="my_repo",
+    bakes=[
+        {
+            "bake_name": "bake_v1",
+            "template": "default",
+            "overrides": {"epochs": 3}
+        },
+        {
+            "bake_name": "bake_v2",
+            "template": "bake_v1",
+            "overrides": {"epochs": 5}
+        }
+    ]
+)
+```
+
+---
+
+### delete()
+
+Delete a bake from the repository.
+
+**Endpoint**: `DELETE /v1/repo/{repo_name}/bakes/{bake_name}`
+
+```python
+result = client.bakes.delete(
+    bake_name="old_bake",
+    repo_name="my_repo"
+)
+```
+
+---
+
+## Complete Training Workflow
+
+<Steps>
+  <Step title="Verify Rollouts Complete">
+    ```python
+    # Check target rollout status
+    rollout_status = client.targets.rollout.get(
+        target_name="coding_target",
+        repo_name="my_repo"
+    )
+    
+    if rollout_status.status != "complete":
+        print("Rollout must complete before training")
+        exit(1)
+    ```
+  </Step>
+
+  <Step title="Configure Bake">
+    ```python
+    bake = client.bakes.set(
+        bake_name="my_bake",
+        repo_name="my_repo",
+        template="default",
+        overrides={
+            "datasets": [
+                {"target": "coding_target", "weight": 1.0}
+            ],
+            "epochs": 3,
+            "micro_batch_size": 1,
+            "model": {
+                "type": "bake",
+                "name_or_path": "Qwen/Qwen3-32B"
+            },
+            "optimizer": {
+                "learning_rate": 0.0001
+            }
+        }
+    )
+    ```
+  </Step>
+
+  <Step title="Start Training">
+    ```python
+    result = client.bakes.run(
+        bake_name="my_bake",
+        repo_name="my_repo"
+    )
+    print("Training started")
+    ```
+  </Step>
+
+  <Step title="Monitor Progress">
+    ```python
+    import time
+    
+    while True:
+        bake_status = client.bakes.get(
+            bake_name="my_bake",
+            repo_name="my_repo"
+        )
+        
+        if bake_status.status == "complete":
+            print("Training complete!")
+            break
+        
+        print(f"Status: {bake_status.status}, Job: {bake_status.job}")
+        time.sleep(30)  # Check every 30 seconds
+    ```
+  </Step>
+</Steps>
+
+## Configuration Examples
+
+### LoRA Training
+
+```python
+bake = client.bakes.set(
+    bake_name="lora_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [{"target": "coding_target", "weight": 1.0}],
+        "epochs": 3,
+        "model": {
+            "type": "bake",
+            "name_or_path": "Qwen/Qwen3-32B",
+            "baked_adapter_config": {
+                "r": 16,              # LoRA rank
+                "lora_alpha": 32,     # Alpha parameter
+                "lora_dropout": 0.1,  # Dropout rate
+                "bias": "none",
+                "target_modules": "all-linear"
+            }
+        }
+    }
+)
+```
+
+### Weights & Biases Integration
+
+```python
+bake = client.bakes.set(
+    bake_name="wandb_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [{"target": "coding_target", "weight": 1.0}],
+        "epochs": 5,
+        "wandb": {
+            "enable": True,
+            "project": "bread-experiments",
+            "entity": "my-team",
+            "name": "coding-v1",
+            "tags": ["coding", "experiment", "v1"]
+        }
+    }
+)
+```
+
+### DeepSpeed Configuration
+
+```python
+bake = client.bakes.set(
+    bake_name="deepspeed_bake",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [{"target": "coding_target", "weight": 1.0}],
+        "epochs": 3,
+        "deepspeed": {
+            "zero_optimization": {
+                "stage": 2  # ZeRO stage 2
+            }
+        }
+    }
+)
+```
+
+## Key Configuration Fields
+
+See [Bake Configuration Reference](/configuration/bake-config) for complete details.
+
+### Dataset Configuration
+
+<ParamField path="datasets" type="array" required>
+  List of targets to use as training data
+  - `target` (string, required): Target name
+  - `weight` (float): Dataset sampling weight
+</ParamField>
+
+### Training Parameters
+
+<ParamField path="epochs" type="integer">
+  Number of training epochs
+</ParamField>
+
+<ParamField path="micro_batch_size" type="integer">
+  Micro batch size
+</ParamField>
+
+<ParamField path="gradient_accumulation_steps" type="integer">
+  Gradient accumulation steps
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducibility
+</ParamField>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Verify Prerequisites" icon="list-check">
+    Ensure all target rollouts are complete before starting training
+  </Accordion>
+
+  <Accordion title="Start Small" icon="chart-simple">
+    Test with fewer epochs and smaller datasets first, then scale up
+  </Accordion>
+
+  <Accordion title="Use Weights & Biases" icon="chart-line">
+    Enable W&B logging to track training metrics and compare experiments
+  </Accordion>
+
+  <Accordion title="Version Your Bakes" icon="code-branch">
+    Use descriptive names with versions: `coding_v1`, `coding_v2_lora`
+  </Accordion>
+
+  <Accordion title="Monitor Progress" icon="eye">
+    Check status periodically but not too frequently (every 30-60 seconds)
+  </Accordion>
+</AccordionGroup>
+
+## Error Handling
+
+```python
+import bread
+
+try:
+    result = client.bakes.run(
+        bake_name="my_bake",
+        repo_name="my_repo"
+    )
+except bread.NotFoundError:
+    print("Bake not found - configure it first")
+except bread.APIStatusError as e:
+    if "rollout" in str(e.response).lower():
+        print("Target rollouts must complete first")
+    else:
+        print(f"Error: {e.status_code} - {e.response}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Bake Configuration"
+    icon="gear"
+    href="/configuration/bake-config"
+  >
+    Complete bake configuration reference
+  </Card>
+  <Card
+    title="Complete Workflows"
+    icon="diagram-project"
+    href="/guides/workflows"
+  >
+    End-to-end training examples
+  </Card>
+</CardGroup>
+

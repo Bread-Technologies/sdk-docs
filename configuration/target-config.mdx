@@ -1,0 +1,210 @@
+---
+title: "Target Configuration"
+description: "Complete reference for target configuration fields"
+---
+
+## Overview
+
+Target configuration controls stimulus and rollout generation behavior. Targets are composed from a base template plus per-target overrides.
+
+## Configuration Fields
+
+### Generators
+
+<ParamField path="generators" type="array">
+  List of generator configurations. See [Generators](/configuration/generators).
+  
+  ```python
+  "generators": [
+      {"type": "oneshot_qs", "model": "claude-3-5-sonnet-20241022", "numq": 10},
+      {"type": "hardcoded", "questions": ["Question 1", "Question 2"]}
+  ]
+  ```
+</ParamField>
+
+### Prompts
+
+<ParamField path="u" type="string">
+  Unconditioned stimulus prompt name (system prompt)
+  
+  ```python
+  "u": "system_prompt_coding"
+  ```
+</ParamField>
+
+<ParamField path="v" type="string">
+  Conditioned stimulus prompt name (user prompt with variables)
+  
+  ```python
+  "v": "user_prompt_task"
+  ```
+</ParamField>
+
+### Model Configuration
+
+<ParamField path="model_name" type="string">
+  Base model for rollout generation. **Required for rollout jobs.**
+  
+  ```python
+  "model_name": "Qwen/Qwen3-32B"
+  ```
+</ParamField>
+
+### Generation Parameters
+
+<ParamField path="max_tokens" type="integer">
+  Maximum tokens to generate per response
+  
+  ```python
+  "max_tokens": 150
+  ```
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0). Higher = more random/creative.
+  
+  ```python
+  "temperature": 1.0
+  ```
+</ParamField>
+
+<ParamField path="num_traj_per_stimulus" type="integer">
+  Number of trajectories (responses) to generate per stimulus
+  
+  ```python
+  "num_traj_per_stimulus": 5
+  ```
+</ParamField>
+
+### Performance
+
+<ParamField path="max_concurrency" type="integer">
+  Maximum concurrent API requests during rollout
+  
+  ```python
+  "max_concurrency": 50
+  ```
+</ParamField>
+
+### Advanced
+
+<ParamField path="extra_kwargs" type="object">
+  Additional arguments passed to `chat.completions.create()`
+  
+  ```python
+  "extra_kwargs": {
+      "top_p": 0.9,
+      "frequency_penalty": 0.5
+  }
+  ```
+</ParamField>
+
+## Complete Example
+
+```python
+target = client.targets.set(
+    target_name="advanced_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        # Generators
+        "generators": [
+            {
+                "type": "oneshot_qs",
+                "model": "claude-3-5-sonnet-20241022",
+                "numq": 50,
+                "temperature": 1.2
+            },
+            {
+                "type": "from_dataset",
+                "dataset": "code_contests",
+                "numq": 30,
+                "seed": 42
+            }
+        ],
+        
+        # Prompts
+        "u": "system_prompt_expert",
+        "v": "user_prompt_detailed",
+        
+        # Model
+        "model_name": "Qwen/Qwen3-32B",
+        
+        # Generation params
+        "max_tokens": 200,
+        "temperature": 1.0,
+        "num_traj_per_stimulus": 3,
+        
+        # Performance
+        "max_concurrency": 100,
+        
+        # Advanced
+        "extra_kwargs": {
+            "top_p": 0.95,
+            "frequency_penalty": 0.0
+        }
+    }
+)
+```
+
+## Field Reference Table
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `generators` | Array | No | `[]` | List of generator configs |
+| `u` | String | Stim only | - | System prompt name |
+| `v` | String | Stim only | - | User prompt name |
+| `model_name` | String | Rollout only | - | Base model identifier |
+| `max_tokens` | Integer | No | - | Max tokens per generation |
+| `temperature` | Float | No | `1.0` | Generation temperature |
+| `num_traj_per_stimulus` | Integer | No | `1` | Trajectories per stimulus |
+| `max_concurrency` | Integer | No | `10` | Max concurrent requests |
+| `extra_kwargs` | Object | No | `{}` | Additional model params |
+
+## Template Inheritance
+
+Targets can inherit from other targets:
+
+```python
+# Base target
+client.targets.set(
+    target_name="base_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "model_name": "Qwen/Qwen3-32B",
+        "temperature": 1.0,
+        "max_tokens": 150
+    }
+)
+
+# Inherit and override
+client.targets.set(
+    target_name="high_temp_target",
+    repo_name="my_repo",
+    template="base_target",  # Inherit from base_target
+    overrides={
+        "temperature": 1.5  # Override only temperature
+    }
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Generators"
+    icon="wand-sparkles"
+    href="/configuration/generators"
+  >
+    Configure generator types
+  </Card>
+  <Card
+    title="Targets API"
+    icon="bullseye"
+    href="/api-reference/targets"
+  >
+    Targets API reference
+  </Card>
+</CardGroup>
+

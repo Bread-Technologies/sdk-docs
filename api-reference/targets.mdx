@@ -1,0 +1,353 @@
+---
+title: "Targets"
+description: "Target configuration for stimulus and rollout generation"
+---
+
+## Overview
+
+Targets define the configuration for stimulus generation (stim) and trajectory generation (rollout). They are composed from a base template plus per-target overrides.
+
+**Resource**: `client.targets`
+
+**Sub-resources**:
+- `client.targets.stim` - [Stimulus generation](/api-reference/targets-stim)
+- `client.targets.rollout` - [Trajectory generation](/api-reference/targets-rollout)
+
+## Methods
+
+### list()
+
+List all targets in a repository.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/targets`
+
+```python
+targets = client.targets.list("my_repo")
+for item in targets.items:
+    print(item.target_name)
+```
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+---
+
+### get()
+
+Get target definition and metadata.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/targets/{target_name}`
+
+```python
+target = client.targets.get(
+    target_name="coding_target",
+    repo_name="my_repo"
+)
+print(target.config)
+```
+
+<ParamField path="target_name" type="string" required>
+  Target name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Returns**: `TargetResponse`
+
+---
+
+### set()
+
+Create or update a target. Targets are composed from a base template plus per-target overrides.
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/targets/{target_name}`
+
+<CodeGroup>
+
+```python Basic Configuration
+target = client.targets.set(
+    target_name="coding_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "system_prompt_coding",
+        "v": "user_prompt_python"
+    }
+)
+```
+
+```python With Generators
+target = client.targets.set(
+    target_name="coding_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "oneshot_qs",
+                "model": "claude-3-5-sonnet-20241022",
+                "numq": 10,
+                "temperature": 1.0
+            },
+            {
+                "type": "hardcoded",
+                "questions": [
+                    "Write a function to reverse a string",
+                    "Implement binary search"
+                ]
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "max_tokens": 150,
+        "temperature": 1.0,
+        "u": "system_prompt_coding",
+        "v": "user_prompt_python"
+    }
+)
+```
+
+```python From Another Target
+# Use another target as template
+target = client.targets.set(
+    target_name="coding_target_v2",
+    repo_name="my_repo",
+    template="coding_target",  # Use existing target as base
+    overrides={
+        "temperature": 0.8  # Override just temperature
+    }
+)
+```
+
+</CodeGroup>
+
+<ParamField path="target_name" type="string" required>
+  Target name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="template" type="string" required>
+  Template name: `"default"` or name of existing target
+</ParamField>
+
+<ParamField path="overrides" type="object">
+  Configuration overrides. See [Target Configuration](/configuration/target-config) for all fields.
+</ParamField>
+
+**Returns**: `TargetResponse`
+
+---
+
+### batch_set()
+
+Create or update multiple targets in a single request.
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/targets/batch`
+
+```python
+result = client.targets.batch_set(
+    repo_name="my_repo",
+    targets=[
+        {
+            "target_name": "target_alpha",
+            "template": "default",
+            "overrides": {"model_name": "Qwen/Qwen3-32B"}
+        },
+        {
+            "target_name": "target_beta",
+            "template": "target_alpha",
+            "overrides": {"temperature": 0.7}
+        }
+    ]
+)
+```
+
+---
+
+### delete()
+
+Delete a target from the repository.
+
+**Endpoint**: `DELETE /v1/repo/{repo_name}/targets/{target_name}`
+
+```python
+result = client.targets.delete(
+    target_name="old_target",
+    repo_name="my_repo"
+)
+```
+
+---
+
+## Configuration Fields
+
+See [Target Configuration Reference](/configuration/target-config) for detailed documentation of all configuration fields.
+
+### Key Fields
+
+<ParamField path="generators" type="array">
+  Data generation strategies. See [Generators](/configuration/generators).
+</ParamField>
+
+<ParamField path="model_name" type="string">
+  Base model for rollout (required for rollout jobs)
+</ParamField>
+
+<ParamField path="u" type="string">
+  Unconditioned stimulus prompt name
+</ParamField>
+
+<ParamField path="v" type="string">
+  Conditioned stimulus prompt name
+</ParamField>
+
+<ParamField path="max_tokens" type="integer">
+  Maximum tokens to generate
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0)
+</ParamField>
+
+<ParamField path="num_traj_per_stimulus" type="integer">
+  Number of trajectories per stimulus
+</ParamField>
+
+<ParamField path="max_concurrency" type="integer">
+  Maximum concurrent requests
+</ParamField>
+
+## Examples
+
+### Simple Target with Hardcoded Questions
+
+```python
+target = client.targets.set(
+    target_name="simple_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "hardcoded",
+                "questions": [
+                    "Write a Python function to sort a list",
+                    "Create a REST API endpoint",
+                    "Implement a binary tree"
+                ]
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "system_prompt",
+        "v": "user_prompt"
+    }
+)
+```
+
+### Target with AI-Generated Questions
+
+```python
+target = client.targets.set(
+    target_name="ai_generated_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "oneshot_qs",
+                "model": "claude-3-5-sonnet-20241022",
+                "numq": 50,
+                "temperature": 1.0
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "max_tokens": 200,
+        "temperature": 0.9,
+        "u": "system_coding",
+        "v": "user_task"
+    }
+)
+```
+
+### Target with Dataset
+
+```python
+target = client.targets.set(
+    target_name="dataset_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "from_dataset",
+                "dataset": "code_contests",
+                "numq": 100,
+                "seed": 42
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "system_prompt",
+        "v": "user_prompt"
+    }
+)
+```
+
+## Target Lifecycle
+
+<Steps>
+  <Step title="Create Target">
+    Configure target with generators, prompts, and model settings
+  </Step>
+  
+  <Step title="Run Stim">
+    Generate stimuli (questions/tasks) using the target configuration
+  </Step>
+  
+  <Step title="Run Rollout">
+    Generate trajectories (model responses) for the stimuli
+  </Step>
+  
+  <Step title="Use in Bake">
+    Reference the target's rollout data in a bake for model training
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Stimulus Generation"
+    icon="sparkles"
+    href="/api-reference/targets-stim"
+  >
+    Run stim jobs to generate questions
+  </Card>
+  <Card
+    title="Trajectory Generation"
+    icon="arrows-turn-right"
+    href="/api-reference/targets-rollout"
+  >
+    Run rollout jobs for model responses
+  </Card>
+  <Card
+    title="Generator Types"
+    icon="wand-sparkles"
+    href="/configuration/generators"
+  >
+    Configure different generator types
+  </Card>
+  <Card
+    title="Full Configuration"
+    icon="gear"
+    href="/configuration/target-config"
+  >
+    Complete target configuration reference
+  </Card>
+</CardGroup>
+

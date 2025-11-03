@@ -1,0 +1,385 @@
+---
+title: "Error Handling"
+description: "Handle errors gracefully in the Bread SDK"
+---
+
+## Overview
+
+The Bread SDK provides a comprehensive error hierarchy for handling different failure scenarios. All errors inherit from `bread.APIError`.
+
+## Error Hierarchy
+
+```
+BreadError (base)
+└── APIError
+    ├── APIConnectionError
+    │   └── APITimeoutError
+    ├── APIResponseValidationError
+    └── APIStatusError
+        ├── BadRequestError (400)
+        ├── AuthenticationError (401)
+        ├── PermissionDeniedError (403)
+        ├── NotFoundError (404)
+        ├── ConflictError (409)
+        ├── UnprocessableEntityError (422)
+        ├── RateLimitError (429)
+        └── InternalServerError (≥500)
+```
+
+## Error Status Codes
+
+<CardGroup cols={2}>
+  <Card title="400 - BadRequestError" icon="circle-exclamation">
+    Malformed request
+  </Card>
+  <Card title="401 - AuthenticationError" icon="lock">
+    Invalid API key
+  </Card>
+  <Card title="403 - PermissionDeniedError" icon="ban">
+    Insufficient permissions
+  </Card>
+  <Card title="404 - NotFoundError" icon="magnifying-glass">
+    Resource not found
+  </Card>
+  <Card title="409 - ConflictError" icon="triangle-exclamation">
+    Resource conflict (e.g., immutable field change)
+  </Card>
+  <Card title="422 - UnprocessableEntityError" icon="file-circle-xmark">
+    Invalid entity
+  </Card>
+  <Card title="429 - RateLimitError" icon="gauge-high">
+    Rate limit exceeded
+  </Card>
+  <Card title="500+ - InternalServerError" icon="server">
+    Server error
+  </Card>
+</CardGroup>
+
+## Basic Error Handling
+
+```python
+import bread
+from bread import Bread
+
+client = Bread()
+
+try:
+    repos = client.repo.list()
+except bread.APIConnectionError as e:
+    print("Server could not be reached")
+    print(e.__cause__)  # Underlying exception
+except bread.RateLimitError as e:
+    print("Rate limited - back off")
+except bread.AuthenticationError as e:
+    print("Invalid API key")
+except bread.APIStatusError as e:
+    print(f"Status: {e.status_code}")
+    print(f"Response: {e.response}")
+```
+
+## Specific Error Handling
+
+### Authentication Errors
+
+```python
+import bread
+
+try:
+    client = Bread()
+    repos = client.repo.list()
+except bread.AuthenticationError:
+    print("Invalid API key - check BREAD_API_KEY environment variable")
+except bread.PermissionDeniedError:
+    print("Valid key but insufficient permissions")
+```
+
+### Not Found Errors
+
+```python
+import bread
+
+try:
+    repo = client.repo.get("my_repo")
+except bread.NotFoundError:
+    # Create if doesn't exist
+    repo = client.repo.set(repo_name="my_repo")
+    print("Repository created")
+```
+
+### Conflict Errors
+
+```python
+import bread
+
+try:
+    repo = client.repo.set(
+        repo_name="existing_repo",
+        base_model="different_model"
+    )
+except bread.ConflictError:
+    print("Cannot change base_model of existing repository")
+```
+
+### Rate Limiting
+
+```python
+import bread
+import time
+
+def retry_with_backoff(fn, max_retries=3):
+    """Retry function with exponential backoff"""
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except bread.RateLimitError:
+            if attempt == max_retries - 1:
+                raise
+            wait_time = 2 ** attempt
+            print(f"Rate limited, waiting {wait_time}s")
+            time.sleep(wait_time)
+
+# Usage
+repos = retry_with_backoff(lambda: client.repo.list())
+```
+
+### Connection Errors
+
+```python
+import bread
+import time
+
+def retry_on_connection_error(fn, max_retries=3):
+    """Retry on connection failures"""
+    for attempt in range(max_retries):
+        try:
+            return fn()
+        except bread.APIConnectionError as e:
+            if attempt == max_retries - 1:
+                print(f"Failed after {max_retries} attempts")
+                raise
+            print(f"Connection error, retry {attempt + 1}/{max_retries}")
+            time.sleep(2)
+        except bread.APITimeoutError as e:
+            if attempt == max_retries - 1:
+                raise
+            print(f"Timeout, retry {attempt + 1}/{max_retries}")
+            time.sleep(2)
+
+# Usage
+repos = retry_on_connection_error(lambda: client.repo.list())
+```
+
+## Error Properties
+
+All `APIError` subclasses have:
+- `message`: Error message
+- `request`: Original `httpx.Request`
+- `body`: Response body (if available)
+
+`APIStatusError` additionally has:
+- `response`: Full `httpx.Response`
+- `status_code`: HTTP status code
+
+```python
+import bread
+
+try:
+    client.repo.get("nonexistent")
+except bread.APIStatusError as e:
+    print(f"Status code: {e.status_code}")
+    print(f"Response headers: {e.response.headers}")
+    print(f"Response body: {e.body}")
+    print(f"Request URL: {e.request.url}")
+```
+
+## Comprehensive Error Handler
+
+```python
+import bread
+import logging
+
+logger = logging.getLogger(__name__)
+
+def handle_bread_error(e: Exception) -> dict:
+    """Central error handler for Bread SDK"""
+    if isinstance(e, bread.AuthenticationError):
+        logger.error("Authentication failed")
+        return {"error": "auth_failed", "retry": False}
+    
+    elif isinstance(e, bread.PermissionDeniedError):
+        logger.error("Permission denied")
+        return {"error": "permission_denied", "retry": False}
+    
+    elif isinstance(e, bread.NotFoundError):
+        logger.warning("Resource not found")
+        return {"error": "not_found", "retry": False}
+    
+    elif isinstance(e, bread.ConflictError):
+        logger.warning("Resource conflict")
+        return {"error": "conflict", "retry": False}
+    
+    elif isinstance(e, bread.RateLimitError):
+        logger.warning("Rate limited")
+        return {"error": "rate_limited", "retry": True, "wait": 60}
+    
+    elif isinstance(e, bread.APITimeoutError):
+        logger.error("Request timeout")
+        return {"error": "timeout", "retry": True}
+    
+    elif isinstance(e, bread.APIConnectionError):
+        logger.error("Connection failed")
+        return {"error": "connection_failed", "retry": True}
+    
+    elif isinstance(e, bread.InternalServerError):
+        logger.error("Server error")
+        return {"error": "server_error", "retry": True}
+    
+    elif isinstance(e, bread.APIStatusError):
+        logger.error(f"API error: {e.status_code}")
+        return {"error": "api_error", "status": e.status_code, "retry": e.status_code >= 500}
+    
+    else:
+        logger.error(f"Unexpected error: {e}")
+        return {"error": "unknown", "retry": False}
+
+# Usage
+try:
+    result = client.repo.list()
+except Exception as e:
+    error_info = handle_bread_error(e)
+    
+    if error_info["retry"]:
+        # Retry logic
+        time.sleep(error_info.get("wait", 5))
+        result = client.repo.list()
+    else:
+        # Handle non-retryable error
+        raise
+```
+
+## Retry Configuration
+
+The SDK automatically retries certain errors:
+
+```python
+from bread import Bread
+
+# Default: 2 retries
+client = Bread()
+
+# Disable retries
+client = Bread(max_retries=0)
+
+# Custom retry count
+client = Bread(max_retries=5)
+
+# Per-request override
+client.with_options(max_retries=3).repo.list()
+```
+
+**Auto-retried conditions**:
+- 408 Request Timeout
+- 409 Conflict
+- 429 Rate Limit
+- ≥500 Internal Server Errors
+- Connection errors
+
+## Timeout Configuration
+
+Configure timeouts to prevent hanging:
+
+```python
+import httpx
+from bread import Bread
+
+# Global timeout (20 seconds)
+client = Bread(timeout=20.0)
+
+# Granular timeout control
+client = Bread(
+    timeout=httpx.Timeout(
+        60.0,         # Total
+        connect=2.0,  # Connection
+        read=5.0,     # Read
+        write=10.0    # Write
+    )
+)
+
+# Per-request override
+try:
+    result = client.with_options(timeout=5.0).repo.list()
+except bread.APITimeoutError:
+    print("Request timed out after 5 seconds")
+```
+
+## Async Error Handling
+
+Error handling works the same with async client:
+
+```python
+import asyncio
+import bread
+from bread import AsyncBread
+
+async def safe_api_call():
+    try:
+        async with AsyncBread() as client:
+            repos = await client.repo.list()
+            return repos
+    except bread.APIConnectionError:
+        print("Connection failed")
+    except bread.AuthenticationError:
+        print("Auth failed")
+    except bread.APIStatusError as e:
+        print(f"API error: {e.status_code}")
+
+asyncio.run(safe_api_call())
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Catch Specific Errors First" icon="filter">
+    Handle specific error types before catching generic `APIError`
+  </Accordion>
+
+  <Accordion title="Implement Retry Logic" icon="rotate">
+    Retry on transient errors (rate limits, timeouts, server errors)
+  </Accordion>
+
+  <Accordion title="Log Error Details" icon="file-lines">
+    Log status codes, request details, and error messages for debugging
+  </Accordion>
+
+  <Accordion title="Don't Retry Auth Errors" icon="lock">
+    Authentication and permission errors are not transient - fix the root cause
+  </Accordion>
+
+  <Accordion title="Use Circuit Breakers" icon="toggle-off">
+    For production, implement circuit breakers to prevent cascading failures
+  </Accordion>
+
+  <Accordion title="Set Appropriate Timeouts" icon="clock">
+    Configure timeouts based on your use case (quick requests vs. long-running jobs)
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/guides/workflows"
+  >
+    Production-ready workflow examples
+  </Card>
+  <Card
+    title="Advanced Features"
+    icon="wand-magic-sparkles"
+    href="/guides/advanced-features"
+  >
+    Advanced SDK capabilities
+  </Card>
+</CardGroup>
+

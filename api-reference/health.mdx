@@ -1,0 +1,248 @@
+---
+title: "Health Check"
+description: "Check API health and status"
+---
+
+## Overview
+
+The health check endpoint allows you to verify API connectivity and get API version information.
+
+**Resource**: `client.health`
+
+## Method
+
+### check()
+
+Check API health and status.
+
+**Endpoint**: `GET /v1/health`
+
+```python
+health = client.health.check()
+print(f"Status: {health.status}")
+print(f"API: {health.api}")
+print(f"Version: {health.version}")
+```
+
+**Returns**: `HealthCheckResponse`
+- `status`: `str` - 'healthy' or 'degraded'
+- `api`: `str` - API name
+- `version`: `str` - API version
+
+---
+
+## Examples
+
+### Basic Health Check
+
+```python
+from bread import Bread
+
+client = Bread()
+
+health = client.health.check()
+
+if health.status == "healthy":
+    print(f"✓ API is healthy (version {health.version})")
+else:
+    print(f"⚠ API is degraded")
+```
+
+### Connection Test
+
+Use health check to test connectivity:
+
+```python
+import bread
+
+def test_connection():
+    try:
+        client = Bread()
+        health = client.health.check()
+        
+        return {
+            "connected": True,
+            "status": health.status,
+            "version": health.version
+        }
+    except bread.APIConnectionError:
+        return {
+            "connected": False,
+            "error": "Cannot reach API server"
+        }
+    except bread.AuthenticationError:
+        return {
+            "connected": True,
+            "authenticated": False,
+            "error": "Invalid API key"
+        }
+    except Exception as e:
+        return {
+            "connected": False,
+            "error": str(e)
+        }
+
+result = test_connection()
+print(result)
+```
+
+### Application Startup Check
+
+Verify API connectivity during application initialization:
+
+```python
+from bread import Bread
+import sys
+
+def init_bread_client():
+    """Initialize Bread client with health check"""
+    client = Bread()
+    
+    try:
+        health = client.health.check()
+        
+        if health.status != "healthy":
+            print(f"Warning: API status is {health.status}")
+        
+        print(f"Connected to Bread API v{health.version}")
+        return client
+        
+    except Exception as e:
+        print(f"Failed to connect to Bread API: {e}")
+        sys.exit(1)
+
+# Use in your app
+client = init_bread_client()
+```
+
+### Async Health Check
+
+```python
+import asyncio
+from bread import AsyncBread
+
+async def check_health():
+    async with AsyncBread() as client:
+        health = await client.health.check()
+        return health
+
+health = asyncio.run(check_health())
+print(f"Status: {health.status}")
+```
+
+### Monitoring Script
+
+Continuous health monitoring:
+
+```python
+import time
+from bread import Bread
+import bread
+
+client = Bread()
+
+def monitor_health(interval=60):
+    """Monitor API health every N seconds"""
+    while True:
+        try:
+            health = client.health.check()
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            print(f"[{timestamp}] Status: {health.status} | Version: {health.version}")
+            
+            if health.status != "healthy":
+                # Alert or log degraded status
+                print(f"⚠ API degraded at {timestamp}")
+        
+        except bread.APIConnectionError as e:
+            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            print(f"[{timestamp}] ✗ Connection failed: {e}")
+        
+        time.sleep(interval)
+
+# Run monitor
+monitor_health(interval=60)  # Check every 60 seconds
+```
+
+## Status Values
+
+<CardGroup cols={2}>
+  <Card title="healthy" icon="circle-check">
+    API is operating normally
+  </Card>
+  <Card title="degraded" icon="circle-exclamation">
+    API is experiencing issues but still operational
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Test on Startup" icon="power-off">
+    Perform a health check when your application starts to verify connectivity
+  </Accordion>
+
+  <Accordion title="Include in Monitoring" icon="chart-line">
+    Add health checks to your monitoring and alerting systems
+  </Accordion>
+
+  <Accordion title="Handle Degraded Status" icon="triangle-exclamation">
+    Implement graceful degradation when API status is 'degraded'
+  </Accordion>
+
+  <Accordion title="Don't Poll Too Frequently" icon="clock">
+    Health checks are lightweight but shouldn't be called excessively (every 30-60s is reasonable)
+  </Accordion>
+</AccordionGroup>
+
+## Error Handling
+
+```python
+import bread
+
+try:
+    health = client.health.check()
+    print(f"API Status: {health.status}")
+    
+except bread.APIConnectionError as e:
+    print(f"Cannot reach API: {e}")
+    print("Check network connectivity and base URL")
+    
+except bread.AuthenticationError as e:
+    print(f"Authentication failed: {e}")
+    print("Verify your API key is correct")
+    
+except bread.APITimeoutError as e:
+    print(f"Request timed out: {e}")
+    print("API may be slow or unresponsive")
+```
+
+## Response Type
+
+### HealthCheckResponse
+
+```python
+class HealthCheckResponse:
+    status: str   # 'healthy' or 'degraded'
+    api: str      # API name
+    version: str  # API version
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/guides/error-handling"
+  >
+    Learn comprehensive error handling
+  </Card>
+  <Card
+    title="Advanced Features"
+    icon="wand-magic-sparkles"
+    href="/guides/advanced-features"
+  >
+    Explore advanced SDK capabilities
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,207 @@
+---
+title: "Repositories"
+description: "Repository management API reference"
+---
+
+## Overview
+
+Repositories are the top-level containers for your AI projects. Each repository has a base model configuration and contains prompts, targets, and bakes.
+
+**Resource**: `client.repo`
+
+## Methods
+
+### list()
+
+List all repositories visible to your team.
+
+**Endpoint**: `GET /v1/repo`
+
+```python
+repos = client.repo.list()
+for item in repos.items:
+    print(item.repo_name)
+```
+
+**Returns**: `RepoListResponse`
+- `items`: `List[Item]` - List of repositories
+  - `repo_name`: `str` - Repository name
+
+---
+
+### get()
+
+Get repository configuration and metadata.
+
+**Endpoint**: `GET /v1/repo/{repo_name}`
+
+```python
+repo = client.repo.get("my_repo")
+print(f"Repository: {repo.repo_name}")
+print(f"Base Model: {repo.base_model}")
+```
+
+<ParamField path="repo_name" type="string" required>
+  Repository name to retrieve
+</ParamField>
+
+**Returns**: `RepoResponse`
+- `repo_name`: `str` - Repository name
+- `base_model`: `str` - Base model identifier
+
+---
+
+### set()
+
+Create or update a repository. This operation is idempotent.
+
+**Endpoint**: `PUT /v1/repo`
+
+```python
+repo = client.repo.set(
+    repo_name="my_repo",
+    base_model="Qwen/Qwen3-32B"
+)
+```
+
+<ParamField path="repo_name" type="string" required>
+  Name of the repository
+</ParamField>
+
+<ParamField path="base_model" type="string">
+  Base model for the repository (e.g., "Qwen/Qwen3-32B")
+</ParamField>
+
+<Warning>
+The `base_model` cannot be changed after initial creation. Attempting to modify it will return a **409 Conflict** error.
+</Warning>
+
+**Returns**: `RepoResponse`
+
+---
+
+## Examples
+
+### Create Repository with Base Model
+
+```python
+from bread import Bread
+
+client = Bread()
+
+# Create new repository
+repo = client.repo.set(
+    repo_name="coding_project",
+    base_model="Qwen/Qwen3-32B"
+)
+
+print(f"Created repository: {repo.repo_name}")
+print(f"Base model: {repo.base_model}")
+```
+
+### Check if Repository Exists
+
+```python
+import bread
+
+try:
+    repo = client.repo.get("my_repo")
+    print(f"Repository exists: {repo.repo_name}")
+except bread.NotFoundError:
+    # Create it if it doesn't exist
+    repo = client.repo.set(repo_name="my_repo")
+    print(f"Created repository: {repo.repo_name}")
+```
+
+### List All Repositories
+
+```python
+repos = client.repo.list()
+
+print(f"Found {len(repos.items)} repositories:")
+for repo in repos.items:
+    print(f"  - {repo.repo_name}")
+```
+
+## Error Handling
+
+<CodeGroup>
+
+```python Handle Conflicts
+import bread
+
+try:
+    # Attempt to change base_model
+    repo = client.repo.set(
+        repo_name="existing_repo",
+        base_model="different_model"
+    )
+except bread.ConflictError:
+    print("Cannot change base_model of existing repository")
+```
+
+```python Handle Not Found
+import bread
+
+try:
+    repo = client.repo.get("nonexistent_repo")
+except bread.NotFoundError:
+    print("Repository not found")
+    # Create it
+    repo = client.repo.set(repo_name="nonexistent_repo")
+```
+
+</CodeGroup>
+
+## Response Types
+
+### RepoResponse
+
+```python
+class RepoResponse:
+    repo_name: str   # Repository name
+    base_model: str  # Base model identifier
+```
+
+### RepoListResponse
+
+```python
+class RepoListResponse:
+    items: List[Item]  # List of repository items
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Choose Base Model Carefully" icon="circle-check">
+    The `base_model` cannot be changed after creation. Choose carefully based on your use case and model requirements.
+  </Accordion>
+
+  <Accordion title="Use Descriptive Names" icon="tag">
+    Repository names should be descriptive and follow a consistent naming convention (e.g., `project_name`, `team_experiment_v1`).
+  </Accordion>
+
+  <Accordion title="Check Before Creating" icon="magnifying-glass">
+    Use `get()` to check if a repository exists before creating it, or rely on `set()`'s idempotent behavior.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Prompts"
+    icon="message"
+    href="/api-reference/prompts"
+  >
+    Create prompt templates for your repository
+  </Card>
+  <Card
+    title="Targets"
+    icon="bullseye"
+    href="/api-reference/targets"
+  >
+    Configure targets for stimulus and rollout generation
+  </Card>
+</CardGroup>
+

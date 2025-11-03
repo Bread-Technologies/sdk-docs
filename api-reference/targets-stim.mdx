@@ -1,0 +1,322 @@
+---
+title: "Stimulus Generation (Stim)"
+description: "Generate questions and tasks for model training"
+---
+
+## Overview
+
+Stimulus (stim) generation creates questions, tasks, or prompts based on the target's generator configuration. Stim jobs execute asynchronously and their output is used as input for rollout jobs.
+
+**Resource**: `client.targets.stim`
+
+## Methods
+
+### run()
+
+Start a stim job for the target.
+
+**Endpoint**: `POST /v1/repo/{repo_name}/targets/{target_name}/stim`
+
+```python
+result = client.targets.stim.run(
+    target_name="coding_target",
+    repo_name="my_repo"
+)
+print(result.status)  # Job status
+```
+
+<ParamField path="target_name" type="string" required>
+  Target name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Prerequisites**:
+- Target must have stim configuration (generators, u, v)
+
+**Behavior**:
+- Idempotent: repeated calls return current state (no duplicate jobs)
+- Asynchronous: returns immediately, job runs in background
+
+**Returns**: `StimRunResponse`
+- `status`: Job status (not_started, running, complete)
+- `lines`: Number of output lines generated
+- `parameters`: Job parameters
+
+---
+
+### get()
+
+Get stim job status.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/targets/{target_name}/stim`
+
+```python
+status = client.targets.stim.get(
+    target_name="coding_target",
+    repo_name="my_repo"
+)
+print(f"Status: {status.status}")
+print(f"Lines generated: {status.lines}")
+```
+
+<ParamField path="target_name" type="string" required>
+  Target name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Returns**: `StimGetResponse`
+- `status`: not_started | running | complete
+- `lines`: Number of generated stimuli
+- `parameters`: Job configuration
+
+---
+
+### get_output()
+
+Get paginated stim output data.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/targets/{target_name}/stim/output`
+
+```python
+output = client.targets.stim.get_output(
+    target_name="coding_target",
+    repo_name="my_repo",
+    limit=100,
+    offset=0
+)
+
+for stimulus in output.output:
+    print(stimulus)
+
+if output.has_more:
+    # Fetch more data with increased offset
+    next_batch = client.targets.stim.get_output(
+        target_name="coding_target",
+        repo_name="my_repo",
+        limit=100,
+        offset=100
+    )
+```
+
+<ParamField path="target_name" type="string" required>
+  Target name
+</ParamField>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="limit" type="integer">
+  Number of lines to return (max 1000)
+</ParamField>
+
+<ParamField path="offset" type="integer">
+  Starting line number (0-indexed)
+</ParamField>
+
+**Returns**: `StimGetOutputResponse`
+- `status`: Job status
+- `lines`: Total number of output lines
+- `offset`: Starting line offset
+- `limit`: Page size
+- `has_more`: Whether more data is available
+- `output`: List of generated stimuli
+- `parameters`: Stim configuration
+
+---
+
+## Complete Workflow Example
+
+<Steps>
+  <Step title="Start Stim Job">
+    ```python
+    result = client.targets.stim.run(
+        target_name="coding_target",
+        repo_name="my_repo"
+    )
+    print(f"Job started: {result.status}")
+    ```
+  </Step>
+
+  <Step title="Poll Status">
+    ```python
+    import time
+    
+    while True:
+        status = client.targets.stim.get(
+            target_name="coding_target",
+            repo_name="my_repo"
+        )
+        
+        if status.status == "complete":
+            print(f"Complete! Generated {status.lines} stimuli")
+            break
+        elif status.status == "running":
+            print("Still running...")
+        
+        time.sleep(5)  # Poll every 5 seconds
+    ```
+  </Step>
+
+  <Step title="Fetch Output">
+    ```python
+    output = client.targets.stim.get_output(
+        target_name="coding_target",
+        repo_name="my_repo",
+        limit=100
+    )
+    
+    print(f"Retrieved {len(output.output)} stimuli")
+    for i, stimulus in enumerate(output.output):
+        print(f"Stimulus {i+1}: {stimulus}")
+    ```
+  </Step>
+</Steps>
+
+## Pagination Example
+
+Fetch all stim output with pagination:
+
+```python
+def get_all_stim_output(target_name: str, repo_name: str):
+    all_output = []
+    offset = 0
+    limit = 1000  # Maximum allowed
+    
+    while True:
+        chunk = client.targets.stim.get_output(
+            target_name=target_name,
+            repo_name=repo_name,
+            offset=offset,
+            limit=limit
+        )
+        
+        all_output.extend(chunk.output)
+        
+        if not chunk.has_more:
+            break
+        
+        offset += limit
+    
+    return all_output
+
+# Usage
+stimuli = get_all_stim_output("coding_target", "my_repo")
+print(f"Total stimuli: {len(stimuli)}")
+```
+
+## Async Example
+
+Using the async client:
+
+```python
+import asyncio
+from bread import AsyncBread
+
+async def run_stim_job():
+    async with AsyncBread() as client:
+        # Start job
+        result = await client.targets.stim.run(
+            target_name="coding_target",
+            repo_name="my_repo"
+        )
+        
+        # Poll status
+        while True:
+            status = await client.targets.stim.get(
+                target_name="coding_target",
+                repo_name="my_repo"
+            )
+            
+            if status.status == "complete":
+                break
+            
+            await asyncio.sleep(5)
+        
+        # Get output
+        output = await client.targets.stim.get_output(
+            target_name="coding_target",
+            repo_name="my_repo"
+        )
+        
+        return output.output
+
+# Run
+stimuli = asyncio.run(run_stim_job())
+```
+
+## Job Status States
+
+<CardGroup cols={3}>
+  <Card title="not_started" icon="circle">
+    Job has not begun execution
+  </Card>
+  <Card title="running" icon="circle-half-stroke">
+    Job is currently executing
+  </Card>
+  <Card title="complete" icon="circle-check">
+    Job finished successfully
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Poll Responsibly" icon="clock">
+    Wait at least 5-10 seconds between status checks to avoid unnecessary API calls
+  </Accordion>
+
+  <Accordion title="Use Pagination" icon="books">
+    Use pagination when fetching output to handle large datasets efficiently
+  </Accordion>
+
+  <Accordion title="Check Before Running" icon="magnifying-glass">
+    Check job status before starting a new run to avoid conflicts
+  </Accordion>
+
+  <Accordion title="Handle Incomplete Jobs" icon="triangle-exclamation">
+    Implement proper error handling for jobs that fail or stall
+  </Accordion>
+</AccordionGroup>
+
+## Error Handling
+
+```python
+import bread
+
+try:
+    result = client.targets.stim.run(
+        target_name="coding_target",
+        repo_name="my_repo"
+    )
+except bread.NotFoundError:
+    print("Target not found")
+except bread.APIStatusError as e:
+    print(f"API error: {e.status_code} - {e.response}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Rollout Generation"
+    icon="arrows-turn-right"
+    href="/api-reference/targets-rollout"
+  >
+    Generate trajectories from stim output
+  </Card>
+  <Card
+    title="Pagination Guide"
+    icon="book"
+    href="/guides/pagination"
+  >
+    Learn pagination patterns
+  </Card>
+</CardGroup>
+

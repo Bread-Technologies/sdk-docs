@@ -1,0 +1,440 @@
+---
+title: "Advanced Features"
+description: "Advanced SDK capabilities and customization"
+---
+
+## Raw Response Access
+
+Access raw HTTP response data by prefixing methods with `.with_raw_response.`:
+
+```python
+response = client.repo.with_raw_response.list()
+
+# Access response metadata
+print(response.status_code)
+print(response.headers.get('X-Custom-Header'))
+print(response.http_response)
+
+# Parse to get typed data
+repos = response.parse()
+print(repos.items)
+```
+
+**Available Properties**:
+- `status_code`: HTTP status code
+- `headers`: Response headers
+- `http_response`: Raw `httpx.Response`
+- `parse()`: Parse response body
+
+---
+
+## Streaming Responses
+
+Stream response bodies instead of loading entirely into memory:
+
+```python
+with client.repo.with_streaming_response.list() as response:
+    print(response.headers.get("X-My-Header"))
+    
+    for line in response.iter_lines():
+        print(line)
+```
+
+**Async Streaming**:
+```python
+async with client.repo.with_streaming_response.list() as response:
+    async for line in response.iter_lines():
+        print(line)
+```
+
+**Available Methods**:
+- `iter_bytes()`: Iterate raw bytes
+- `iter_text()`: Iterate text
+- `iter_lines()`: Iterate lines
+- `read()`: Read all content
+- `parse()`: Parse to typed object
+
+---
+
+## Custom HTTP Client
+
+Override the HTTP client for proxies, custom transports, and advanced configurations:
+
+```python
+import httpx
+from bread import Bread, DefaultHttpxClient
+
+client = Bread(
+    base_url="http://my-server.com:8083",
+    http_client=DefaultHttpxClient(
+        proxy="http://my-proxy.com:8080",
+        transport=httpx.HTTPTransport(local_address="0.0.0.0")
+    )
+)
+```
+
+### Proxy Configuration
+
+```python
+import httpx
+from bread import Bread, DefaultHttpxClient
+
+client = Bread(
+    http_client=DefaultHttpxClient(
+        proxy="http://proxy.example.com:8080"
+    )
+)
+
+# With proxy authentication
+proxies = {
+    "http://": "http://user:pass@proxy.example.com:8080",
+    "https://": "http://user:pass@proxy.example.com:8080"
+}
+client = Bread(
+    http_client=DefaultHttpxClient(proxy=proxies)
+)
+```
+
+---
+
+## Timeout Configuration
+
+<CodeGroup>
+
+```python Global Timeout
+from bread import Bread
+
+# Simple timeout (seconds)
+client = Bread(timeout=20.0)
+```
+
+```python Granular Control
+import httpx
+from bread import Bread
+
+client = Bread(
+    timeout=httpx.Timeout(
+        60.0,         # Total timeout
+        connect=2.0,  # Connection timeout
+        read=5.0,     # Read timeout
+        write=10.0    # Write timeout
+    )
+)
+```
+
+```python Per-Request Override
+client = Bread()
+
+# Override for single request
+repos = client.with_options(timeout=5.0).repo.list()
+```
+
+</CodeGroup>
+
+**Default**: 60 seconds
+
+---
+
+## Retry Configuration
+
+<CodeGroup>
+
+```python Global Configuration
+from bread import Bread
+
+# Default: 2 retries
+client = Bread(max_retries=2)
+
+# Disable retries
+client = Bread(max_retries=0)
+
+# More aggressive retries
+client = Bread(max_retries=5)
+```
+
+```python Per-Request Override
+client = Bread()
+
+repos = client.with_options(max_retries=3).repo.list()
+```
+
+</CodeGroup>
+
+**Auto-retried Errors**:
+- 408 Request Timeout
+- 409 Conflict
+- 429 Rate Limit
+- ≥500 Server Errors
+- Connection errors
+
+**Retry Strategy**: Exponential backoff with jitter
+
+---
+
+## Request Customization
+
+### Extra Headers
+
+```python
+repos = client.repo.list(
+    extra_headers={"X-Custom-Header": "value"}
+)
+```
+
+### Extra Query Parameters
+
+```python
+repos = client.repo.list(
+    extra_query={"custom_param": "value"}
+)
+```
+
+### Extra Body Fields
+
+```python
+repo = client.repo.set(
+    repo_name="my_repo",
+    extra_body={"additional_field": "value"}
+)
+```
+
+---
+
+## Undocumented Endpoints
+
+Make requests to undocumented endpoints:
+
+```python
+import httpx
+
+response = client.post(
+    "/custom/endpoint",
+    cast_to=httpx.Response,
+    body={"my_param": True}
+)
+
+print(response.status_code)
+```
+
+---
+
+## Undocumented Response Properties
+
+Access undocumented fields in responses:
+
+```python
+response = client.repo.get("my_repo")
+
+# Access unknown property
+extra_field = response.unknown_prop
+
+# Get all extra fields
+extras = response.model_extra
+```
+
+---
+
+## Context Manager Usage
+
+Automatically manage HTTP connections:
+
+<CodeGroup>
+
+```python Sync
+from bread import Bread
+
+with Bread() as client:
+    repos = client.repo.list()
+# HTTP client is now closed
+```
+
+```python Async
+from bread import AsyncBread
+
+async with AsyncBread() as client:
+    repos = await client.repo.list()
+# HTTP client is now closed
+```
+
+</CodeGroup>
+
+---
+
+## Client Options Override
+
+Modify client settings for a single request:
+
+```python
+client = Bread()
+
+# Override multiple options
+response = client.with_options(
+    timeout=5.0,
+    max_retries=3,
+    http_client=custom_client
+).repo.list()
+```
+
+---
+
+## Type Handling
+
+### Response Serialization
+
+```python
+repo = client.repo.get("my_repo")
+
+# Serialize to JSON
+json_str = repo.to_json()  # Pretty-printed by default
+compact_json = repo.to_json(indent=None)
+
+# Convert to dictionary
+data_dict = repo.to_dict()
+data_with_api_names = repo.to_dict(use_api_names=True)
+data_all_fields = repo.to_dict(exclude_unset=False)
+```
+
+### Check Fields Set
+
+```python
+repo = client.repo.get("my_repo")
+
+if 'base_model' not in repo.model_fields_set:
+    print('base_model was not in API response')
+```
+
+---
+
+## Logging
+
+Enable debug logging:
+
+```bash
+export BREAD_LOG=debug
+```
+
+Or in code:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+```
+
+**Log Levels**:
+- `info`: Basic request/response info
+- `debug`: Detailed HTTP traffic
+
+---
+
+## Custom Base URL
+
+Override API endpoint:
+
+<CodeGroup>
+
+```python Environment Variable
+export BREAD_BASE_URL='https://api.custom-domain.com'
+```
+
+```python In Code
+from bread import Bread
+
+client = Bread(
+    base_url="https://api.custom-domain.com"
+)
+```
+
+</CodeGroup>
+
+---
+
+## Default Headers and Query Params
+
+Set default headers/query params for all requests:
+
+```python
+from bread import Bread
+
+client = Bread(
+    default_headers={"X-Custom": "header"},
+    default_query={"param": "value"}
+)
+```
+
+---
+
+## Version Check
+
+Check installed SDK version:
+
+```python
+import bread
+
+print(bread.__version__)
+```
+
+---
+
+## Async with aiohttp
+
+For better async performance, use aiohttp:
+
+```bash
+pip install 'bread[aiohttp] @ git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git'
+```
+
+```python
+from bread import AsyncBread, DefaultAioHttpClient
+
+async with AsyncBread(
+    http_client=DefaultAioHttpClient()
+) as client:
+    repos = await client.repo.list()
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Context Managers" icon="brackets-curly">
+    Always use context managers (`with` statements) to ensure proper cleanup
+  </Accordion>
+
+  <Accordion title="Configure Timeouts" icon="clock">
+    Set appropriate timeouts based on your use case
+  </Accordion>
+
+  <Accordion title="Enable Logging" icon="file-lines">
+    Use debug logging during development to understand API interactions
+  </Accordion>
+
+  <Accordion title="Handle Raw Responses Carefully" icon="shield">
+    Validate and handle raw response data appropriately
+  </Accordion>
+
+  <Accordion title="Use Streaming for Large Data" icon="water">
+    Stream responses when dealing with large datasets
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/guides/error-handling"
+  >
+    Comprehensive error handling guide
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/guides/workflows"
+  >
+    Production-ready workflow examples
+  </Card>
+</CardGroup>
+

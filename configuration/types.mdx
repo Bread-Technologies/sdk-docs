@@ -1,0 +1,289 @@
+---
+title: "Type Definitions"
+description: "SDK type definitions and data models"
+---
+
+## Overview
+
+The Bread SDK uses Pydantic models for responses and TypedDicts for request parameters, providing full type safety.
+
+## Response Types
+
+### RepoResponse
+
+```python
+class RepoResponse:
+    repo_name: str   # Repository name
+    base_model: str  # Base model identifier
+```
+
+### PromptResponse
+
+```python
+class PromptResponse:
+    prompt_name: str           # Prompt identifier
+    messages: List[Message]    # List of messages
+```
+
+### Message
+
+```python
+class Message:
+    role: str       # "system", "user", or "assistant"
+    content: str    # Message content
+```
+
+### TargetResponse
+
+```python
+class TargetResponse:
+    target_name: str              # Target name
+    config: TargetConfigBase      # Configuration
+```
+
+### BakeResponse
+
+```python
+class BakeResponse:
+    bake_name: str              # Bake name
+    status: str                 # "incomplete" or "complete"
+    config: Config              # Bake configuration
+    job: Optional[str]          # Job type if running
+```
+
+### HealthCheckResponse
+
+```python
+class HealthCheckResponse:
+    status: str   # "healthy" or "degraded"
+    api: str      # API name
+    version: str  # API version
+```
+
+## Request Parameter Types
+
+### MessageParam
+
+```python
+from bread.types import MessageParam
+
+class MessageParam(TypedDict):
+    role: str       # Required: "system", "user", "assistant"
+    content: str    # Required: Message content
+
+# Usage
+messages: List[MessageParam] = [
+    {"role": "system", "content": "You are helpful"},
+    {"role": "user", "content": "Hello"}
+]
+```
+
+### TargetConfigBaseParam
+
+```python
+from bread.types import TargetConfigBaseParam
+
+class TargetConfigBaseParam(TypedDict, total=False):
+    generators: Optional[List[Generator]]
+    model_name: Optional[str]
+    u: Optional[str]
+    v: Optional[str]
+    max_concurrency: Optional[int]
+    max_tokens: Optional[int]
+    num_traj_per_stimulus: Optional[int]
+    temperature: Optional[float]
+    extra_kwargs: Optional[Dict[str, Any]]
+```
+
+### BakeConfigBaseParam
+
+```python
+from bread.types import BakeConfigBaseParam
+
+class BakeConfigBaseParam(TypedDict, total=False):
+    datasets: Optional[List[DatasetItemParam]]
+    epochs: Optional[int]
+    micro_batch_size: Optional[int]
+    gradient_accumulation_steps: Optional[int]
+    model: Optional[ModelConfigParam]
+    optimizer: Optional[OptimizerConfigParam]
+    scheduler: Optional[SchedulerConfigParam]
+    wandb: Optional[WandbConfigParam]
+    deepspeed: Optional[DeepspeedConfigParam]
+```
+
+## Working with Types
+
+### Type Imports
+
+```python
+from bread import Bread
+from bread.types import (
+    RepoResponse,
+    PromptResponse,
+    TargetResponse,
+    BakeResponse,
+    Message,
+    MessageParam,
+    HealthCheckResponse
+)
+```
+
+### Type Hints
+
+```python
+from bread import Bread
+from bread.types import RepoResponse, PromptResponse
+
+def get_repository(name: str) -> RepoResponse:
+    client = Bread()
+    return client.repo.get(name)
+
+def create_prompt(
+    name: str,
+    repo: str,
+    messages: List[MessageParam]
+) -> PromptResponse:
+    client = Bread()
+    return client.prompts.set(name, repo, messages)
+```
+
+### Response Serialization
+
+```python
+repo = client.repo.get("my_repo")
+
+# To JSON
+json_str = repo.to_json()           # Pretty-printed
+compact = repo.to_json(indent=None)  # Compact
+
+# To dictionary
+data = repo.to_dict()
+data_all = repo.to_dict(exclude_unset=False)
+```
+
+### Check Fields Set
+
+```python
+repo = client.repo.get("my_repo")
+
+if 'base_model' not in repo.model_fields_set:
+    print('Field was not in API response')
+```
+
+### Access Extra Fields
+
+```python
+response = client.repo.get("my_repo")
+
+# Access unknown property
+extra = response.unknown_prop
+
+# Get all extra fields
+all_extras = response.model_extra
+```
+
+## Generator Types
+
+```python
+# Oneshot QS
+{
+    "type": "oneshot_qs",
+    "model": str,
+    "numq": int,
+    "temperature": float
+}
+
+# Hardcoded
+{
+    "type": "hardcoded",
+    "questions": List[str]
+}
+
+# From Dataset
+{
+    "type": "from_dataset",
+    "dataset": str,
+    "numq": int,
+    "seed": int
+}
+
+# Persona
+{
+    "type": "persona",
+    "numq": int,
+    "seed": int,
+    "temperature": float
+}
+
+# Custom
+{
+    "type": "custom",
+    "template_path": str
+}
+```
+
+## Type Safety Example
+
+```python
+from typing import List
+from bread import Bread
+from bread.types import MessageParam, PromptResponse
+
+def create_coding_prompts(repo_name: str) -> List[PromptResponse]:
+    """Type-safe prompt creation"""
+    client = Bread()
+    
+    prompts: List[MessageParam] = [
+        {"role": "system", "content": "You are a coder"},
+        {"role": "user", "content": "Task: {task}"}
+    ]
+    
+    response: PromptResponse = client.prompts.set(
+        prompt_name="coding_prompt",
+        repo_name=repo_name,
+        messages=prompts
+    )
+    
+    return [response]
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Type Hints" icon="code">
+    Add type hints to your functions for better IDE support and type checking
+  </Accordion>
+
+  <Accordion title="Import Types Explicitly" icon="file-import">
+    Import types from `bread.types` for better autocomplete
+  </Accordion>
+
+  <Accordion title="Validate TypedDicts" icon="check-double">
+    Use TypedDicts for request parameters to catch errors at development time
+  </Accordion>
+
+  <Accordion title="Check Model Fields" icon="magnifying-glass">
+    Use `model_fields_set` to check which fields were actually returned by the API
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/repo"
+  >
+    Explore API methods
+  </Card>
+  <Card
+    title="Guides"
+    icon="book"
+    href="/guides/workflows"
+  >
+    Learn common patterns
+  </Card>
+</CardGroup>
+
