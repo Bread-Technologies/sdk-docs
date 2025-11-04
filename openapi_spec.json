@@ -1,0 +1,5203 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "BReaDv3 API",
+      "description": "\n    BReaDv3 Production API\n    \n    A git-centric AI model fine-tuning platform that uses distributed git repositories \n    for coordination instead of traditional databases.\n    \n    Key Features:\n    - Repository Management: Create and manage AI training repositories\n    - Prompt Management: Store and organize training prompts\n    - Target Management: Define training targets and configurations\n    - Async Workflows: Git-based coordination for distributed training\n    \n    Authentication:\n    All endpoints require authentication via Bearer token.\n    \n    API Structure:\n    - /v1/repo/* - Repository operations\n    - /v1/repo/{repo_name}/prompts/* - Prompt management\n    - /v1/repo/{repo_name}/targets/* - Target management\n    - /v1/repo/{repo_name}/bakes/* - Bake management\n    ",
+      "version": "0.1.0"
+    },
+    "servers": [
+      {
+        "url": "http://localhost:8080",
+        "description": "Development server"
+      }
+    ],
+    "paths": {
+      "/v1/repo": {
+        "get": {
+          "tags": [
+            "repositories"
+          ],
+          "summary": "List Repos",
+          "description": "Returns repositories visible to the authenticated team. Use this to discover repo names for subsequent calls.",
+          "operationId": "list_repos_v1_repo_get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RepoList"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ]
+        },
+        "put": {
+          "tags": [
+            "repositories"
+          ],
+          "summary": "Set Repo",
+          "description": "Creates the repository if missing or returns the existing one. Idempotent; base_model cannot be changed (409 on conflict).",
+          "operationId": "set_repo_v1_repo_put",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepoCreate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RepoResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Repository already exists - base_model is immutable",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Repository 'my-repo' already exists with base_model 'Qwen/Qwen3-32B'. Repository base_model is immutable and cannot be changed.",
+                    "code": "RESOURCE_CONFLICT"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  },
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ]
+        }
+      },
+      "/v1/repo/{repo_name}": {
+        "get": {
+          "tags": [
+            "repositories"
+          ],
+          "summary": "Get Repo",
+          "description": "Returns repository configuration and metadata.",
+          "operationId": "get_repo_v1_repo__repo_name__get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Repo Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RepoResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/prompts": {
+        "get": {
+          "tags": [
+            "prompts"
+          ],
+          "summary": "List Prompts",
+          "description": "Lists prompts in the repository for discovery and validation.",
+          "operationId": "list_prompts_v1_repo___repo_name__prompts_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PromptList"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/prompts/{prompt_name}": {
+        "get": {
+          "tags": [
+            "prompts"
+          ],
+          "summary": "Get Prompt",
+          "description": "Returns the prompt definition and metadata.",
+          "operationId": "get_prompt_v1_repo___repo_name__prompts__prompt_name__get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "prompt_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Prompt Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PromptResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "prompts"
+          ],
+          "summary": "Set Prompt",
+          "description": "Creates or updates a single prompt. Idempotent; invalid names return 422.",
+          "operationId": "set_prompt_v1_repo___repo_name__prompts__prompt_name__put",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "prompt_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Prompt Name"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptSet"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PromptResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation error - invalid prompt name",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Name contains invalid character: '/'",
+                    "code": "VALIDATION_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "prompts"
+          ],
+          "summary": "Delete Prompt",
+          "description": "Deletes a prompt from the repository.",
+          "operationId": "delete_prompt_v1_repo___repo_name__prompts__prompt_name__delete",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "prompt_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Prompt Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeleteResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/prompts/batch": {
+        "put": {
+          "tags": [
+            "prompts"
+          ],
+          "summary": "Batch Set Prompts",
+          "description": "Creates or updates multiple prompts. Idempotent; invalid names return 422.",
+          "operationId": "batch_set_prompts_v1_repo___repo_name__prompts_batch_put",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchPromptSet"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BatchPromptResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation error - invalid prompt name",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Name contains invalid character: '/'",
+                    "code": "VALIDATION_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets": {
+        "get": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "List Targets",
+          "description": "Lists targets in the repository for discovery and validation.",
+          "operationId": "list_targets_v1_repo___repo_name__targets_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TargetList"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets/batch": {
+        "put": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Batch Set Targets",
+          "description": "Create or update multiple targets (idempotent).\n\nTargets are composed from a base template plus per-target overrides. The base template can be another target; overrides take precedence where specified.",
+          "operationId": "batch_set_targets_v1_repo___repo_name__targets_batch_put",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchTargetCreate"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BatchTargetResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets/{target_name}": {
+        "put": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Set Target",
+          "description": "Create or update a target (idempotent).\n\nTargets are composed from a base template plus per-target overrides. The base template can be another target; overrides take precedence where specified.",
+          "operationId": "set_target_v1_repo___repo_name__targets__target_name__put",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetConfig"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TargetResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Get Target",
+          "description": "Get target definition and metadata.",
+          "operationId": "get_target_v1_repo___repo_name__targets__target_name__get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TargetResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Delete Target",
+          "description": "Deletes a target from the repository.",
+          "operationId": "delete_target_v1_repo___repo_name__targets__target_name__delete",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeleteResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets/{target_name}/stim": {
+        "get": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Get Stim Status",
+          "description": "Returns the stim job status.",
+          "operationId": "get_stim_status_v1_repo___repo_name__targets__target_name__stim_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/StimResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Run Stim",
+          "description": "Queue a stim (stimulus generation) job for the target.\n\nPrereqs: target has stim configuration (u, v, generators).\nIdempotent: repeated calls while a job exists return the current state (no duplicate jobs).\n\nAsync: returns immediately. Poll GET stim status to monitor and fetch results via GET stim output (paginated).",
+          "operationId": "run_stim_v1_repo___repo_name__targets__target_name__stim_post",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/StimResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets/{target_name}/stim/output": {
+        "get": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Get Stim Output",
+          "description": "Get paginated stim output data.\n\nReturns the generated stimuli from the stim job.\nUse offset and limit parameters to paginate through large datasets.",
+          "operationId": "get_stim_output_v1_repo___repo_name__targets__target_name__stim_output_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Starting line number (0-indexed)",
+                "default": 0,
+                "title": "Offset"
+              },
+              "description": "Starting line number (0-indexed)"
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 1000,
+                "minimum": 1,
+                "description": "Number of lines to return (max 1000)",
+                "default": 100,
+                "title": "Limit"
+              },
+              "description": "Number of lines to return (max 1000)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/StimOutputResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets/{target_name}/rollout": {
+        "get": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Get Rollout Status",
+          "description": "Get rollout job status.",
+          "operationId": "get_rollout_status_v1_repo___repo_name__targets__target_name__rollout_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RolloutResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Run Rollout",
+          "description": "Start a rollout (trajectory generation) job for the specified target.\n\nThe target must have:\n- Completed stim job (stim output must exist)\n- Configured rollout parameters (model_name is required)\n\nThis endpoint creates a job marker and returns immediately - job execution is asynchronous.",
+          "operationId": "run_rollout_v1_repo___repo_name__targets__target_name__rollout_post",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RolloutResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/targets/{target_name}/rollout/output": {
+        "get": {
+          "tags": [
+            "targets"
+          ],
+          "summary": "Get Rollout Output",
+          "description": "Get paginated rollout output data.\n    \n    Returns the generated trajectories/responses from the rollout job.\n    Use offset and limit parameters to paginate through large datasets.",
+          "operationId": "get_rollout_output_v1_repo___repo_name__targets__target_name__rollout_output_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "target_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Target Name"
+              }
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Starting line number (0-indexed)",
+                "default": 0,
+                "title": "Offset"
+              },
+              "description": "Starting line number (0-indexed)"
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 1000,
+                "minimum": 1,
+                "description": "Number of lines to return (max 1000)",
+                "default": 100,
+                "title": "Limit"
+              },
+              "description": "Number of lines to return (max 1000)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RolloutOutputResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/bakes": {
+        "get": {
+          "tags": [
+            "bakes"
+          ],
+          "summary": "List Bakes",
+          "description": "Lists bakes in the repository for discovery and validation.",
+          "operationId": "list_bakes_v1_repo___repo_name__bakes_get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BakeList"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/bakes/batch": {
+        "put": {
+          "tags": [
+            "bakes"
+          ],
+          "summary": "Batch Set Bakes",
+          "description": "Create or update multiple bakes (idempotent).\n\nBakes are composed from a base template plus per-bake overrides. The base template can be another bake; overrides take precedence where specified.",
+          "operationId": "batch_set_bakes_v1_repo___repo_name__bakes_batch_put",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchBakeCreate"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BatchBakeResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/bakes/{bake_name}": {
+        "put": {
+          "tags": [
+            "bakes"
+          ],
+          "summary": "Set Bake",
+          "description": "Create or update a bake (idempotent).\n\nBakes are composed from a base template plus per-bake overrides. The base template can be another bake; overrides take precedence where specified.",
+          "operationId": "set_bake_v1_repo___repo_name__bakes__bake_name__put",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "bake_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Bake Name"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BakeConfig"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BakeResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "bakes"
+          ],
+          "summary": "Get Bake",
+          "description": "Get bake definition and metadata.",
+          "operationId": "get_bake_v1_repo___repo_name__bakes__bake_name__get",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "bake_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Bake Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BakeResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "bakes"
+          ],
+          "summary": "Delete Bake",
+          "description": "Deletes a bake from the repository.",
+          "operationId": "delete_bake_v1_repo___repo_name__bakes__bake_name__delete",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "bake_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Bake Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeleteResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/repo/{_repo_name}/bakes/{bake_name}/start": {
+        "post": {
+          "tags": [
+            "bakes"
+          ],
+          "summary": "Start Bake",
+          "description": "Queue a bake (model training) job for the specified bake.\n\nPrereqs: bake config is complete (datasets + training settings); all referenced targets have completed rollouts.\nIdempotent: repeated calls while a job exists return the current state (no duplicate jobs).\n\nAsync: returns immediately. Poll GET bake to monitor (status/job) and access artifacts after completion.",
+          "operationId": "start_bake_v1_repo___repo_name__bakes__bake_name__start_post",
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "_repo_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": " Repo Name"
+              }
+            },
+            {
+              "name": "bake_name",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Bake Name"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BakeJobResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad request - Invalid input",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Invalid input parameters",
+                    "code": "INVALID_INPUT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Resource not found",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource not found",
+                    "code": "RESOURCE_NOT_FOUND"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Conflict - Resource already exists",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Resource already exists",
+                    "code": "RESOURCE_CONFLICT"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "message": "Internal server error",
+                    "code": "INTERNAL_ERROR"
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/health": {
+        "get": {
+          "tags": [
+            "health"
+          ],
+          "summary": "Health Check",
+          "description": "Check API health and status",
+          "operationId": "health_v1_health_get",
+          "responses": {
+            "200": {
+              "description": "API is healthy and operational",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HealthResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "BakeConfig": {
+          "properties": {
+            "template": {
+              "type": "string",
+              "title": "Template",
+              "description": "Template: 'default' or existing bake name"
+            },
+            "overrides": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BakeConfigBase-Input"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fields to override from template"
+            }
+          },
+          "type": "object",
+          "required": [
+            "template"
+          ],
+          "title": "BakeConfig",
+          "description": "Bake configuration for create/update (template-based)"
+        },
+        "BakeConfigBase-Input": {
+          "properties": {
+            "total_trajectories": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Total Trajectories",
+              "description": "Total trajectories"
+            },
+            "seed": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seed",
+              "description": "Random seed"
+            },
+            "datasets": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/DatasetItem"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Datasets",
+              "description": "List of datasets"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Bake type (e.g., 'single_baker')"
+            },
+            "micro_batch_size": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Micro Batch Size",
+              "description": "Micro batch size"
+            },
+            "gradient_accumulation_steps": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gradient Accumulation Steps",
+              "description": "Gradient accumulation steps"
+            },
+            "epochs": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Epochs",
+              "description": "Number of epochs"
+            },
+            "model": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ModelConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model configuration"
+            },
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DataConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Data configuration"
+            },
+            "optimizer": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OptimizerConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optimizer configuration"
+            },
+            "scheduler": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SchedulerConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Scheduler configuration"
+            },
+            "wandb": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WandbConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Wandb configuration"
+            },
+            "deepspeed": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DeepSpeedConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "DeepSpeed configuration"
+            },
+            "checkpoint": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/CheckpointConfig"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Checkpoint",
+              "description": "Checkpoint configuration"
+            },
+            "train_log_iter_interval": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Train Log Iter Interval",
+              "description": "Training log interval"
+            },
+            "eval_interval": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eval Interval",
+              "description": "Evaluation interval"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "title": "BakeConfigBase",
+          "description": "Base bake configuration fields (for responses - all optional)"
+        },
+        "BakeConfigBase-Output": {
+          "properties": {
+            "total_trajectories": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Total Trajectories",
+              "description": "Total trajectories"
+            },
+            "seed": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seed",
+              "description": "Random seed"
+            },
+            "datasets": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/DatasetItem"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Datasets",
+              "description": "List of datasets"
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Bake type (e.g., 'single_baker')"
+            },
+            "micro_batch_size": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Micro Batch Size",
+              "description": "Micro batch size"
+            },
+            "gradient_accumulation_steps": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gradient Accumulation Steps",
+              "description": "Gradient accumulation steps"
+            },
+            "epochs": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Epochs",
+              "description": "Number of epochs"
+            },
+            "model": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ModelConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model configuration"
+            },
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DataConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Data configuration"
+            },
+            "optimizer": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OptimizerConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optimizer configuration"
+            },
+            "scheduler": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SchedulerConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Scheduler configuration"
+            },
+            "wandb": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WandbConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Wandb configuration"
+            },
+            "deepspeed": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DeepSpeedConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "DeepSpeed configuration"
+            },
+            "checkpoint": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/CheckpointConfig"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Checkpoint",
+              "description": "Checkpoint configuration"
+            },
+            "train_log_iter_interval": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Train Log Iter Interval",
+              "description": "Training log interval"
+            },
+            "eval_interval": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eval Interval",
+              "description": "Evaluation interval"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "title": "BakeConfigBase",
+          "description": "Base bake configuration fields (for responses - all optional)"
+        },
+        "BakeConfigWithName": {
+          "properties": {
+            "template": {
+              "type": "string",
+              "title": "Template",
+              "description": "Template: 'default' or existing bake name"
+            },
+            "overrides": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BakeConfigBase-Input"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fields to override from template"
+            },
+            "bake_name": {
+              "type": "string",
+              "title": "Bake Name",
+              "description": "Bake name"
+            }
+          },
+          "type": "object",
+          "required": [
+            "template",
+            "bake_name"
+          ],
+          "title": "BakeConfigWithName",
+          "description": "Bake configuration with explicit name for batch operations"
+        },
+        "BakeJobResponse": {
+          "properties": {
+            "message": {
+              "type": "string",
+              "title": "Message",
+              "description": "Job execution message"
+            }
+          },
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "title": "BakeJobResponse",
+          "description": "Bake job execution response"
+        },
+        "BakeList": {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/BakeListItem"
+              },
+              "type": "array",
+              "title": "Items"
+            }
+          },
+          "type": "object",
+          "required": [
+            "items"
+          ],
+          "title": "BakeList",
+          "description": "Bake list"
+        },
+        "BakeListItem": {
+          "properties": {
+            "bake_name": {
+              "type": "string",
+              "title": "Bake Name"
+            }
+          },
+          "type": "object",
+          "required": [
+            "bake_name"
+          ],
+          "title": "BakeListItem",
+          "description": "Bake list item"
+        },
+        "BakeResponse": {
+          "properties": {
+            "bake_name": {
+              "type": "string",
+              "title": "Bake Name"
+            },
+            "config": {
+              "$ref": "#/components/schemas/BakeConfigBase-Output"
+            },
+            "status": {
+              "type": "string",
+              "title": "Status",
+              "description": "Status: 'incomplete' or 'complete'"
+            },
+            "job": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job",
+              "description": "Job type if incomplete"
+            }
+          },
+          "type": "object",
+          "required": [
+            "bake_name",
+            "config",
+            "status"
+          ],
+          "title": "BakeResponse",
+          "description": "Bake response"
+        },
+        "BatchBakeCreate": {
+          "properties": {
+            "bakes": {
+              "items": {
+                "$ref": "#/components/schemas/BakeConfigWithName"
+              },
+              "type": "array",
+              "title": "Bakes",
+              "description": "List of bakes to create/update"
+            }
+          },
+          "type": "object",
+          "required": [
+            "bakes"
+          ],
+          "title": "BatchBakeCreate",
+          "description": "Batch bake creation",
+          "example": {
+            "bakes": [
+              {
+                "bake_name": "bake_v1",
+                "overrides": {
+                  "epochs": 5,
+                  "micro_batch_size": 16
+                },
+                "template": "default"
+              },
+              {
+                "bake_name": "bake_v2",
+                "overrides": {
+                  "optimizer": {
+                    "learning_rate": 0.001
+                  }
+                },
+                "template": "bake_v1"
+              }
+            ]
+          }
+        },
+        "BatchBakeResponse": {
+          "properties": {
+            "created": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "title": "Created",
+              "description": "Successfully created bakes"
+            },
+            "failed": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "title": "Failed",
+              "description": "Failed bakes with error messages"
+            }
+          },
+          "type": "object",
+          "required": [
+            "created",
+            "failed"
+          ],
+          "title": "BatchBakeResponse",
+          "description": "Batch bake response",
+          "example": {
+            "created": [
+              "coding_bake_v1",
+              "math_bake_v1"
+            ],
+            "failed": {
+              "bad_config_bake": "Invalid dataset reference: target 'missing_target' not found",
+              "invalid_bake": "Template 'nonexistent_bake' not found"
+            }
+          }
+        },
+        "BatchPromptResponse": {
+          "properties": {
+            "created": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "title": "Created",
+              "description": "List of successfully created prompt names"
+            },
+            "failed": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "title": "Failed",
+              "description": "Dictionary of failed prompts with error messages"
+            }
+          },
+          "type": "object",
+          "required": [
+            "created",
+            "failed"
+          ],
+          "title": "BatchPromptResponse",
+          "description": "Batch prompt response model",
+          "example": {
+            "created": [
+              "greeting_prompt",
+              "mathematics_prompt"
+            ],
+            "failed": {
+              "invalid_prompt": "Name contains invalid character: '/'"
+            }
+          }
+        },
+        "BatchPromptSet": {
+          "properties": {
+            "prompts": {
+              "additionalProperties": {
+                "items": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "type": "array"
+              },
+              "type": "object",
+              "title": "Prompts",
+              "description": "Dictionary mapping prompt_name to messages list"
+            }
+          },
+          "type": "object",
+          "required": [
+            "prompts"
+          ],
+          "title": "BatchPromptSet",
+          "description": "Batch prompt set model",
+          "examples": [
+            {
+              "prompts": {
+                "greeting_prompt": [
+                  {
+                    "content": "You must always greet the user with a warm welcome.",
+                    "role": "assistant"
+                  }
+                ],
+                "mathematics_prompt": [
+                  {
+                    "content": "You are a helpful assistant that can answer questions\n                                about mathematics.",
+                    "role": "assistant"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "BatchTargetCreate": {
+          "properties": {
+            "targets": {
+              "items": {
+                "$ref": "#/components/schemas/TargetConfigWithName"
+              },
+              "type": "array",
+              "title": "Targets",
+              "description": "List of targets to create/update"
+            }
+          },
+          "type": "object",
+          "required": [
+            "targets"
+          ],
+          "title": "BatchTargetCreate",
+          "description": "Batch target creation",
+          "example": {
+            "targets": [
+              {
+                "overrides": {
+                  "temperature": 0.8,
+                  "u": "my_unconditioned_prompt"
+                },
+                "target_name": "target_alpha",
+                "template": "default"
+              },
+              {
+                "overrides": {
+                  "v": "my_conditioned_prompt"
+                },
+                "target_name": "target_beta",
+                "template": "target_alpha"
+              }
+            ]
+          }
+        },
+        "BatchTargetResponse": {
+          "properties": {
+            "created": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "title": "Created",
+              "description": "Successfully created targets"
+            },
+            "failed": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "title": "Failed",
+              "description": "Failed targets with error messages"
+            }
+          },
+          "type": "object",
+          "required": [
+            "created",
+            "failed"
+          ],
+          "title": "BatchTargetResponse",
+          "description": "Batch target response model",
+          "example": {
+            "created": [
+              "target_alpha",
+              "target_beta"
+            ],
+            "failed": {
+              "target_delta": "Template 'nonexistent' not found",
+              "target_gamma": "Missing required stim fields: ['u', 'v']"
+            }
+          }
+        },
+        "CheckpointConfig": {
+          "properties": {
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Checkpoint type (e.g., 'huggingface')"
+            },
+            "save_end_of_training": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Save End Of Training",
+              "description": "Save checkpoint at end of training"
+            },
+            "output_dir": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Output Dir",
+              "description": "Output directory for checkpoints"
+            },
+            "save_interval": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Save Interval",
+              "description": "Save every N steps"
+            }
+          },
+          "type": "object",
+          "title": "CheckpointConfig",
+          "description": "Checkpoint configuration"
+        },
+        "DataConfig": {
+          "properties": {
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Data type (e.g., 'single_baker')"
+            },
+            "sources": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/DataSource"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sources",
+              "description": "List of data sources"
+            },
+            "beta": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Beta",
+              "description": "Beta parameter for training"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperature",
+              "description": "Sampling temperature"
+            },
+            "max_length": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Length",
+              "description": "Maximum sequence length"
+            },
+            "train_eval_split": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Train Eval Split",
+              "description": "Train/eval split ratio [train, eval]"
+            },
+            "cache_dir": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cache Dir",
+              "description": "Cache directory"
+            },
+            "dl_num_workers": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dl Num Workers",
+              "description": "Number of dataloader workers"
+            }
+          },
+          "type": "object",
+          "title": "DataConfig",
+          "description": "Data configuration for training"
+        },
+        "DataSource": {
+          "properties": {
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Source type (e.g., 'bake_jsonl')"
+            },
+            "name_or_path": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name Or Path",
+              "description": "Path to data file"
+            },
+            "max_samples": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Samples",
+              "description": "Maximum samples to use (-1 for all)"
+            }
+          },
+          "type": "object",
+          "title": "DataSource",
+          "description": "Individual data source configuration"
+        },
+        "DatasetItem": {
+          "properties": {
+            "target": {
+              "type": "string",
+              "title": "Target",
+              "description": "Target name"
+            },
+            "weight": {
+              "type": "number",
+              "title": "Weight",
+              "description": "Dataset weight",
+              "default": 1
+            }
+          },
+          "type": "object",
+          "required": [
+            "target"
+          ],
+          "title": "DatasetItem",
+          "description": "Dataset reference for collation (API-facing, simplified)"
+        },
+        "DeepSpeedConfig": {
+          "properties": {
+            "zero_optimization": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DeepSpeedZeroConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ZeRO optimization settings"
+            }
+          },
+          "type": "object",
+          "title": "DeepSpeedConfig",
+          "description": "DeepSpeed configuration"
+        },
+        "DeepSpeedZeroConfig": {
+          "properties": {
+            "stage": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stage",
+              "description": "ZeRO stage (0, 1, 2, or 3)"
+            }
+          },
+          "type": "object",
+          "title": "DeepSpeedZeroConfig",
+          "description": "DeepSpeed ZeRO optimization configuration"
+        },
+        "DeleteResponse": {
+          "properties": {
+            "message": {
+              "type": "string",
+              "title": "Message",
+              "description": "Success message confirming deletion"
+            }
+          },
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "title": "DeleteResponse",
+          "description": "Standard delete operation response",
+          "example": {
+            "message": "Resource deleted successfully"
+          }
+        },
+        "ErrorResponse": {
+          "properties": {
+            "message": {
+              "type": "string",
+              "title": "Message",
+              "description": "Error message"
+            },
+            "code": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code",
+              "description": "Error code for programmatic handling"
+            }
+          },
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "title": "ErrorResponse",
+          "description": "Standard error response",
+          "example": {
+            "code": "RESOURCE_NOT_FOUND",
+            "message": "Resource not found"
+          }
+        },
+        "Generator": {
+          "properties": {
+            "type": {
+              "type": "string",
+              "title": "Type",
+              "description": "Generator type: oneshot_qs, hardcoded, persona, from_dataset, custom"
+            },
+            "model": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model",
+              "description": "Model name for oneshot_qs"
+            },
+            "numq": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Numq",
+              "description": "Number of questions to generate"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 2,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperature",
+              "description": "Generation temperature (0.0-2.0)"
+            },
+            "dataset": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dataset",
+              "description": "Dataset name for from_dataset"
+            },
+            "questions": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Questions",
+              "description": "Hardcoded questions"
+            },
+            "template_path": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Template Path",
+              "description": "Custom template path"
+            },
+            "seed": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seed",
+              "description": "Random seed"
+            }
+          },
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "title": "Generator",
+          "description": "Generator model"
+        },
+        "HTTPValidationError": {
+          "properties": {
+            "detail": {
+              "items": {
+                "$ref": "#/components/schemas/ValidationError"
+              },
+              "type": "array",
+              "title": "Detail"
+            }
+          },
+          "type": "object",
+          "title": "HTTPValidationError"
+        },
+        "HealthResponse": {
+          "properties": {
+            "status": {
+              "type": "string",
+              "title": "Status",
+              "description": "API health status: 'healthy' or 'degraded'"
+            },
+            "api": {
+              "type": "string",
+              "title": "Api",
+              "description": "API name"
+            },
+            "version": {
+              "type": "string",
+              "title": "Version",
+              "description": "API version"
+            }
+          },
+          "type": "object",
+          "required": [
+            "status",
+            "api",
+            "version"
+          ],
+          "title": "HealthResponse",
+          "description": "Health check response",
+          "example": {
+            "api": "bread-api",
+            "status": "healthy",
+            "version": "0.1.0"
+          }
+        },
+        "LoRAAdapterConfig": {
+          "properties": {
+            "r": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "R",
+              "description": "LoRA rank"
+            },
+            "lora_alpha": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lora Alpha",
+              "description": "LoRA alpha parameter"
+            },
+            "target_modules": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Modules",
+              "description": "Target modules (e.g., 'all-linear')"
+            },
+            "lora_dropout": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lora Dropout",
+              "description": "LoRA dropout rate"
+            },
+            "bias": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bias",
+              "description": "Bias setting (e.g., 'none')"
+            }
+          },
+          "type": "object",
+          "title": "LoRAAdapterConfig",
+          "description": "LoRA adapter configuration"
+        },
+        "Message": {
+          "properties": {
+            "role": {
+              "type": "string",
+              "title": "Role",
+              "description": "Role of the message sender"
+            },
+            "content": {
+              "type": "string",
+              "title": "Content",
+              "description": "Content of the message"
+            }
+          },
+          "type": "object",
+          "required": [
+            "role",
+            "content"
+          ],
+          "title": "Message",
+          "description": "Message model"
+        },
+        "ModelConfig": {
+          "properties": {
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Model type (e.g., 'bake')"
+            },
+            "name_or_path": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name Or Path",
+              "description": "Base model name or path"
+            },
+            "adapter_paths": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Adapter Paths",
+              "description": "Paths to adapter checkpoints"
+            },
+            "parent_peft_dir": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Peft Dir",
+              "description": "Parent PEFT directory"
+            },
+            "baked_adapter_config": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/LoRAAdapterConfig"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "LoRA adapter configuration"
+            }
+          },
+          "type": "object",
+          "title": "ModelConfig",
+          "description": "Model configuration for baking"
+        },
+        "OptimizerConfig": {
+          "properties": {
+            "learning_rate": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Learning Rate",
+              "description": "Learning rate"
+            }
+          },
+          "type": "object",
+          "title": "OptimizerConfig",
+          "description": "Optimizer configuration"
+        },
+        "PromptList": {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/PromptListItem"
+              },
+              "type": "array",
+              "title": "Items",
+              "description": "List of prompts"
+            }
+          },
+          "type": "object",
+          "required": [
+            "items"
+          ],
+          "title": "PromptList",
+          "description": "Prompt list model",
+          "example": {
+            "items": [
+              {
+                "prompt_name": "system_prompt_coding"
+              },
+              {
+                "prompt_name": "user_prompt_python"
+              },
+              {
+                "prompt_name": "greeting_prompt"
+              }
+            ]
+          }
+        },
+        "PromptListItem": {
+          "properties": {
+            "prompt_name": {
+              "type": "string",
+              "title": "Prompt Name",
+              "description": "Prompt identifier"
+            }
+          },
+          "type": "object",
+          "required": [
+            "prompt_name"
+          ],
+          "title": "PromptListItem",
+          "description": "Prompt list item model"
+        },
+        "PromptResponse": {
+          "properties": {
+            "prompt_name": {
+              "type": "string",
+              "title": "Prompt Name",
+              "description": "Prompt identifier"
+            },
+            "messages": {
+              "items": {
+                "$ref": "#/components/schemas/Message"
+              },
+              "type": "array",
+              "title": "Messages",
+              "description": "List of messages in the prompt"
+            }
+          },
+          "type": "object",
+          "required": [
+            "prompt_name",
+            "messages"
+          ],
+          "title": "PromptResponse",
+          "description": "Prompt response model",
+          "example": {
+            "messages": [
+              {
+                "content": "You are an expert Python programmer.",
+                "role": "system"
+              }
+            ],
+            "prompt_name": "system_prompt_coding"
+          }
+        },
+        "PromptSet": {
+          "properties": {
+            "messages": {
+              "items": {
+                "$ref": "#/components/schemas/Message"
+              },
+              "type": "array",
+              "title": "Messages",
+              "description": "List of messages in the prompt"
+            }
+          },
+          "type": "object",
+          "required": [
+            "messages"
+          ],
+          "title": "PromptSet",
+          "description": "Prompt set model"
+        },
+        "RepoCreate": {
+          "properties": {
+            "repo_name": {
+              "type": "string",
+              "title": "Repo Name",
+              "description": "Name of the repository"
+            },
+            "base_model": {
+              "type": "string",
+              "title": "Base Model",
+              "description": "Base model for the repository",
+              "default": "Qwen/Qwen3-32B"
+            }
+          },
+          "type": "object",
+          "required": [
+            "repo_name"
+          ],
+          "title": "RepoCreate",
+          "description": "Repository create model"
+        },
+        "RepoList": {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/RepoListItem"
+              },
+              "type": "array",
+              "title": "Items",
+              "description": "List of repositories"
+            }
+          },
+          "type": "object",
+          "required": [
+            "items"
+          ],
+          "title": "RepoList",
+          "description": "Repository list model",
+          "example": {
+            "items": [
+              {
+                "repo_name": "production"
+              },
+              {
+                "repo_name": "development"
+              },
+              {
+                "repo_name": "experiment-1"
+              }
+            ]
+          }
+        },
+        "RepoListItem": {
+          "properties": {
+            "repo_name": {
+              "type": "string",
+              "title": "Repo Name",
+              "description": "Repository name"
+            }
+          },
+          "type": "object",
+          "required": [
+            "repo_name"
+          ],
+          "title": "RepoListItem",
+          "description": "Repository list item model"
+        },
+        "RepoResponse": {
+          "properties": {
+            "repo_name": {
+              "type": "string",
+              "title": "Repo Name",
+              "description": "Repository name"
+            },
+            "base_model": {
+              "type": "string",
+              "title": "Base Model",
+              "description": "Base model identifier"
+            }
+          },
+          "type": "object",
+          "required": [
+            "repo_name",
+            "base_model"
+          ],
+          "title": "RepoResponse",
+          "description": "Repository response model",
+          "example": {
+            "base_model": "Qwen/Qwen3-32B",
+            "repo_name": "my-project"
+          }
+        },
+        "RolloutOutputResponse": {
+          "properties": {
+            "status": {
+              "type": "string",
+              "title": "Status",
+              "description": "Job status: not_started, running, complete"
+            },
+            "lines": {
+              "type": "integer",
+              "title": "Lines",
+              "description": "Total number of output lines"
+            },
+            "parameters": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parameters",
+              "description": "Rollout parameters"
+            },
+            "output": {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array",
+              "title": "Output",
+              "description": "Paginated output data"
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Offset",
+              "description": "Starting line offset"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Limit",
+              "description": "Page size"
+            },
+            "has_more": {
+              "type": "boolean",
+              "title": "Has More",
+              "description": "Whether more data is available"
+            }
+          },
+          "type": "object",
+          "required": [
+            "status",
+            "lines",
+            "output",
+            "offset",
+            "limit",
+            "has_more"
+          ],
+          "title": "RolloutOutputResponse",
+          "description": "Paginated rollout output response\n\nReturns rollout job status along with paginated output data.",
+          "example": {
+            "has_more": true,
+            "limit": 100,
+            "lines": 7500,
+            "offset": 0,
+            "output": [
+              {
+                "response": "Python is a high-level programming language...",
+                "stimulus_id": 0,
+                "tokens": 42,
+                "trajectory_id": 0
+              },
+              {
+                "response": "Python is an interpreted language...",
+                "stimulus_id": 0,
+                "tokens": 38,
+                "trajectory_id": 1
+              }
+            ],
+            "parameters": {
+              "max_concurrency": 50,
+              "max_tokens": 150,
+              "model_name": "Qwen/Qwen3-32B",
+              "num_traj_per_stimulus": 5,
+              "temperature": 1
+            },
+            "status": "complete"
+          }
+        },
+        "RolloutResponse": {
+          "properties": {
+            "status": {
+              "type": "string",
+              "title": "Status",
+              "description": "Job status: not_started, running, complete"
+            },
+            "lines": {
+              "type": "integer",
+              "title": "Lines",
+              "description": "Number of output lines"
+            },
+            "parameters": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parameters",
+              "description": "Job parameters"
+            }
+          },
+          "type": "object",
+          "required": [
+            "status",
+            "lines"
+          ],
+          "title": "RolloutResponse",
+          "description": "Rollout job execution status\n\nInherits all fields from JobStatus. Separated from StimResponse\nfor future extensibility (e.g., model checkpoint paths, inference metrics).",
+          "example": {
+            "lines": 75,
+            "parameters": {
+              "max_concurrency": 50,
+              "max_tokens": 150,
+              "model_name": "Qwen/Qwen3-32B",
+              "num_traj_per_stimulus": 5,
+              "temperature": 1
+            },
+            "status": "running"
+          }
+        },
+        "SchedulerConfig": {
+          "properties": {
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type",
+              "description": "Scheduler type (e.g., 'huggingface')"
+            }
+          },
+          "type": "object",
+          "title": "SchedulerConfig",
+          "description": "Learning rate scheduler configuration"
+        },
+        "StimOutputResponse": {
+          "properties": {
+            "status": {
+              "type": "string",
+              "title": "Status",
+              "description": "Job status: not_started, running, complete"
+            },
+            "lines": {
+              "type": "integer",
+              "title": "Lines",
+              "description": "Total number of output lines"
+            },
+            "parameters": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parameters",
+              "description": "Stim parameters"
+            },
+            "output": {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array",
+              "title": "Output",
+              "description": "Paginated output data"
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Offset",
+              "description": "Starting line offset"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Limit",
+              "description": "Page size"
+            },
+            "has_more": {
+              "type": "boolean",
+              "title": "Has More",
+              "description": "Whether more data is available"
+            }
+          },
+          "type": "object",
+          "required": [
+            "status",
+            "lines",
+            "output",
+            "offset",
+            "limit",
+            "has_more"
+          ],
+          "title": "StimOutputResponse",
+          "description": "Paginated stim output response\n\nReturns stim job status along with paginated output data.",
+          "example": {
+            "has_more": true,
+            "limit": 100,
+            "lines": 1500,
+            "offset": 0,
+            "output": [
+              {
+                "question": "What is Python?",
+                "stimulus_id": 0
+              },
+              {
+                "question": "Explain machine learning",
+                "stimulus_id": 1
+              }
+            ],
+            "parameters": {
+              "generators": [
+                {
+                  "model": "claude-3-5-sonnet-20241022",
+                  "numq": 10,
+                  "temperature": 1,
+                  "type": "oneshot_qs"
+                }
+              ],
+              "u": "system_prompt_v1",
+              "v": "user_prompt_v1"
+            },
+            "status": "complete"
+          }
+        },
+        "StimResponse": {
+          "properties": {
+            "status": {
+              "type": "string",
+              "title": "Status",
+              "description": "Job status: not_started, running, complete"
+            },
+            "lines": {
+              "type": "integer",
+              "title": "Lines",
+              "description": "Number of output lines"
+            },
+            "parameters": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parameters",
+              "description": "Job parameters"
+            }
+          },
+          "type": "object",
+          "required": [
+            "status",
+            "lines"
+          ],
+          "title": "StimResponse",
+          "description": "Stim job execution status\n\nInherits all fields from JobStatus. Separated from RolloutResponse\nfor future extensibility (e.g., generator-specific metadata).",
+          "example": {
+            "lines": 150,
+            "parameters": {
+              "generators": [
+                {
+                  "model": "claude-3-5-sonnet-20241022",
+                  "numq": 10,
+                  "temperature": 1,
+                  "type": "oneshot_qs"
+                }
+              ],
+              "u": "system_prompt_v1",
+              "v": "user_prompt_v1"
+            },
+            "status": "complete"
+          }
+        },
+        "TargetConfig": {
+          "properties": {
+            "template": {
+              "type": "string",
+              "title": "Template",
+              "description": "Template: 'default' or existing target name"
+            },
+            "overrides": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TargetConfigBase"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fields to override from template"
+            }
+          },
+          "type": "object",
+          "required": [
+            "template"
+          ],
+          "title": "TargetConfig",
+          "description": "Target configuration model",
+          "example": {
+            "overrides": {
+              "generators": [
+                {
+                  "model": "claude-3-5-sonnet-20241022",
+                  "numq": 10,
+                  "temperature": 1,
+                  "type": "oneshot_qs"
+                },
+                {
+                  "dataset": "code_contests",
+                  "numq": 15,
+                  "seed": 42,
+                  "type": "from_dataset"
+                },
+                {
+                  "questions": [
+                    "Write a function to reverse a string",
+                    "Implement binary search",
+                    "Create a linked list class"
+                  ],
+                  "type": "hardcoded"
+                },
+                {
+                  "numq": 5,
+                  "seed": 123,
+                  "temperature": 0.9,
+                  "type": "persona"
+                }
+              ],
+              "max_concurrency": 50,
+              "max_tokens": 150,
+              "model_name": "Qwen/Qwen3-32B",
+              "num_traj_per_stimulus": 5,
+              "temperature": 1,
+              "u": "system_prompt_coding",
+              "v": "user_prompt_python"
+            },
+            "template": "default"
+          }
+        },
+        "TargetConfigBase": {
+          "properties": {
+            "u": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "U",
+              "description": "Unconditioned stimulus prompt name"
+            },
+            "v": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "V",
+              "description": "Conditioned stimulus prompt name"
+            },
+            "generators": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/Generator"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Generators",
+              "description": "Data generation strategies"
+            },
+            "model_name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Name",
+              "description": "Base model for rollout"
+            },
+            "num_traj_per_stimulus": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Num Traj Per Stimulus",
+              "description": "Number of trajectories per stimulus"
+            },
+            "max_concurrency": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Concurrency",
+              "description": "Maximum concurrent requests"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 2,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperature",
+              "description": "Generation temperature (0.0-2.0)"
+            },
+            "max_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Tokens",
+              "description": "Maximum tokens to generate"
+            },
+            "extra_kwargs": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Extra Kwargs",
+              "description": "Additional kwargs passed to chat.completions.create()"
+            }
+          },
+          "type": "object",
+          "title": "TargetConfigBase",
+          "description": "Target configuration base model"
+        },
+        "TargetConfigWithName": {
+          "properties": {
+            "template": {
+              "type": "string",
+              "title": "Template",
+              "description": "Template: 'default' or existing target name"
+            },
+            "overrides": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TargetConfigBase"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fields to override from template"
+            },
+            "target_name": {
+              "type": "string",
+              "title": "Target Name",
+              "description": "Target name"
+            }
+          },
+          "type": "object",
+          "required": [
+            "template",
+            "target_name"
+          ],
+          "title": "TargetConfigWithName",
+          "description": "Target configuration with explicit name for batch operations",
+          "example": {
+            "overrides": {
+              "generators": [
+                {
+                  "model": "claude-3-5-sonnet-20241022",
+                  "numq": 10,
+                  "temperature": 1,
+                  "type": "oneshot_qs"
+                },
+                {
+                  "dataset": "code_contests",
+                  "numq": 15,
+                  "seed": 42,
+                  "type": "from_dataset"
+                },
+                {
+                  "questions": [
+                    "Write a function to reverse a string",
+                    "Implement binary search",
+                    "Create a linked list class"
+                  ],
+                  "type": "hardcoded"
+                },
+                {
+                  "numq": 5,
+                  "seed": 123,
+                  "temperature": 0.9,
+                  "type": "persona"
+                }
+              ],
+              "max_concurrency": 50,
+              "max_tokens": 150,
+              "model_name": "Qwen/Qwen3-32B",
+              "num_traj_per_stimulus": 5,
+              "temperature": 1,
+              "u": "system_prompt_coding",
+              "v": "user_prompt_python"
+            },
+            "template": "default"
+          }
+        },
+        "TargetList": {
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/TargetListItem"
+              },
+              "type": "array",
+              "title": "Items"
+            }
+          },
+          "type": "object",
+          "required": [
+            "items"
+          ],
+          "title": "TargetList",
+          "description": "Target list model"
+        },
+        "TargetListItem": {
+          "properties": {
+            "target_name": {
+              "type": "string",
+              "title": "Target Name"
+            }
+          },
+          "type": "object",
+          "required": [
+            "target_name"
+          ],
+          "title": "TargetListItem",
+          "description": "Target list item model"
+        },
+        "TargetResponse": {
+          "properties": {
+            "target_name": {
+              "type": "string",
+              "title": "Target Name"
+            },
+            "config": {
+              "$ref": "#/components/schemas/TargetConfigBase"
+            }
+          },
+          "type": "object",
+          "required": [
+            "target_name",
+            "config"
+          ],
+          "title": "TargetResponse",
+          "description": "Target response"
+        },
+        "ValidationError": {
+          "properties": {
+            "loc": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ]
+              },
+              "type": "array",
+              "title": "Location"
+            },
+            "msg": {
+              "type": "string",
+              "title": "Message"
+            },
+            "type": {
+              "type": "string",
+              "title": "Error Type"
+            }
+          },
+          "type": "object",
+          "required": [
+            "loc",
+            "msg",
+            "type"
+          ],
+          "title": "ValidationError"
+        },
+        "WandbConfig": {
+          "properties": {
+            "enable": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Enable",
+              "description": "Enable wandb logging"
+            },
+            "project": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project",
+              "description": "Wandb project name"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name",
+              "description": "Run name"
+            },
+            "entity": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity",
+              "description": "Wandb entity/team"
+            },
+            "tags": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tags",
+              "description": "Tags for this run"
+            }
+          },
+          "type": "object",
+          "title": "WandbConfig",
+          "description": "Weights & Biases configuration"
+        }
+      },
+      "securitySchemes": {
+        "HTTPBearer": {
+          "type": "http",
+          "scheme": "bearer"
+        }
+      }
+    },
+    "tags": [
+      {
+        "name": "repositories",
+        "description": "Repository management operations"
+      },
+      {
+        "name": "prompts",
+        "description": "Prompt management within repositories"
+      },
+      {
+        "name": "targets",
+        "description": "Training target configuration and management"
+      },
+      {
+        "name": "bakes",
+        "description": "Bake management operations"
+      },
+      {
+        "name": "health",
+        "description": "System health and status"
+      }
+    ]
+  }

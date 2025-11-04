@@ -9,9 +9,9 @@ Generators define how stimuli (questions/tasks) are created. You can use multipl
 
 ## Generator Types
 
-### oneshot_qs
+### Oneshot
 
-AI-generated questions using a language model.
+Let a LLM (Anthropic only) generate stimuli for you.
 
 ```python
 {
@@ -27,7 +27,7 @@ AI-generated questions using a language model.
 </ParamField>
 
 <ParamField path="model" type="string">
-  Model name (e.g., `"claude-3-5-sonnet-20241022"`, `"gpt-4"`)
+  Model name (Only Anthropic models supported e.g., `"claude-3-5-sonnet-20241022"`, `"claude-4-5-sonnet"`)
 </ParamField>
 
 <ParamField path="numq" type="integer">
@@ -42,9 +42,9 @@ AI-generated questions using a language model.
 
 ---
 
-### hardcoded
+### Hardcoded
 
-Use predefined list of questions.
+Predefine a list of questions you want the prompted model to respond to.
 
 ```python
 {
@@ -69,9 +69,9 @@ Use predefined list of questions.
 
 ---
 
-### from_dataset
+### Dataset Questions
 
-Load questions from an existing dataset.
+Sample from established datasets like SQuAD, GSM8K, MMLU, HellaSwag.
 
 ```python
 {
@@ -87,7 +87,7 @@ Load questions from an existing dataset.
 </ParamField>
 
 <ParamField path="dataset" type="string" required>
-  Dataset name (e.g., `"code_contests"`)
+  Dataset name (e.g., `"squad"`, `"gsm8k"`, `"mmlu"`, `"hellaswag"`)
 </ParamField>
 
 <ParamField path="numq" type="integer">
@@ -102,9 +102,9 @@ Load questions from an existing dataset.
 
 ---
 
-### persona
+### Persona
 
-Persona-based question generation.
+A dataset curated specifically to bake personas.
 
 ```python
 {
@@ -135,9 +135,9 @@ Persona-based question generation.
 
 ---
 
-### custom
+### Custom Template
 
-Use custom template for generation.
+Write your own prompt to a language model to generate stimuli prompts on your behalf.
 
 ```python
 {
@@ -160,7 +160,7 @@ Use custom template for generation.
 
 ## Combining Generators
 
-Use multiple generators in a target:
+It is advantageous to use a combination of generators to create a complete dataset for a bake. Use multiple generators for a target:
 
 ```python
 target = client.targets.set(

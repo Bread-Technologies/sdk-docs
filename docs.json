@@ -69,6 +69,72 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "API Playground",
+        "groups": [
+          {
+            "group": "Repositories",
+            "pages": [
+              "api-playground/list-repos",
+              "api-playground/set-repo",
+              "api-playground/get-repo"
+            ]
+          },
+          {
+            "group": "Prompts",
+            "pages": [
+              "api-playground/list-prompts",
+              "api-playground/get-prompt",
+              "api-playground/set-prompt",
+              "api-playground/batch-set-prompts",
+              "api-playground/delete-prompt"
+            ]
+          },
+          {
+            "group": "Targets",
+            "pages": [
+              "api-playground/list-targets",
+              "api-playground/set-target",
+              "api-playground/get-target",
+              "api-playground/batch-set-targets",
+              "api-playground/delete-target"
+            ]
+          },
+          {
+            "group": "Stim Jobs",
+            "pages": [
+              "api-playground/run-stim",
+              "api-playground/get-stim-status",
+              "api-playground/get-stim-output"
+            ]
+          },
+          {
+            "group": "Rollout Jobs",
+            "pages": [
+              "api-playground/run-rollout",
+              "api-playground/get-rollout-status",
+              "api-playground/get-rollout-output"
+            ]
+          },
+          {
+            "group": "Bakes",
+            "pages": [
+              "api-playground/list-bakes",
+              "api-playground/get-bake",
+              "api-playground/set-bake",
+              "api-playground/batch-set-bakes",
+              "api-playground/delete-bake",
+              "api-playground/start-bake"
+            ]
+          },
+          {
+            "group": "Health",
+            "pages": [
+              "api-playground/health-check"
+            ]
+          }
+        ]
       }
     ],
     "global": {
@@ -84,6 +150,17 @@
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
+  },
+  "openapi": "/openapi_spec.json",
+  "api": {
+    "baseUrl": "http://localhost:8080",
+    "auth": {
+      "method": "bearer",
+      "name": "BREAD_API_KEY"
+    },
+    "playground": {
+      "mode": "show"
+    }
   },
   "navbar": {
     "links": [
