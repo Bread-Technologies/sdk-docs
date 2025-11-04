@@ -85,7 +85,7 @@ The `base_model` cannot be changed after initial creation. Attempting to modify 
 ### Create Repository with Base Model
 
 ```python
-from bread import Bread
+from aibread import Bread
 
 client = Bread()
 
@@ -102,12 +102,12 @@ print(f"Base model: {repo.base_model}")
 ### Check if Repository Exists
 
 ```python
-import bread
+import aibread
 
 try:
     repo = client.repo.get("my_repo")
     print(f"Repository exists: {repo.repo_name}")
-except bread.NotFoundError:
+except aibread.NotFoundError:
     # Create it if it doesn't exist
     repo = client.repo.set(repo_name="my_repo")
     print(f"Created repository: {repo.repo_name}")
@@ -128,7 +128,7 @@ for repo in repos.items:
 <CodeGroup>
 
 ```python Handle Conflicts
-import bread
+import aibread
 
 try:
     # Attempt to change base_model
@@ -136,16 +136,16 @@ try:
         repo_name="existing_repo",
         base_model="different_model"
     )
-except bread.ConflictError:
+except aibread.ConflictError:
     print("Cannot change base_model of existing repository")
 ```
 
 ```python Handle Not Found
-import bread
+import aibread
 
 try:
     repo = client.repo.get("nonexistent_repo")
-except bread.NotFoundError:
+except aibread.NotFoundError:
     print("Repository not found")
     # Create it
     repo = client.repo.set(repo_name="nonexistent_repo")

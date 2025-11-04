@@ -65,7 +65,7 @@ class HealthCheckResponse:
 ### MessageParam
 
 ```python
-from bread.types import MessageParam
+from aibread.types import MessageParam
 
 class MessageParam(TypedDict):
     role: str       # Required: "system", "user", "assistant"
@@ -81,7 +81,7 @@ messages: List[MessageParam] = [
 ### TargetConfigBaseParam
 
 ```python
-from bread.types import TargetConfigBaseParam
+from aibread.types import TargetConfigBaseParam
 
 class TargetConfigBaseParam(TypedDict, total=False):
     generators: Optional[List[Generator]]
@@ -98,7 +98,7 @@ class TargetConfigBaseParam(TypedDict, total=False):
 ### BakeConfigBaseParam
 
 ```python
-from bread.types import BakeConfigBaseParam
+from aibread.types import BakeConfigBaseParam
 
 class BakeConfigBaseParam(TypedDict, total=False):
     datasets: Optional[List[DatasetItemParam]]
@@ -117,8 +117,8 @@ class BakeConfigBaseParam(TypedDict, total=False):
 ### Type Imports
 
 ```python
-from bread import Bread
-from bread.types import (
+from aibread import Bread
+from aibread.types import (
     RepoResponse,
     PromptResponse,
     TargetResponse,
@@ -132,8 +132,8 @@ from bread.types import (
 ### Type Hints
 
 ```python
-from bread import Bread
-from bread.types import RepoResponse, PromptResponse
+from aibread import Bread
+from aibread.types import RepoResponse, PromptResponse
 
 def get_repository(name: str) -> RepoResponse:
     client = Bread()
@@ -227,8 +227,8 @@ all_extras = response.model_extra
 
 ```python
 from typing import List
-from bread import Bread
-from bread.types import MessageParam, PromptResponse
+from aibread import Bread
+from aibread.types import MessageParam, PromptResponse
 
 def create_coding_prompts(repo_name: str) -> List[PromptResponse]:
     """Type-safe prompt creation"""
@@ -256,7 +256,7 @@ def create_coding_prompts(repo_name: str) -> List[PromptResponse]:
   </Accordion>
 
   <Accordion title="Import Types Explicitly" icon="file-import">
-    Import types from `bread.types` for better autocomplete
+    Import types from `aibread.types` for better autocomplete
   </Accordion>
 
   <Accordion title="Validate TypedDicts" icon="check-double">

@@ -62,7 +62,7 @@ Override the HTTP client for proxies, custom transports, and advanced configurat
 
 ```python
 import httpx
-from bread import Bread, DefaultHttpxClient
+from aibread import Bread, DefaultHttpxClient
 
 client = Bread(
     base_url="http://my-server.com:8083",
@@ -77,7 +77,7 @@ client = Bread(
 
 ```python
 import httpx
-from bread import Bread, DefaultHttpxClient
+from aibread import Bread, DefaultHttpxClient
 
 client = Bread(
     http_client=DefaultHttpxClient(
@@ -102,7 +102,7 @@ client = Bread(
 <CodeGroup>
 
 ```python Global Timeout
-from bread import Bread
+from aibread import Bread
 
 # Simple timeout (seconds)
 client = Bread(timeout=20.0)
@@ -110,7 +110,7 @@ client = Bread(timeout=20.0)
 
 ```python Granular Control
 import httpx
-from bread import Bread
+from aibread import Bread
 
 client = Bread(
     timeout=httpx.Timeout(
@@ -140,7 +140,7 @@ repos = client.with_options(timeout=5.0).repo.list()
 <CodeGroup>
 
 ```python Global Configuration
-from bread import Bread
+from aibread import Bread
 
 # Default: 2 retries
 client = Bread(max_retries=2)
@@ -241,7 +241,7 @@ Automatically manage HTTP connections:
 <CodeGroup>
 
 ```python Sync
-from bread import Bread
+from aibread import Bread
 
 with Bread() as client:
     repos = client.repo.list()
@@ -249,7 +249,7 @@ with Bread() as client:
 ```
 
 ```python Async
-from bread import AsyncBread
+from aibread import AsyncBread
 
 async with AsyncBread() as client:
     repos = await client.repo.list()
@@ -338,7 +338,7 @@ export BREAD_BASE_URL='https://api.custom-domain.com'
 ```
 
 ```python In Code
-from bread import Bread
+from aibread import Bread
 
 client = Bread(
     base_url="https://api.custom-domain.com"
@@ -354,7 +354,7 @@ client = Bread(
 Set default headers/query params for all requests:
 
 ```python
-from bread import Bread
+from aibread import Bread
 
 client = Bread(
     default_headers={"X-Custom": "header"},
@@ -369,9 +369,9 @@ client = Bread(
 Check installed SDK version:
 
 ```python
-import bread
+import aibread
 
-print(bread.__version__)
+print(aibread.__version__)
 ```
 
 ---
@@ -381,11 +381,11 @@ print(bread.__version__)
 For better async performance, use aiohttp:
 
 ```bash
-pip install 'bread[aiohttp] @ git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git'
+pip install aibread[aiohttp]
 ```
 
 ```python
-from bread import AsyncBread, DefaultAioHttpClient
+from aibread import AsyncBread, DefaultAioHttpClient
 
 async with AsyncBread(
     http_client=DefaultAioHttpClient()

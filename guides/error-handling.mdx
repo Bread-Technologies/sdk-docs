@@ -58,21 +58,21 @@ BreadError (base)
 ## Basic Error Handling
 
 ```python
-import bread
-from bread import Bread
+import aibread
+from aibread import Bread
 
 client = Bread()
 
 try:
     repos = client.repo.list()
-except bread.APIConnectionError as e:
+except aibread.APIConnectionError as e:
     print("Server could not be reached")
     print(e.__cause__)  # Underlying exception
-except bread.RateLimitError as e:
+except aibread.RateLimitError as e:
     print("Rate limited - back off")
-except bread.AuthenticationError as e:
+except aibread.AuthenticationError as e:
     print("Invalid API key")
-except bread.APIStatusError as e:
+except aibread.APIStatusError as e:
     print(f"Status: {e.status_code}")
     print(f"Response: {e.response}")
 ```
@@ -82,25 +82,25 @@ except bread.APIStatusError as e:
 ### Authentication Errors
 
 ```python
-import bread
+import aibread
 
 try:
     client = Bread()
     repos = client.repo.list()
-except bread.AuthenticationError:
+except aibread.AuthenticationError:
     print("Invalid API key - check BREAD_API_KEY environment variable")
-except bread.PermissionDeniedError:
+except aibread.PermissionDeniedError:
     print("Valid key but insufficient permissions")
 ```
 
 ### Not Found Errors
 
 ```python
-import bread
+import aibread
 
 try:
     repo = client.repo.get("my_repo")
-except bread.NotFoundError:
+except aibread.NotFoundError:
     # Create if doesn't exist
     repo = client.repo.set(repo_name="my_repo")
     print("Repository created")
@@ -109,21 +109,21 @@ except bread.NotFoundError:
 ### Conflict Errors
 
 ```python
-import bread
+import aibread
 
 try:
     repo = client.repo.set(
         repo_name="existing_repo",
         base_model="different_model"
     )
-except bread.ConflictError:
+except aibread.ConflictError:
     print("Cannot change base_model of existing repository")
 ```
 
 ### Rate Limiting
 
 ```python
-import bread
+import aibread
 import time
 
 def retry_with_backoff(fn, max_retries=3):
@@ -131,7 +131,7 @@ def retry_with_backoff(fn, max_retries=3):
     for attempt in range(max_retries):
         try:
             return fn()
-        except bread.RateLimitError:
+        except aibread.RateLimitError:
             if attempt == max_retries - 1:
                 raise
             wait_time = 2 ** attempt
@@ -145,7 +145,7 @@ repos = retry_with_backoff(lambda: client.repo.list())
 ### Connection Errors
 
 ```python
-import bread
+import aibread
 import time
 
 def retry_on_connection_error(fn, max_retries=3):
@@ -153,13 +153,13 @@ def retry_on_connection_error(fn, max_retries=3):
     for attempt in range(max_retries):
         try:
             return fn()
-        except bread.APIConnectionError as e:
+        except aibread.APIConnectionError as e:
             if attempt == max_retries - 1:
                 print(f"Failed after {max_retries} attempts")
                 raise
             print(f"Connection error, retry {attempt + 1}/{max_retries}")
             time.sleep(2)
-        except bread.APITimeoutError as e:
+        except aibread.APITimeoutError as e:
             if attempt == max_retries - 1:
                 raise
             print(f"Timeout, retry {attempt + 1}/{max_retries}")
@@ -181,11 +181,11 @@ All `APIError` subclasses have:
 - `status_code`: HTTP status code
 
 ```python
-import bread
+import aibread
 
 try:
     client.repo.get("nonexistent")
-except bread.APIStatusError as e:
+except aibread.APIStatusError as e:
     print(f"Status code: {e.status_code}")
     print(f"Response headers: {e.response.headers}")
     print(f"Response body: {e.body}")
@@ -195,46 +195,46 @@ except bread.APIStatusError as e:
 ## Comprehensive Error Handler
 
 ```python
-import bread
+import aibread
 import logging
 
 logger = logging.getLogger(__name__)
 
 def handle_bread_error(e: Exception) -> dict:
     """Central error handler for Bread SDK"""
-    if isinstance(e, bread.AuthenticationError):
+    if isinstance(e, aibread.AuthenticationError):
         logger.error("Authentication failed")
         return {"error": "auth_failed", "retry": False}
     
-    elif isinstance(e, bread.PermissionDeniedError):
+    elif isinstance(e, aibread.PermissionDeniedError):
         logger.error("Permission denied")
         return {"error": "permission_denied", "retry": False}
     
-    elif isinstance(e, bread.NotFoundError):
+    elif isinstance(e, aibread.NotFoundError):
         logger.warning("Resource not found")
         return {"error": "not_found", "retry": False}
     
-    elif isinstance(e, bread.ConflictError):
+    elif isinstance(e, aibread.ConflictError):
         logger.warning("Resource conflict")
         return {"error": "conflict", "retry": False}
     
-    elif isinstance(e, bread.RateLimitError):
+    elif isinstance(e, aibread.RateLimitError):
         logger.warning("Rate limited")
         return {"error": "rate_limited", "retry": True, "wait": 60}
     
-    elif isinstance(e, bread.APITimeoutError):
+    elif isinstance(e, aibread.APITimeoutError):
         logger.error("Request timeout")
         return {"error": "timeout", "retry": True}
     
-    elif isinstance(e, bread.APIConnectionError):
+    elif isinstance(e, aibread.APIConnectionError):
         logger.error("Connection failed")
         return {"error": "connection_failed", "retry": True}
     
-    elif isinstance(e, bread.InternalServerError):
+    elif isinstance(e, aibread.InternalServerError):
         logger.error("Server error")
         return {"error": "server_error", "retry": True}
     
-    elif isinstance(e, bread.APIStatusError):
+    elif isinstance(e, aibread.APIStatusError):
         logger.error(f"API error: {e.status_code}")
         return {"error": "api_error", "status": e.status_code, "retry": e.status_code >= 500}
     
@@ -262,7 +262,7 @@ except Exception as e:
 The SDK automatically retries certain errors:
 
 ```python
-from bread import Bread
+from aibread import Bread
 
 # Default: 2 retries
 client = Bread()
@@ -290,7 +290,7 @@ Configure timeouts to prevent hanging:
 
 ```python
 import httpx
-from bread import Bread
+from aibread import Bread
 
 # Global timeout (20 seconds)
 client = Bread(timeout=20.0)
@@ -308,7 +308,7 @@ client = Bread(
 # Per-request override
 try:
     result = client.with_options(timeout=5.0).repo.list()
-except bread.APITimeoutError:
+except aibread.APITimeoutError:
     print("Request timed out after 5 seconds")
 ```
 
@@ -318,8 +318,8 @@ Error handling works the same with async client:
 
 ```python
 import asyncio
-import bread
-from bread import AsyncBread
+import aibread
+from aibread import AsyncBread
 
 async def safe_api_call():
     try:
@@ -330,7 +330,7 @@ async def safe_api_call():
         print("Connection failed")
     except bread.AuthenticationError:
         print("Auth failed")
-    except bread.APIStatusError as e:
+    except aibread.APIStatusError as e:
         print(f"API error: {e.status_code}")
 
 asyncio.run(safe_api_call())

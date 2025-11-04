@@ -36,7 +36,7 @@ print(f"Version: {health.version}")
 ### Basic Health Check
 
 ```python
-from bread import Bread
+from aibread import Bread
 
 client = Bread()
 
@@ -53,7 +53,7 @@ else:
 Use health check to test connectivity:
 
 ```python
-import bread
+import aibread
 
 def test_connection():
     try:
@@ -65,12 +65,12 @@ def test_connection():
             "status": health.status,
             "version": health.version
         }
-    except bread.APIConnectionError:
+    except aibread.APIConnectionError:
         return {
             "connected": False,
             "error": "Cannot reach API server"
         }
-    except bread.AuthenticationError:
+    except aibread.AuthenticationError:
         return {
             "connected": True,
             "authenticated": False,
@@ -91,7 +91,7 @@ print(result)
 Verify API connectivity during application initialization:
 
 ```python
-from bread import Bread
+from aibread import Bread
 import sys
 
 def init_bread_client():
@@ -119,7 +119,7 @@ client = init_bread_client()
 
 ```python
 import asyncio
-from bread import AsyncBread
+from aibread import AsyncBread
 
 async def check_health():
     async with AsyncBread() as client:
@@ -136,8 +136,8 @@ Continuous health monitoring:
 
 ```python
 import time
-from bread import Bread
-import bread
+from aibread import Bread
+import aibread
 
 client = Bread()
 
@@ -153,7 +153,7 @@ def monitor_health(interval=60):
                 # Alert or log degraded status
                 print(f"⚠ API degraded at {timestamp}")
         
-        except bread.APIConnectionError as e:
+        except aibread.APIConnectionError as e:
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             print(f"[{timestamp}] ✗ Connection failed: {e}")
         
@@ -197,21 +197,21 @@ monitor_health(interval=60)  # Check every 60 seconds
 ## Error Handling
 
 ```python
-import bread
+import aibread
 
 try:
     health = client.health.check()
     print(f"API Status: {health.status}")
     
-except bread.APIConnectionError as e:
+except aibread.APIConnectionError as e:
     print(f"Cannot reach API: {e}")
     print("Check network connectivity and base URL")
     
-except bread.AuthenticationError as e:
+except aibread.AuthenticationError as e:
     print(f"Authentication failed: {e}")
     print("Verify your API key is correct")
     
-except bread.APITimeoutError as e:
+except aibread.APITimeoutError as e:
     print(f"Request timed out: {e}")
     print("API may be slow or unresponsive")
 ```

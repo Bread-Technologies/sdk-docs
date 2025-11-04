@@ -249,7 +249,7 @@ client.prompts.set(
 ## Error Handling
 
 ```python
-import bread
+import aibread
 
 try:
     prompt = client.prompts.set(
@@ -257,7 +257,7 @@ try:
         repo_name="my_repo",
         messages=[{"role": "system", "content": "Test"}]
     )
-except bread.UnprocessableEntityError:
+except aibread.UnprocessableEntityError:
     print("Invalid prompt name format")
 
 try:
@@ -265,7 +265,7 @@ try:
         prompt_name="nonexistent",
         repo_name="my_repo"
     )
-except bread.NotFoundError:
+except aibread.NotFoundError:
     print("Prompt not found")
 ```
 

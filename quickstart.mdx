@@ -12,7 +12,7 @@ New to baking? Start with [Understanding Baking](/understanding-baking) to learn
 First, install the Bread SDK:
 
 ```bash
-pip install git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git
+pip install aibread
 ```
 
 ## Set Up API Key
@@ -33,7 +33,7 @@ Use [python-dotenv](https://pypi.org/project/python-dotenv/) to manage environme
 
 ```python Sync Client
 import os
-from bread import Bread
+from aibread import Bread
 
 client = Bread(
     api_key=os.environ.get("BREAD_API_KEY")
@@ -45,7 +45,7 @@ print(repos.items)
 
 ```python Async Client
 import asyncio
-from bread import AsyncBread
+from aibread import AsyncBread
 
 async def main():
     async with AsyncBread() as client:
@@ -64,7 +64,7 @@ Here's a complete workflow that creates a repository, sets up prompts, configure
 <Steps>
   <Step title="Create Repository & Prompts">
     ```python
-    from bread import Bread
+    from aibread import Bread
     
     client = Bread()
     
@@ -200,15 +200,15 @@ print(f"API Version: {health.version}")
 Add error handling to make your code production-ready:
 
 ```python
-import bread
+import aibread
 
 try:
     repos = client.repo.list()
-except bread.AuthenticationError:
+except aibread.AuthenticationError:
     print("Invalid API key")
-except bread.APIConnectionError as e:
+except aibread.APIConnectionError as e:
     print(f"Connection failed: {e}")
-except bread.APIStatusError as e:
+except aibread.APIStatusError as e:
     print(f"API error {e.status_code}: {e.response}")
 ```
 

@@ -10,31 +10,28 @@ The Bread SDK is currently available from the staging Git repository.
 <CodeGroup>
 
 ```bash pip
-pip install git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git
+pip install aibread
 ```
 
 ```bash With aiohttp
-pip install 'bread[aiohttp] @ git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git'
+pip install aibread[aiohttp]
 ```
 
 </CodeGroup>
 
-<Note>
-Once published to PyPI, installation will become: `pip install bread`
-</Note>
 
 ## Optional: aiohttp for Async Performance
 
 For improved concurrency performance in async applications, install with aiohttp support:
 
 ```bash
-pip install 'bread[aiohttp] @ git+ssh://git@github.com/stainless-sdks/bread-sdk-v1-python.git'
+pip install aibread[aiohttp]
 ```
 
 Then enable it when creating the async client:
 
 ```python
-from bread import AsyncBread, DefaultAioHttpClient
+from aibread import AsyncBread, DefaultAioHttpClient
 
 async with AsyncBread(
     api_key="your_api_key",
@@ -59,10 +56,10 @@ async with AsyncBread(
 After installation, verify the SDK is working:
 
 ```python
-import bread
-print(bread.__version__)  # Check installed version
+import aibread
+print(aibread.__version__)  # Check installed version
 
-from bread import Bread
+from aibread import Bread
 client = Bread()
 print("Bread SDK installed successfully!")
 ```

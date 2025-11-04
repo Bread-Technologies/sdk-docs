@@ -194,7 +194,7 @@ Run both stim and rollout in sequence:
 
 ```python
 import time
-from bread import Bread
+from aibread import Bread
 
 client = Bread()
 
@@ -336,16 +336,16 @@ Multiple trajectories per stimulus provide diverse training data and can improve
 ## Error Handling
 
 ```python
-import bread
+import aibread
 
 try:
     result = client.targets.rollout.run(
         target_name="coding_target",
         repo_name="my_repo"
     )
-except bread.NotFoundError:
+except aibread.NotFoundError:
     print("Target not found")
-except bread.APIStatusError as e:
+except aibread.APIStatusError as e:
     if "stim" in str(e.response).lower():
         print("Stim job must complete first")
     elif "model_name" in str(e.response).lower():

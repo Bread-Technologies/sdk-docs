@@ -18,7 +18,7 @@ export BREAD_API_KEY='your_api_key_here'
 ```
 
 ```python
-from bread import Bread
+from aibread import Bread
 
 # API key is read automatically from BREAD_API_KEY
 client = Bread()
@@ -46,7 +46,7 @@ BREAD_BASE_URL=http://localhost:8080  # Optional
 **3. Load in your application:**
 ```python
 from dotenv import load_dotenv
-from bread import Bread
+from aibread import Bread
 
 load_dotenv()  # Loads .env file
 
@@ -65,7 +65,7 @@ Add `.env` to your `.gitignore` to prevent committing secrets to version control
 You can also pass the API key directly when creating the client:
 
 ```python
-from bread import Bread
+from aibread import Bread
 
 client = Bread(api_key="your_api_key_here")
 ```
@@ -106,17 +106,17 @@ client = Bread(
 Handle authentication errors gracefully:
 
 ```python
-import bread
-from bread import Bread
+import aibread
+from aibread import Bread
 
 client = Bread()
 
 try:
     repos = client.repo.list()
-except bread.AuthenticationError as e:
+except aibread.AuthenticationError as e:
     print("Authentication failed - invalid API key")
     print(f"Error: {e}")
-except bread.PermissionDeniedError as e:
+except aibread.PermissionDeniedError as e:
     print("Permission denied - insufficient privileges")
     print(f"Error: {e}")
 ```
@@ -138,7 +138,7 @@ Authentication works the same way for async clients:
 
 ```python
 import asyncio
-from bread import AsyncBread
+from aibread import AsyncBread
 
 async def main():
     # API key from environment variable
@@ -181,7 +181,7 @@ For production deployments, use secure secret management:
 
 ```python AWS Secrets Manager
 import boto3
-from bread import Bread
+from aibread import Bread
 
 def get_secret():
     client = boto3.client('secretsmanager', region_name='us-east-1')
@@ -193,7 +193,7 @@ bread_client = Bread(api_key=get_secret())
 
 ```python Docker Secrets
 import os
-from bread import Bread
+from aibread import Bread
 
 # Docker secret mounted at /run/secrets/bread_api_key
 with open('/run/secrets/bread_api_key', 'r') as f:
@@ -204,7 +204,7 @@ client = Bread(api_key=api_key)
 
 ```python Kubernetes Secrets
 import os
-from bread import Bread
+from aibread import Bread
 
 # Kubernetes secret injected as environment variable
 client = Bread(api_key=os.environ['BREAD_API_KEY'])

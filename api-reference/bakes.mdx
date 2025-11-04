@@ -432,16 +432,16 @@ See [Bake Configuration Reference](/configuration/bake-config) for complete deta
 ## Error Handling
 
 ```python
-import bread
+import aibread
 
 try:
     result = client.bakes.run(
         bake_name="my_bake",
         repo_name="my_repo"
     )
-except bread.NotFoundError:
+except aibread.NotFoundError:
     print("Bake not found - configure it first")
-except bread.APIStatusError as e:
+except aibread.APIStatusError as e:
     if "rollout" in str(e.response).lower():
         print("Target rollouts must complete first")
     else:

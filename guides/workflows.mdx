@@ -14,7 +14,7 @@ Generate stimuli and trajectories for a target.
 <Steps>
   <Step title="Setup Repository & Prompts">
     ```python
-    from bread import Bread
+    from aibread import Bread
     
     client = Bread()
     
@@ -231,7 +231,7 @@ Create reusable functions for common patterns:
 
 ```python
 import time
-from bread import Bread
+from aibread import Bread
 from typing import Callable
 
 client = Bread()
@@ -409,7 +409,7 @@ Using async/await for better concurrency:
 
 ```python
 import asyncio
-from bread import AsyncBread
+from aibread import AsyncBread
 
 async def async_target_workflow(
     repo_name: str,
@@ -449,7 +449,7 @@ asyncio.run(async_target_workflow("my_repo", "coding_target"))
 Robust workflow with comprehensive error handling:
 
 ```python
-import bread
+import aibread
 import time
 import logging
 
@@ -467,7 +467,7 @@ def production_workflow(
         # Verify repository exists
         try:
             client.repo.get(repo_name)
-        except bread.NotFoundError:
+        except aibread.NotFoundError:
             logger.info(f"Creating repository: {repo_name}")
             client.repo.set(repo_name=repo_name)
         
@@ -481,7 +481,7 @@ def production_workflow(
                     overrides={...}
                 )
                 break
-            except bread.APIStatusError as e:
+            except aibread.APIStatusError as e:
                 if attempt == max_retries - 1:
                     raise
                 logger.warning(f"Retry {attempt + 1}/{max_retries}")
@@ -508,10 +508,10 @@ def production_workflow(
         # Continue with rollout...
         logger.info("Workflow completed successfully")
         
-    except bread.AuthenticationError:
+    except aibread.AuthenticationError:
         logger.error("Authentication failed - check API key")
         raise
-    except bread.APIConnectionError as e:
+    except aibread.APIConnectionError as e:
         logger.error(f"Connection failed: {e}")
         raise
     except Exception as e:

@@ -217,7 +217,7 @@ Using the async client:
 
 ```python
 import asyncio
-from bread import AsyncBread
+from aibread import AsyncBread
 
 async def run_stim_job():
     async with AsyncBread() as client:
@@ -288,16 +288,16 @@ stimuli = asyncio.run(run_stim_job())
 ## Error Handling
 
 ```python
-import bread
+import aibread
 
 try:
     result = client.targets.stim.run(
         target_name="coding_target",
         repo_name="my_repo"
     )
-except bread.NotFoundError:
+except aibread.NotFoundError:
     print("Target not found")
-except bread.APIStatusError as e:
+except aibread.APIStatusError as e:
     print(f"API error: {e.status_code} - {e.response}")
 ```
 
