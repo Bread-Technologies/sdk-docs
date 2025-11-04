@@ -166,7 +166,7 @@
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/stainless-sdks/bread-sdk-v1-python"
+        "href": "https://github.com/Bread-Technologies"
       }
     ]
   },
@@ -182,7 +182,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/stainless-sdks/bread-sdk-v1-python"
+      "github": "https://github.com/Bread-Technologies"
     }
   }
 }
