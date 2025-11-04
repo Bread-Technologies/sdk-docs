@@ -58,6 +58,49 @@ The Bread Python SDK provides convenient access to "Git for Weight Space," a ver
   </Accordion>
 </AccordionGroup>
 
+## Core Concepts
+
+<CardGroup cols={3}>
+  <Card title="Repositories" icon="folder-tree">
+    Container for your AI projects with base model configuration
+  </Card>
+  <Card title="Prompts" icon="message">
+    Reusable message templates for stimulus generation
+  </Card>
+  <Card title="Targets" icon="bullseye">
+    Configuration for stimulus and trajectory generation
+  </Card>
+  <Card title="Stim Jobs" icon="sparkles">
+    Generate questions and tasks for model training
+  </Card>
+  <Card title="Rollout Jobs" icon="arrows-turn-right">
+    Generate model responses to stimuli
+  </Card>
+  <Card title="Bakes" icon="fire">
+    Model training jobs using rollout data
+  </Card>
+</CardGroup>
+
+## Common Workflow
+
+<Steps>
+  <Step title="Setup Repository">
+    Create a repository and define prompt templates
+  </Step>
+  <Step title="Configure Target">
+    Set up generators, models, and prompts for your target
+  </Step>
+  <Step title="Generate Stimuli">
+    Run stim jobs to create training questions/tasks
+  </Step>
+  <Step title="Generate Trajectories">
+    Run rollout jobs to get model responses
+  </Step>
+  <Step title="Train Model">
+    Configure and run bake jobs for model training
+  </Step>
+</Steps>
+
 ## Quick Example
 
 ```python
@@ -92,49 +135,6 @@ target = client.targets.set(
 # Generate stimuli
 client.targets.stim.run(target_name="coding_target", repo_name="my_repo")
 ```
-
-## Core Concepts
-
-<CardGroup cols={3}>
-  <Card title="Repositories" icon="folder-tree">
-    Container for your AI projects with base model configuration
-  </Card>
-  <Card title="Prompts" icon="message">
-    Reusable message templates for stimulus generation
-  </Card>
-  <Card title="Targets" icon="bullseye">
-    Configuration for stimulus and trajectory generation
-  </Card>
-  <Card title="Stim Jobs" icon="sparkles">
-    Generate questions and tasks for model training
-  </Card>
-  <Card title="Rollout Jobs" icon="arrows-turn-right">
-    Generate model responses to stimuli
-  </Card>
-  <Card title="Bakes" icon="fire">
-    Model training jobs using rollout data
-  </Card>
-</CardGroup>
-
-## Common Workflows
-
-<Steps>
-  <Step title="Setup Repository">
-    Create a repository and define prompt templates
-  </Step>
-  <Step title="Configure Target">
-    Set up generators, models, and prompts for your target
-  </Step>
-  <Step title="Generate Stimuli">
-    Run stim jobs to create training questions/tasks
-  </Step>
-  <Step title="Generate Trajectories">
-    Run rollout jobs to get model responses
-  </Step>
-  <Step title="Train Model (Optional)">
-    Configure and run bake jobs for model training
-  </Step>
-</Steps>
 
 ## Requirements
 

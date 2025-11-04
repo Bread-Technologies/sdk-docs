@@ -5,7 +5,7 @@ description: "Learn what prompt baking is and how it works"
 
 ## What is Baking?
 
-Baking (also known as "prompt baking") is a technique that allows you to convert prompts into weight updates in a language model. It's a way to "bake in" prompts so that the AI inherently knows them without needing them at inference time.
+Baking (also known as "prompt baking") is a technique that allows you to convert prompts into weight updates for a language model. It's a way to "bake in" prompts so that the AI inherently knows them without needing them at inference time.
 
 <CardGroup cols={3}>
   <Card title="Not Fine-Tuning" icon="xmark">
@@ -21,7 +21,7 @@ Baking (also known as "prompt baking") is a technique that allows you to convert
 
 ### The Core Idea
 
-Prompt baking matches the distribution of a prompted model to that of the base model—effectively making them "equivalent." The baked model learns to act as if it always had the baked-in prompt, without needing to receive that prompt at inference time.
+Prompt baking matches the distribution of a prompted model to that of the base model, effectively making them "equivalent." The baked model learns to act as if it always had the baked-in prompt, without needing to receive that prompt at inference time.
 
 **Benefits**:
 - **Speed**: As fast as prompt engineering, not as slow as traditional fine-tuning
@@ -39,12 +39,12 @@ Baking consists of four major phases that work together to convert prompts into 
   <Step title="1. Stim (Stimuli Generation)">
     Stim generates a synthetic dataset of "questions" that a prompted language model would reasonably receive.
     
-    **Purpose**: Predict and generate all the inputs a prompted language model would encounter while responding based on a given prompt.
+    **Purpose**: Predict and generate inputs a prompted language model would encounter while responding based on a given prompt.
     
     **Example**: For a prompt like "Act like Mickey Mouse," stim generates questions such as:
     - "Do you live in Disneyland, Mickey Mouse?"
     - "What's your favorite ride at Disneyland?"
-    - "Tell me about your friends!"
+    - "Who is Donald Duck?"
     
     The goal is to create a synthetic dataset covering the range of possible questions, allowing us to capture the prompted model's behavior across diverse situations.
     
