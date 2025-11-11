@@ -19,13 +19,12 @@ List all repositories visible to your team.
 
 ```python
 repos = client.repo.list()
-for item in repos.items:
-    print(item.repo_name)
+for repo_name in repos.repos:
+    print(repo_name)
 ```
 
-**Returns**: `RepoListResponse`
-- `items`: `List[Item]` - List of repositories
-  - `repo_name`: `str` - Repository name
+**Returns**: `RepoList`
+- `repos`: `List[str]` - List of repository names
 
 ---
 
@@ -116,11 +115,11 @@ except aibread.NotFoundError:
 ### List All Repositories
 
 ```python
-repos = client.repo.list()
+response = client.repo.list()
 
-print(f"Found {len(repos.items)} repositories:")
-for repo in repos.items:
-    print(f"  - {repo.repo_name}")
+print(f"Found {len(response.repos)} repositories:")
+for repo_name in response.repos:
+    print(f"  - {repo_name}")
 ```
 
 ## Error Handling

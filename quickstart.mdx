@@ -9,9 +9,9 @@ Get the Bread SDK installed and authenticated so you can start baking AI models.
 New to baking? Start with [Understanding Baking](/understanding-baking) to learn the core concepts.
 </Note>
 
-## Installation
+## Install the SDK
 
-Install the Bread SDK via pip:
+Install the Bread Python SDK via pip:
 
 <CodeGroup>
 
@@ -29,45 +29,10 @@ python -m pip install aibread
 
 </CodeGroup>
 
-### Optional: Async Performance
 
-For improved async performance, install with aiohttp support:
+## Set Your API Key
 
-<CodeGroup>
-
-```bash MacOS/Linux
-pip install aibread[aiohttp]
-```
-
-```cmd Windows (Command Prompt)
-pip install aibread[aiohttp]
-```
-
-```powershell Windows (PowerShell)
-python -m pip install "aibread[aiohttp]"
-```
-
-</CodeGroup>
-
-Then enable it when creating the async client:
-
-```python
-from aibread import AsyncBread, DefaultAioHttpClient
-
-async with AsyncBread(
-    api_key=os.environ.get("BREAD_API_KEY"),
-    http_client=DefaultAioHttpClient()
-) as client:
-    repos = await client.repo.list()
-```
-
-<Tip>
-**Requirements:** Python 3.8+ is required. httpx is included automatically.
-</Tip>
-
-## Set Up API Key
-
-Set your API key as an environment variable:
+After obtaining your API key, set it as an environment variable in your terminal: 
 
 <CodeGroup>
 
@@ -85,50 +50,34 @@ $env:BREAD_API_KEY='your_api_key_here'
 
 </CodeGroup>
 
-<Tip>
-Use [python-dotenv](https://pypi.org/project/python-dotenv/) to manage environment variables in a `.env` file and keep credentials out of source control.
-</Tip>
-
 ## Initialize the Client
 
-Create a Bread client to interact with the API:
+Create a Bread client that reads from your environment variable:
 
-<CodeGroup>
-
-```python Sync Client
+```python
 import os
 from aibread import Bread
 
-client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
-
-# Test connection
-repos = client.repo.list()
-print(f"Connected! Found {len(repos.items)} repositories")
+client = Bread() # Automatically uses BREAD_API_KEY
 ```
 
-```python Async Client
-import asyncio
-import os
-from aibread import AsyncBread
-
-async def main():
-    async with AsyncBread(api_key=os.environ.get("BREAD_API_KEY")) as client:
-        repos = await client.repo.list()
-        print(f"Connected! Found {len(repos.items)} repositories")
-
-asyncio.run(main())
-```
-
-</CodeGroup>
+<Tip>
+For production deployments and `.env` file usage, see [Production Authentication](/authentication).
+</Tip>
 
 ## Verify Your Setup
 
-Test your connection with a health check:
+Test your connection with a health check and list your repos (new users should be 0):
 
 ```python
+# Test connection
 health = client.health.check()
 print(f"Status: {health.status}")
 print(f"API Version: {health.version}")
+
+# List number of repos
+response = client.repo.list()
+print(f"Connected! Found {len(response.repos)} repositories")
 ```
 
 ## Next Steps
