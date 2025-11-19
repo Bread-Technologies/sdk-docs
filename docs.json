@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Bread Python SDK",
+  "name": "Bread Documentation",
   "colors": {
     "primary": "#F97316",
     "light": "#FB923C",
@@ -17,9 +17,21 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "understanding-baking",
               "quickstart",
+              "understanding-baking",
               "authentication"
+            ]
+          },
+          {
+            "group": "bgit",
+            "pages": [
+              "guides/bgit-workflows"
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "tools/mcp-server"
             ]
           },
           {

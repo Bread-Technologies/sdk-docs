@@ -1,0 +1,986 @@
+---
+title: "bgit Workflows"
+description: "Master iteration, branching, experimentation, and collaboration with bgit"
+---
+
+<Note>
+**New to bgit?** Start with the [Quickstart](/quickstart) to create your first model.
+</Note>
+
+Now that you've created your first model, let's dive into how to actually work with bgit: iterating on models, experimenting with branches, and collaborating with teams.
+
+## Core Concepts
+
+bgit transforms model training into a familiar git workflow where:
+
+- **Your repository** tracks model weight evolution (not just config files)
+- **Commits** represent model versions in weight space
+- **recipe.yml** is your complete audit trail from base model  → current weights
+
+<div style={{display: 'flex', alignItems: 'center', gap: '12px', overflowX: 'auto', padding: '20px 0', flexWrap: 'wrap', justifyContent: 'center'}}>
+  <div style={{flex: '0 0 auto', textAlign: 'center', padding: '20px 24px', borderRadius: '8px', background: 'transparent', border: '2px solid #F97316', minWidth: '140px'}}>
+    <div style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '4px'}}>Edit</div>
+    <div style={{fontSize: '13px', opacity: 0.7}}>`your-model.yml`</div>
+  </div>
+  
+  <div style={{fontSize: '20px', color: '#F97316', fontWeight: 'bold'}}>→</div>
+  
+  <div style={{flex: '0 0 auto', textAlign: 'center', padding: '20px 24px', borderRadius: '8px', background: 'transparent', border: '2px solid #F97316', minWidth: '140px'}}>
+    <div style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '4px'}}>Commit</div>
+    <div style={{fontSize: '13px', opacity: 0.7}}>Version change</div>
+  </div>
+  
+  <div style={{fontSize: '20px', color: '#F97316', fontWeight: 'bold'}}>→</div>
+  
+  <div style={{flex: '0 0 auto', textAlign: 'center', padding: '20px 24px', borderRadius: '8px', background: 'transparent', border: '2px solid #F97316', minWidth: '140px'}}>
+    <div style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '4px'}}>Run</div>
+    <div style={{fontSize: '13px', opacity: 0.7}}>Operations</div>
+  </div>
+  
+  <div style={{fontSize: '20px', color: '#F97316', fontWeight: 'bold'}}>→</div>
+  
+  <div style={{flex: '0 0 auto', textAlign: 'center', padding: '20px 24px', borderRadius: '8px', background: 'transparent', border: '2px solid #F97316', minWidth: '140px'}}>
+    <div style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '4px'}}>Test</div>
+    <div style={{fontSize: '13px', opacity: 0.7}}>Chat with model</div>
+  </div>
+  
+  <div style={{fontSize: '20px', color: '#F97316', fontWeight: 'bold'}}>→</div>
+  
+  <div style={{flex: '0 0 auto', textAlign: 'center', padding: '20px 24px', borderRadius: '8px', background: 'transparent', border: '2px solid #F97316', minWidth: '140px'}}>
+    <div style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '4px'}}>Iterate</div>
+    <div style={{fontSize: '13px', opacity: 0.7}}>Repeat cycle</div>
+  </div>
+</div>
+
+---
+
+## Understanding Your Files in Depth
+
+### Three Primary Files
+
+<CardGroup cols={3}>
+  <Card icon="pen">
+    **`your-model.yml`**
+    
+    *You Edit*
+    
+    Input box for next baking operation
+  </Card>
+  
+  <Card icon="database">
+    **`.bread`**
+    
+    *Auto-generated*
+    
+    Current state metadata (read-only)
+  </Card>
+  
+  <Card icon="list-timeline">
+    **`recipe.yml`**
+    
+    *Auto-generated*
+    
+    Complete history log (read-only)
+  </Card>
+</CardGroup>
+
+### `your-model.yml`: Your Control Panel
+
+This is the only file you edit. It specifies what operation to perform next:
+
+```yaml
+REPO:
+  name: my_model              # Repository name on Bread platform
+  base_model: Qwen/Qwen3-32B  # Base model to build from
+
+PROMPT:
+  teacher:                    # What behavior to bake in
+    messages:
+      - role: system
+        content: "You are an expert Python developer..."
+  
+  student:                    # Trigger at inference (empty = always-on)
+    messages:
+      - role: system
+        content: ""           # Empty string = zero-token, permanent behavior
+
+TARGET:
+  generators:                 # How to generate training data
+    - type: oneshot_qs        # AI-generated questions
+      model: claude-sonnet-4-5-20250929
+      numq: 100
+      temperature: 0.7
+    
+    - type: hardcoded         # Specific test cases
+      questions:
+        - "Write an email validator"
+        - "Implement LRU cache"
+  
+  model_name: Qwen/Qwen3-32B  # Model to use for rollout
+  num_traj_per_stimulus: 5     # Responses per question
+
+BAKE:
+  name: v1                    # Bake identifier
+  datasets:
+    - target: main_target     # Which target(s) to train on
+      weight: 1.0             # Relative weight
+  
+  epochs: 1                   # Training epochs
+  micro_batch_size: 1
+  gradient_accumulation_steps: 8
+  
+  model:
+    dtype: bf16               # Model precision
+    baked_adapter_config:     # LoRA configuration
+      r: 32
+      lora_alpha: 64
+      lora_dropout: 0.05
+```
+
+### `recipe.yml`: Your Audit Trail
+
+**Read-only** - automatically updated after operations run.
+
+Shows every step from base model to current state:
+
+<Tabs>
+  <Tab title="After Init">
+    ```yaml
+    steps:
+      - step: 1
+        operation: initialize
+        base_model: Qwen/Qwen3-32B
+        timestamp: 2024-01-15T10:00:00Z
+    ```
+  </Tab>
+  
+  <Tab title="After First Bake">
+    ```yaml
+    steps:
+      - step: 1
+        operation: initialize
+        base_model: Qwen/Qwen3-32B
+        timestamp: 2024-01-15T10:00:00Z
+      
+      - step: 2
+        operation: add_prompt
+        prompt_name: python_expert_teacher
+        content: "You are an expert Python developer..."
+        timestamp: 2024-01-15T10:05:00Z
+      
+      - step: 3
+        operation: add_target
+        target_name: main_target
+        generators: [oneshot_qs, hardcoded]
+        timestamp: 2024-01-15T10:05:01Z
+      
+      - step: 4
+        operation: run_stim
+        target: main_target
+        output_count: 150
+        timestamp: 2024-01-15T10:15:00Z
+      
+      - step: 5
+        operation: run_rollout
+        target: main_target
+        trajectory_count: 750
+        timestamp: 2024-01-15T10:45:00Z
+      
+      - step: 6
+        operation: run_bake
+        bake_name: v1
+        result_model: user/repo/v1/checkpoint_1
+        training_loss: 0.0000047
+        timestamp: 2024-01-15T11:30:00Z
+    ```
+  </Tab>
+  
+  <Tab title="After Second Iteration">
+    ```yaml
+    steps:
+      # ... steps 1-6 from previous bake ...
+      
+      - step: 7
+        operation: update_prompt
+        prompt_name: python_expert_teacher
+        changes: "Added emphasis on edge cases and error handling"
+        timestamp: 2024-01-16T09:00:00Z
+      
+      - step: 8
+        operation: run_stim
+        target: main_target
+        output_count: 200
+        timestamp: 2024-01-16T09:10:00Z
+      
+      - step: 9
+        operation: run_rollout
+        target: main_target
+        trajectory_count: 1000
+        timestamp: 2024-01-16T09:50:00Z
+      
+      - step: 10
+        operation: run_bake
+        bake_name: v1
+        parent_model: user/repo/v1/checkpoint_1
+        result_model: user/repo/v1/checkpoint_2
+        training_loss: 0.0000052
+        timestamp: 2024-01-16T11:15:00Z
+    ```
+    
+    The file continues growing with each baking cycle.
+  </Tab>
+</Tabs>
+
+**When to read recipe.yml:**
+
+<AccordionGroup>
+  <Accordion title="Understanding Model Evolution" icon="timeline">
+    Read chronologically to see how your model developed:
+    - Which prompts were tried
+    - How many bakes were performed
+    - What models resulted at each step
+    - Training loss progression
+  </Accordion>
+  
+  <Accordion title="Debugging Behavior Changes" icon="bug">
+    Identify which operation introduced specific behavior:
+    
+    ```bash
+    # View recipe at different commits
+    git show HEAD~1:recipe.yml
+    git show HEAD:recipe.yml
+    
+    # The diff shows what operation was added
+    git diff HEAD~1 recipe.yml
+    ```
+  </Accordion>
+  
+  <Accordion title="Reproducing Builds" icon="rotate">
+    The recipe is a complete build script. You could theoretically replay these steps from the base model to recreate the exact same weights.
+  </Accordion>
+  
+  <Accordion title="Auditing for Compliance" icon="shield-check">
+    Complete paper trail for regulatory or documentation purposes:
+    - What data was used (stim/rollout counts)
+    - When operations occurred (timestamps)
+    - What models were produced
+  </Accordion>
+</AccordionGroup>
+
+### `.bread`: Current State Metadata
+
+**Read-only** - tracks your model's current configuration state.
+
+Useful for:
+- Checking operation status before running
+- Verifying prompt/target setup
+- Debugging configuration issues
+
+<Warning>
+**Never edit `.bread` or `recipe.yml` manually.** They're automatically maintained by bgit. Manual edits will be overwritten on the next operation.
+</Warning>
+
+---
+
+## Core Workflow: Iterative Baking
+
+<Steps>
+  <Step title="Edit Configuration">
+    Make changes to `your-model.yml` to specify your next baking operation:
+    - Modify prompts
+    - Adjust stim settings (more questions, different temperature)
+    - Change bake parameters (epochs, LoRA rank)
+    
+    ```yaml
+    # Example: Increase temperature for more creative responses
+    TARGET:
+      generators:
+        - type: oneshot_qs
+          numq: 150          # More questions
+          temperature: 0.9    # Higher creativity
+    ```
+  </Step>
+
+  <Step title="Commit Your Changes">
+    Create a version marker with descriptive message:
+    
+    ```bash
+    bgit add .
+    bgit commit -m "Increase temp to 0.9 for more creative Python examples"
+    ```
+    
+    Your commit message documents **what you're baking** and **why**.
+    
+    <Tip>
+    **Good commit messages:**
+    - "Add error handling emphasis to teacher prompt"
+    - "Increase LoRA rank to 64 for better capacity"
+    - "Add hardcoded edge cases for validation functions"
+    
+    **Bad commit messages:**
+    - "Update file"
+    - "Changes"
+    - "Fix"
+    </Tip>
+  </Step>
+
+  <Step title="Run Operations">
+    Execute the baking operations:
+    
+    ```bash
+    # Run all operations in sequence
+    bgit run stim rollout bake
+    
+    # Or run individually
+    bgit run stim       # Generate questions
+    bgit run rollout    # Generate responses
+    bgit run bake       # Train weights
+    ```
+    
+    This produces new model weights. The `.bread` and `recipe.yml` files are automatically updated.
+  </Step>
+
+  <Step title="Check Status">
+    Monitor operation progress:
+    
+    ```bash
+    bgit status
+    ```
+    
+    Shows:
+    - Stim: complete (150 stimuli generated)
+    - Rollout: running (450/750 trajectories, 60%)
+    - Bake: not started
+  </Step>
+
+  <Step title="Test Your Model">
+    Once bake completes, test the new weights:
+    
+    ```bash
+    # Get model name from status
+    bgit status
+    
+    # Chat with new model
+    bgit chat user/repo/v1/checkpoint_2
+    ```
+    
+    Verify the behavior changed as expected.
+  </Step>
+
+  <Step title="Commit Updated State">
+    After operations complete, commit the updated metadata:
+    
+    ```bash
+    bgit add .
+    bgit commit -m "Bake complete: checkpoint_2 with higher creativity"
+    ```
+    
+    This saves the updated `.bread` and `recipe.yml` to git history.
+  </Step>
+
+  <Step title="Repeat">
+    Continue iterating:
+    - Make more changes to `your-model.yml`
+    - Commit and run operations
+    - Test and evaluate
+    - Document results in commits
+  </Step>
+</Steps>
+
+---
+
+## Advanced Git Workflows
+
+### Branching for Experiments
+
+**Key concept:** Branches in bgit represent **parallel weight evolutions**. Each branch has its own `recipe.yml` tracking independent operations from a common ancestor.
+
+<Warning>
+**bgit doesn't support merging** because model weights can't be combined. You experiment on branches, then **copy the winning branch's files** to main.
+</Warning>
+
+**Workflow:**
+
+<Steps>
+  <Step title="Create Experiment Branches">
+    ```bash
+    # Start from current main state
+    git checkout main
+    
+    # Create first experiment
+    git checkout -b experiment/formal-tone
+    vim your-model.yml  # Edit for formal tone
+    bgit commit -am "Experiment: formal business tone"
+    bgit run stim rollout bake
+    
+    # Create second experiment (from main, not formal-tone)
+    git checkout main
+    git checkout -b experiment/casual-tone
+    vim your-model.yml  # Edit for casual tone
+    bgit commit -am "Experiment: casual friendly tone"
+    bgit run stim rollout bake
+    ```
+    
+    Each branch now has divergent `recipe.yml` files:
+    - `main`: base → prompt1 → bake1
+    - `experiment/formal-tone`: base → prompt1 → bake1 → prompt2_formal → bake2
+    - `experiment/casual-tone`: base → prompt1 → bake1 → prompt2_casual → bake2
+  </Step>
+
+  <Step title="Test Both Models">
+    ```bash
+    # Test formal experiment
+    git checkout experiment/formal-tone
+    bgit status  # Get model name
+    bgit chat user/repo/v1/formal_checkpoint
+    
+    # Test casual experiment
+    git checkout experiment/casual-tone
+    bgit status  # Get model name
+    bgit chat user/repo/v1/casual_checkpoint
+    ```
+  </Step>
+
+  <Step title="Pick the Winner">
+    Decide which experiment succeeded:
+    
+    ```bash
+    # Casual tone was better, adopt it to main
+    git checkout main
+    
+    # Copy the winning branch's files (this is how you "merge")
+    git checkout experiment/casual-tone -- your-model.yml .bread recipe.yml
+    
+    # Commit the adoption
+    git commit -m "Adopt casual-tone approach: better user engagement"
+    ```
+    
+    Now `main` has the casual branch's weight evolution. The formal experiment's operations are discarded.
+  </Step>
+
+  <Step title="Clean Up (Optional)">
+    ```bash
+    # Delete losing experiment
+    git branch -d experiment/formal-tone
+    
+    # Or keep for reference/future comparison
+    git tag archive/formal-tone-experiment experiment/formal-tone
+    git branch -d experiment/formal-tone
+    ```
+  </Step>
+</Steps>
+
+**Why no merging?**
+
+<Accordion title="Technical Explanation">
+Model weights can't be "merged" like code files. If branch A bakes in formal tone and branch B bakes in casual tone, there's no meaningful way to combine those weight changes - you'd get incoherent behavior.
+
+Think of it like training two different models - you can't merge their weights and expect sensible results. You must choose one evolutionary path.
+
+This is actually **simpler** than traditional git - no merge conflicts to resolve!
+</Accordion>
+
+### Comparing Branches
+
+```bash
+# Compare what you're ABOUT to bake differently
+git diff main..experiment/formal-tone your-model.yml
+
+# Compare complete HISTORIES (what was actually baked)
+git diff main..experiment/formal-tone recipe.yml
+
+# This shows the divergent operations after the branch point
+```
+
+**Example diff output:**
+
+```diff
+# recipe.yml diff
++ - step: 7
++   operation: update_prompt
++   prompt_name: teacher
++   changes: "Added formal business language guidelines"
++ - step: 8
++   operation: run_bake
++   result_model: user/repo/v1/formal_checkpoint
+
+# vs on the other branch:
++ - step: 7
++   operation: update_prompt
++   prompt_name: teacher
++   changes: "Added casual friendly conversational style"
++ - step: 8
++   operation: run_bake
++   result_model: user/repo/v1/casual_checkpoint
+```
+
+### Time Travel
+
+Git's history features work perfectly with bgit:
+
+```bash
+# See all model versions
+git log --oneline
+
+# Output:
+# a3f7c2e Increase creativity with temp 0.9
+# b8e4d1a Add error handling emphasis
+# c5f9a7b Initial Python expert personality
+
+# Go back to previous version
+git checkout b8e4d1a
+
+# Your model is now at that historical state
+# recipe.yml shows operations up to that point
+cat recipe.yml  # Only steps 1-6
+
+# Test that historical model
+bgit chat <model-from-that-commit>
+
+# Return to latest
+git checkout main
+```
+
+**Use cases:**
+- Compare current vs previous performance
+- Roll back a bad baking decision
+- Understand when behavior changed
+
+### Tagging Milestones
+
+Mark successful production models:
+
+```bash
+# Tag current state as production
+git tag -a v1.0 -m "Production: Python expert baseline - training loss 4.7e-6"
+git push --tags
+
+# Tag after significant improvements
+git tag -a v1.1 -m "Production: Added edge case handling - loss 5.2e-6"
+
+# Roll back to a tagged version
+git checkout v1.0
+```
+
+**Recommended tags:**
+- `v1.0`, `v1.1`: Production versions
+- `baseline`: Initial working model
+- `pre-refactor`: Before major changes
+- `deployment-2024-01-15`: Timestamped deployments
+
+### Team Collaboration
+
+bgit repositories work like any git repository:
+
+```bash
+# Clone teammate's model repository
+git clone git@github.com:team/customer-support-bot.git
+cd customer-support-bot
+
+# See what they've been doing
+git log
+
+# Test their latest model
+bgit status
+bgit chat <their-model>
+
+# Create your own experiment
+git checkout -b experiment/add-product-knowledge
+vim customer-support-bot.yml  # Add product database prompt
+bgit commit -am "Experiment: integrate product knowledge base"
+bgit run stim rollout bake
+
+# Push your experiment for team review
+git push origin experiment/add-product-knowledge
+```
+
+**Pull request workflow:**
+
+1. Teammate creates experiment branch
+2. Pushes to shared repository
+3. Team members pull and test the branch model
+4. Discuss results in PR comments
+5. If successful, adopt to main (copy files)
+6. Everyone pulls updated main
+
+**No merge conflicts!** Since you can't merge weights, you either adopt one branch or the other - no conflicts to resolve.
+
+---
+
+## Command Reference
+
+### `bgit init <model-name>`
+
+Initialize a new model repository.
+
+```bash
+bgit init yoda-model
+```
+
+Creates:
+- Model directory with YAML config
+- Git repository
+- Pre-commit hooks
+- README.md
+
+**Options:**
+- Prompts for API key if not configured
+- Validates API key before proceeding
+
+### `bgit add [files...]`
+
+Stage files for commit (wraps `git add`).
+
+```bash
+bgit add .
+bgit add your-model.yml
+```
+
+The pre-commit hook automatically updates `.bread` when YAML files change.
+
+### `bgit commit [options]`
+
+Commit changes (wraps `git commit`).
+
+```bash
+bgit commit -m "Add edge case handling to prompts"
+bgit commit -am "Quick fix: adjust temperature"  # -a stages all changes
+```
+
+**Best practices:**
+- Describe what you're baking
+- Explain why if non-obvious
+- Reference issues/tickets if applicable
+
+### `bgit status`
+
+Show current operation status with progress indicators.
+
+```bash
+bgit status
+```
+
+**Example output:**
+```
+Repository: yoda-model
+Current state: user/repo/v1/checkpoint_2
+
+Operations:
+  Stim:    ✓ complete (150 stimuli)
+  Rollout: ✓ complete (750 trajectories)
+  Bake:    ⟳ running (45% complete, loss: 0.0000052, ETA: 15 min)
+
+Latest model: user/repo/v1/checkpoint_2
+Training loss: 0.0000047
+```
+
+### `bgit run <operations...>`
+
+Run one or more operations.
+
+```bash
+# Run individually
+bgit run stim
+bgit run rollout
+bgit run bake
+
+# Run in sequence
+bgit run stim rollout bake
+
+# Just run bake (if stim/rollout already complete)
+bgit run bake
+```
+
+**Operations:**
+- `stim`: Generate training questions
+- `rollout`: Generate model responses
+- `bake`: Train model weights
+
+Updates `.bread` and `recipe.yml` automatically after each operation.
+
+### `bgit stim [--limit <number>]`
+
+View stim outputs (generated questions).
+
+```bash
+# View all stim outputs
+bgit stim
+
+# Limit to first 10
+bgit stim --limit 10
+```
+
+**Example output:**
+```
+Stim outputs (150 total):
+1. "Write a function to validate email addresses"
+2. "Implement an LRU cache with O(1) operations"
+3. "Create a REST API endpoint with proper error handling"
+...
+```
+
+### `bgit rollout [--limit <number>]`
+
+View rollout outputs (model responses to stim).
+
+```bash
+# View all rollout outputs
+bgit rollout
+
+# Limit to first 5
+bgit rollout --limit 5
+```
+
+**Example output:**
+```
+Rollout outputs (750 total):
+
+Stimulus: "Write a function to validate email addresses"
+Response:
+```python
+import re
+from typing import Optional
+
+def validate_email(email: str) -> bool:
+    """
+    Validate email address format.
+    
+    Args:
+        email: Email address to validate
+    ...
+```
+
+### `bgit chat <model-name>`
+
+Start interactive chat session with a baked model.
+
+```bash
+# Get model name from status
+bgit status
+
+# Start chat
+bgit chat user/repo/v1/checkpoint_2
+```
+
+**Chat commands:**
+- `/help` - Show available commands
+- `/clear` - Clear conversation history
+- `/system <prompt>` - Set system prompt
+- `/status` - Show current settings
+- `/quit` - Exit chat
+
+---
+
+## Best Practices
+
+### Commit Message Conventions
+
+**Format:** `<action>: <what> [why]`
+
+**Good examples:**
+```bash
+git commit -m "Increase LoRA rank: improve model capacity for complex patterns"
+git commit -m "Add edge cases: validator functions need better error handling"
+git commit -m "Reduce temperature: responses too creative, losing accuracy"
+```
+
+**Bad examples:**
+```bash
+git commit -m "Update config"  # What changed?
+git commit -m "Fix"            # Fix what?
+git commit -m "Changes"        # Too vague
+```
+
+### Branch Naming Strategies
+
+**Convention:** `<type>/<description>`
+
+**Types:**
+- `experiment/`: Testing new approaches
+- `feat/`: Adding new capabilities
+- `fix/`: Correcting issues
+- `test/`: Parameter tuning
+
+**Examples:**
+```bash
+experiment/formal-business-tone
+experiment/higher-creativity
+feat/multi-language-support
+feat/domain-specific-knowledge
+fix/reduce-hallucinations
+test/optimal-lora-rank
+```
+
+### When to Run Operations
+
+**Run `stim` when:**
+- First time setting up target
+- Changed stim generators (added/removed)
+- Want more training data
+
+**Run `rollout` when:**
+- Stim outputs changed
+- Changed teacher prompt significantly
+- Want to see how prompted model responds
+
+**Run `bake` when:**
+- Have new rollout data
+- Changed bake parameters (epochs, LoRA config)
+- Ready to update model weights
+
+**Run all three when:**
+- Significant prompt changes
+- Starting from scratch
+- Want fresh training data
+
+### Organizing Experiments
+
+**Single model repo approach:**
+```
+yoda-model/
+├── main branch:          Production model
+├── experiment/formal:    Formal tone experiment
+├── experiment/casual:    Casual tone experiment
+└── feat/add-wisdom:      Add philosophical wisdom
+```
+
+**Multiple model repos approach:**
+```
+~/models/
+├── customer-support-bot/    # One model
+├── code-assistant/          # Another model
+└── content-writer/          # Third model
+```
+
+Choose based on:
+- Single repo: Variations of same base behavior
+- Multiple repos: Completely different models/purposes
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Command not found" icon="terminal">
+    **Symptom:** `bgit: command not found`
+    
+    **Solution:**
+    ```bash
+    # Reinstall and link
+    cd bread_sdk_git_interface
+    npm install
+    npm run build
+    npm link
+    
+    # Or use npx
+    npx bgit status
+    ```
+  </Accordion>
+
+  <Accordion title="Invalid API key" icon="key">
+    **Symptom:** "Invalid API key" error
+    
+    **Solution:**
+    ```bash
+    # Check environment variable
+    echo $BREAD_API_KEY
+    
+    # Check config file
+    cat ~/.bgit/config.json
+    
+    # Re-run init to update
+    bgit init test-model  # Will prompt for new key
+    ```
+  </Accordion>
+
+  <Accordion title="Operations fail" icon="circle-xmark">
+    **Symptom:** Stim/rollout/bake operations fail
+    
+    **Common causes:**
+    - Invalid prompt names in YAML
+    - Incorrect repo name
+    - Network issues
+    - API rate limits
+    
+    **Solution:**
+    ```bash
+    # Check status for error details
+    bgit status
+    
+    # Verify YAML configuration
+    cat your-model.yml
+    
+    # Check .bread for current state
+    cat .bread
+    ```
+  </Accordion>
+
+  <Accordion title=".bread file missing" icon="database">
+    **Symptom:** `.bread file not found`
+    
+    **Solution:**
+    The pre-commit hook auto-generates it. If missing:
+    ```bash
+    # Manually trigger update
+    npx bgit update-bread $(pwd)
+    
+    # Or re-commit
+    git add .
+    git commit --amend --no-edit
+    ```
+  </Accordion>
+
+  <Accordion title="Chat not working" icon="message">
+    **Symptom:** Can't connect to model for chat
+    
+    **Check:**
+    - Model name is correct (from `bgit status`)
+    - API key is valid
+    - Network connectivity
+    
+    **Solution:**
+    ```bash
+    # Verify model exists
+    bgit status
+    
+    # Try with full model path
+    bgit chat user/repo/bake_name/checkpoint_number
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="YAML Configuration Reference"
+    icon="file-code"
+    href="/guides/bgit-yaml-reference"
+  >
+    Complete field-by-field reference
+  </Card>
+  <Card
+    title="Configuration Examples"
+    icon="lightbulb"
+    href="/configuration/generators"
+  >
+    Common patterns and use cases
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/targets"
+  >
+    SDK documentation for advanced users
+  </Card>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+    href="/guides/error-handling"
+  >
+    Handle errors gracefully
+  </Card>
+</CardGroup>
+

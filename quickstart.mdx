@@ -1,114 +1,134 @@
 ---
 title: "Quickstart"
-description: "Set up the Bread SDK in 5 minutes"
+description: "Get bgit installed and bake your first model in 5 minutes"
 ---
 
-Get the Bread SDK installed and authenticated so you can start baking AI models.
+**bgit** is the primary way to work with Bread. It's a git-native interface that lets you version control AI model weights like you version control code.
 
 <Note>
-New to baking? Start with [Understanding Baking](/understanding-baking) to learn the core concepts.
+**Want to understand the theory first?** Check out [Understanding Baking](/understanding-baking) to learn how prompt baking works.
 </Note>
 
-## Install the SDK
+---
 
-Install the Bread Python SDK via pip:
+## Prerequisites
 
-<CodeGroup>
+Before starting, make sure you have:
 
-```bash MacOS/Linux
-pip install aibread
+- **Node.js 16+** and npm installed
+- **Git** installed and configured
+- **Bread API key** ([contact us](mailto:contact@aibread.com) to get one)
+
+---
+
+## Install bgit
+
+```bash
+# Clone the bgit repository
+git clone https://github.com/Bread-Technologies/bread_sdk_git_interface.git
+cd bread_sdk_git_interface
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Link globally
+npm link
+
+# Verify installation
+bgit --version
 ```
 
-```cmd Windows (Command Prompt)
-pip install aibread
-```
+---
 
-```powershell Windows (PowerShell)
-python -m pip install aibread
-```
+## Your First Model
 
-</CodeGroup>
+Let's bake a Yoda personality model:
+
+<Steps>
+  <Step title="Initialize">
+    ```bash
+    bgit init yoda-model
+    cd yoda-model
+    ```
+    
+    Enter your API key when prompted. It will be saved to `~/.bgit/config.json`.
+  </Step>
+
+  <Step title="Commit">
+    ```bash
+    bgit add .
+    bgit commit -m "Initial Yoda personality"
+    ```
+  </Step>
+
+  <Step title="Run">
+    ```bash
+    bgit run stim rollout bake
+    ```
+    
+    This generates questions, captures Yoda-style responses, and trains the model (30-60 minutes).
+  </Step>
+
+  <Step title="Test">
+    ```bash
+    bgit status  # Get model name
+    bgit chat <model-name>
+    ```
+    
+    Try: "Teach me about patience"
+    
+    Response: "Patience, you must learn. The Jedi way, slow and sure it is."
+  </Step>
+</Steps>
+
+**That's it!** You just baked Yoda's personality into a model's weights.
 
 
-## Set Your API Key
+---
 
-After obtaining your API key, set it as an environment variable in your terminal: 
+## What You Just Did
 
-<CodeGroup>
+You created a git repository that tracks AI model weights. Each time you:
+- Edit `yoda-model.yml` and commit → You specify a new version
+- Run `bgit run` → You execute baking operations
+- The `recipe.yml` file grows → Complete audit trail of all operations
 
-```bash MacOS/Linux
-export BREAD_API_KEY='your_api_key_here'
-```
+Your repo IS your model's weight history.
 
-```cmd Windows (Command Prompt)
-setx BREAD_API_KEY "your_api_key_here"
-```
-
-```powershell Windows (PowerShell)
-$env:BREAD_API_KEY='your_api_key_here'
-```
-
-</CodeGroup>
-
-## Initialize the Client
-
-Create a Bread client that reads from your environment variable:
-
-```python
-import os
-from aibread import Bread
-
-client = Bread() # Automatically uses BREAD_API_KEY
-```
-
-<Tip>
-For production deployments and `.env` file usage, see [Production Authentication](/authentication).
-</Tip>
-
-## Verify Your Setup
-
-Test your connection with a health check and list your repos (new users should be 0):
-
-```python
-# Test connection
-health = client.health.check()
-print(f"Status: {health.status}")
-print(f"API Version: {health.version}")
-
-# List number of repos
-response = client.repo.list()
-print(f"Connected! Found {len(response.repos)} repositories")
-```
+---
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card
-    title="Complete Your First Bake"
-    icon="fire"
-    href="/guides/single-prompt-bake"
+    title="bgit Workflows"
+    icon="diagram-project"
+    href="/guides/bgit-workflows"
   >
-    Bake the Yoda personality into a model in 4 steps
+    Learn how to iterate, experiment with branches, and collaborate
   </Card>
   <Card
     title="Understanding Baking"
     icon="lightbulb"
     href="/understanding-baking"
   >
-    Learn how prompt baking works
+    Understand the theory: how prompts become weights
   </Card>
   <Card
-    title="Production Authentication"
-    icon="shield"
-    href="/authentication"
+    title="Configuration Reference"
+    icon="file-code"
+    href="/configuration/generators"
   >
-    Advanced auth patterns for production deployments
+    Deep dive into YAML structure and options
   </Card>
   <Card
     title="API Reference"
     icon="code"
-    href="/api-reference/repo"
+    href="/api-reference/targets"
   >
-    Explore all available methods
+    Python SDK for programmatic control
   </Card>
 </CardGroup>

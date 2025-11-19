@@ -14,7 +14,7 @@ description: "Learn what prompt baking is and how it works"
 
 ## What is Baking?
 
-Baking converts prompts into model weight updates, letting you fine-tune at prompting speed. The model permanently learns the prompted behavior with zero input tokens needed at inference time.
+Baking converts prompts into model weight updates, letting you fine-tune at prompting speed.
 
 <CardGroup cols={3}>
   <Card title="Not Fine-Tuning" icon="xmark">
@@ -28,15 +28,60 @@ Baking converts prompts into model weight updates, letting you fine-tune at prom
   </Card>
 </CardGroup>
 
-### Baking Makes Models Behave Identically to Prompted Models
+### How is Baking Different from Prompting?
 
-Baking makes a model behave identically to a prompted model by matching their output distributions. The baked model acts as if it always received the teacher prompt. In practice, this is done by minimizing the KL divergence of the two distributions. [Read the paper here.](https://arxiv.org/abs/2409.13697)
+Traditional prompting requires sending instructions with every request. Baking converts those instructions into permanent weight updates.
 
-**Benefits**:
-- **Speed**: As fast as prompt engineering, not as slow as traditional fine-tuning
-- **Ease**: Simple as writing prompts, powerful as model training
-- **Efficiency**: Reduce inference costs by eliminating system prompts
-- **Consistency**: Model behavior is baked in, not dependent on runtime prompts
+<AccordionGroup>
+  <Accordion title="Traditional Prompting: Temporary Instructions" icon="message">
+    With prompting, you send instructions every single time:
+    
+    ```python
+    # Every request needs the full prompt
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant..."},
+        {"role": "user", "content": "Help me with my question"}
+    ]
+    ```
+    
+    **Limitations:**
+    - System prompt tokens consumed on every request
+    - Behavior exists only while prompt is present
+    - Can't persist complex behaviors beyond context window
+    - Costs accumulate with every API call
+  </Accordion>
+
+  <Accordion title="Prompt Baking: Permanent Weight Updates" icon="fire">
+    Baking encodes the prompt directly into model weights:
+    
+    ```python
+    # After baking, no system prompt needed
+    messages = [
+        {"role": "user", "content": "Help me with my question"}
+    ]
+    # Model automatically exhibits the baked-in behavior
+    ```
+    
+    **Advantages:**
+    - Zero system prompt tokens at inference
+    - Behavior permanently encoded in weights
+    - Model identity changes fundamentally
+    - Dramatic cost savings on high-volume usage
+  </Accordion>
+
+  <Accordion title="The Math: KL Divergence Minimization" icon="function">
+    Baking works by minimizing the difference between two probability distributions:
+    
+    - **P<sub>θ</sub>(·|u)**: Original model with prompt `u`
+    - **P<sub>θ_u</sub>(·)**: Baked model without prompt
+    
+    We update weights `θ` → `θ_u` to minimize KL divergence between these distributions. The result: the baked model behaves identically to the prompted model, but without needing the prompt.
+    
+    [Read the full paper →](https://arxiv.org/abs/2409.13697)
+  </Accordion>
+</AccordionGroup>
+
+**Key Insight:** Prompting tells the model what to do at runtime. Baking teaches the model who to be permanently.
 
 ---
 
@@ -63,7 +108,7 @@ Baking makes a model behave identically to a prompted model by matching their ou
     The phase where the teacher-prompted model generates expert responses to stimuli. Creates the training dataset of input-output pairs.
   </Accordion>
 
-  <Accordion title="Trajectory" icon="route">
+  <Accordion title="Trajectory (Sample Outputs?)" icon="route">
     A complete response from the prompted model to a stimulus. The training data for baking.
   </Accordion>
 
