@@ -4,8 +4,8 @@ info:
   description: "\n    BReaDv3 Production API\n    \n    A git-centric AI model fine-tuning platform that uses distributed git repositories \n    for coordination instead of traditional databases.\n    \n    Key Features:\n    - Repository Management: Create and manage AI training repositories\n    - Prompt Management: Store and organize training prompts\n    - Target Management: Define training targets and configurations\n    - Async Workflows: Git-based coordination for distributed training\n    \n    Authentication:\n    All endpoints require authentication via Bearer token.\n    \n    API Structure:\n    - /v1/repo/* - Repository operations\n    - /v1/repo/{repo_name}/prompts/* - Prompt management\n    - /v1/repo/{repo_name}/targets/* - Target management\n    - /v1/repo/{repo_name}/bakes/* - Bake management\n    "
   version: 0.1.0
 servers:
-  - url: http://localhost:8080
-    description: Development server
+  - url: https://bapi.bread.com.ai
+    description: Production server
 paths:
   /v1/repo:
     get:

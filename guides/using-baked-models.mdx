@@ -47,7 +47,7 @@ import os
 import requests
 
 response = requests.post(
-    "http://bapi.bread.com.ai/v1/chat/completions",
+    "https://bapi.bread.com.ai/v1/chat/completions",
     headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"},
     json={
         "model": "johndoe/yoda_repo/yoda_bake_v1/35",
@@ -63,7 +63,7 @@ print(response.json())
 **Key requirements:**
 - `BREAD_API_KEY` environment variable must be set
 - Update `MODEL_NAME` to your baked model path: `username/repo/bake/checkpoint`
-- Base URL: `http://bapi.bread.com.ai/v1/chat/completions`
+- Base URL: `https://bapi.bread.com.ai/v1/chat/completions`
 </Info>
 
 ### Streaming Responses
@@ -76,7 +76,7 @@ import requests
 import json
 
 response = requests.post(
-    "http://bapi.bread.com.ai/v1/chat/completions",
+    "https://bapi.bread.com.ai/v1/chat/completions",
     headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"},
     json={
         "model": "johndoe/yoda_repo/yoda_bake_v1/35",
@@ -116,7 +116,7 @@ To use your baked model, you need three things:
 **Example configuration:**
 ```python
 BREAD_API_KEY = os.environ.get("BREAD_API_KEY")
-BASE_URL = "http://bapi.bread.com.ai/v1/chat/completions"
+BASE_URL = "https://bapi.bread.com.ai/v1/chat/completions"
 MODEL_NAME = "johndoe/yoda_repo/yoda_bake_v1/35"
 ```
 

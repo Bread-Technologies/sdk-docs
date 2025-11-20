@@ -178,7 +178,7 @@
   },
   "openapi": "/openapi_spec.json",
   "api": {
-    "baseUrl": "http://localhost:8080",
+    "baseUrl": "https://bapi.bread.com.ai",
     "auth": {
       "method": "bearer",
       "name": "BREAD_API_KEY"
