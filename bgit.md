@@ -62,7 +62,7 @@ You'll be prompted for:
 
 ```
 yoda-model/
-├── yoda-model.yml    # Your model configuration (YAML format)
+├── input.yml    # Your model configuration (YAML format)
 ├── README.md         # Auto-generated documentation
 ├── .bread            # Internal Bread SDK mapping (auto-generated)
 ├── .gitignore        # Git ignores (Node.js + security)
@@ -75,7 +75,7 @@ yoda-model/
 cd yoda-model
 ```
 
-Open `yoda-model.yml` in your editor and customize:
+Open `input.yml` in your editor and customize:
 
 - `REPO.name`: Repository name on Bread platform
 - `REPO.base_model`: Base model to use
@@ -233,10 +233,10 @@ Start an interactive chat session with a baked model. The model name is typicall
 
 ```bash
 # Make changes to your YAML file
-vim yoda-model.yml  # or open in your IDE
+vim input.yml  # or open in your IDE
 
 # Review what changed
-git diff yoda-model.yml
+git diff input.yml
 
 # Stage and commit
 bgit add .
@@ -258,7 +258,7 @@ Your commit message documents what changed. Be descriptive!
 git checkout -b experiment/formal-tone
 
 # Edit YAML for your experiment
-vim yoda-model.yml
+vim input.yml
 
 # Commit and run
 bgit commit -am "Experiment: formal business tone"
@@ -271,7 +271,7 @@ git push -u origin experiment/formal-tone
 Compare experiments:
 
 ```bash
-git diff main..experiment/formal-tone yoda-model.yml
+git diff main..experiment/formal-tone input.yml
 ```
 
 Merge successful experiments:
@@ -293,7 +293,7 @@ git log --oneline
 git checkout <commit-hash>
 
 # Or checkout the file only
-git checkout <commit-hash> yoda-model.yml
+git checkout <commit-hash> input.yml
 ```
 
 ### Tagging Milestones
@@ -474,7 +474,7 @@ bread_sdk_git_interface/
 
 ```
 your-model/
-├── your-model.yml    # Your model config (edit this)
+├── input.yml         # Your model config (edit this)
 ├── README.md         # Auto-generated documentation
 ├── .bread            # Internal mapping (auto-generated)
 ├── .gitignore        # Git ignores

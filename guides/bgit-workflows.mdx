@@ -20,7 +20,7 @@ bgit transforms model training into a familiar git workflow where:
 <div style={{display: 'flex', alignItems: 'center', gap: '12px', overflowX: 'auto', padding: '20px 0', flexWrap: 'wrap', justifyContent: 'center'}}>
   <div style={{flex: '0 0 auto', textAlign: 'center', padding: '20px 24px', borderRadius: '8px', background: 'transparent', border: '2px solid #F97316', minWidth: '140px'}}>
     <div style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '4px'}}>Edit</div>
-    <div style={{fontSize: '13px', opacity: 0.7}}>`your-model.yml`</div>
+    <div style={{fontSize: '13px', opacity: 0.7}}>`input.yml`</div>
   </div>
   
   <div style={{fontSize: '20px', color: '#F97316', fontWeight: 'bold'}}>→</div>
@@ -60,7 +60,7 @@ bgit transforms model training into a familiar git workflow where:
 
 <CardGroup cols={3}>
   <Card icon="pen">
-    **`your-model.yml`**
+    **`input.yml`**
     
     *You Edit*
     
@@ -84,7 +84,7 @@ bgit transforms model training into a familiar git workflow where:
   </Card>
 </CardGroup>
 
-### `your-model.yml`: Your Control Panel
+### `input.yml`: Your Control Panel
 
 This is the only file you edit. It specifies what operation to perform next:
 
@@ -286,7 +286,7 @@ Useful for:
 
 <Steps>
   <Step title="Edit Configuration">
-    Make changes to `your-model.yml` to specify your next baking operation:
+    Make changes to `input.yml` to specify your next baking operation:
     - Modify prompts
     - Adjust stim settings (more questions, different temperature)
     - Change bake parameters (epochs, LoRA rank)
@@ -380,7 +380,7 @@ Useful for:
 
   <Step title="Repeat">
     Continue iterating:
-    - Make more changes to `your-model.yml`
+    - Make more changes to `input.yml`
     - Commit and run operations
     - Test and evaluate
     - Document results in commits
@@ -409,14 +409,14 @@ Useful for:
     
     # Create first experiment
     git checkout -b experiment/formal-tone
-    vim your-model.yml  # Edit for formal tone
+    vim input.yml  # Edit for formal tone
     bgit commit -am "Experiment: formal business tone"
     bgit run stim rollout bake
     
     # Create second experiment (from main, not formal-tone)
     git checkout main
     git checkout -b experiment/casual-tone
-    vim your-model.yml  # Edit for casual tone
+    vim input.yml  # Edit for casual tone
     bgit commit -am "Experiment: casual friendly tone"
     bgit run stim rollout bake
     ```
@@ -449,7 +449,7 @@ Useful for:
     git checkout main
     
     # Copy the winning branch's files (this is how you "merge")
-    git checkout experiment/casual-tone -- your-model.yml .bread recipe.yml
+    git checkout experiment/casual-tone -- input.yml .bread recipe.yml
     
     # Commit the adoption
     git commit -m "Adopt casual-tone approach: better user engagement"
@@ -484,7 +484,7 @@ This is actually **simpler** than traditional git - no merge conflicts to resolv
 
 ```bash
 # Compare what you're ABOUT to bake differently
-git diff main..experiment/formal-tone your-model.yml
+git diff main..experiment/formal-tone input.yml
 
 # Compare complete HISTORIES (what was actually baked)
 git diff main..experiment/formal-tone recipe.yml
@@ -633,7 +633,7 @@ Stage files for commit (wraps `git add`).
 
 ```bash
 bgit add .
-bgit add your-model.yml
+bgit add input.yml
 ```
 
 The pre-commit hook automatically updates `.bread` when YAML files change.
@@ -908,7 +908,7 @@ Choose based on:
     bgit status
     
     # Verify YAML configuration
-    cat your-model.yml
+    cat input.yml
     
     # Check .bread for current state
     cat .bread
