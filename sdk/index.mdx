@@ -1,0 +1,112 @@
+---
+title: "Introduction"
+description: "Python SDK for programmatic AI model baking"
+---
+
+Use the **Python SDK** for programmatic control over the baking process. Perfect for automation, integration, and advanced use cases.
+
+## What is the Bread SDK?
+
+The Bread Python SDK provides full programmatic access to the baking platform:
+
+- **Python-native API**: Work with familiar Python objects and methods
+- **Full control**: Access all baking features programmatically
+- **Async support**: Efficient async/await patterns for concurrent operations
+- **Integration ready**: Easy to integrate into existing Python workflows
+
+---
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card
+    title="Understanding Baking"
+    icon="lightbulb"
+    href="/understanding-baking"
+  >
+    **Start here!** Learn the four-phase process: Prompt, Stim, Rollout, and Bake.
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/sdk/quickstart"
+  >
+    Install the SDK and run your first bake with step-by-step instructions.
+  </Card>
+  <Card
+    title="Baking Guides"
+    icon="book"
+    href="/sdk/guides/single-prompt-bake"
+  >
+    Step-by-step guides for single prompts, multi-target baking, and iterative workflows.
+  </Card>
+  <Card
+    title="Configuration"
+    icon="gears"
+    href="/sdk/configuration/generators"
+  >
+    Complete Python SDK configuration reference for generators, targets, and bakes.
+  </Card>
+</CardGroup>
+
+---
+
+## Core Concepts
+
+<CardGroup cols={3}>
+  <Card title="Repositories" icon="folder-tree">
+    Like GitHub, these repos hold all of a model's bake data. Create and manage repos programmatically.
+  </Card>
+  <Card title="Prompts" icon="message">
+    Define teacher and student prompts that encode behavior into model weights.
+  </Card>
+  <Card title="Stim Data" icon="sparkles">
+    Generate synthetic user prompts that the baked model will respond to.
+  </Card>
+  <Card title="Rollout Jobs" icon="arrows-turn-right">
+    Get expert responses from prompted models to create training datasets.
+  </Card>
+  <Card title="Targets" icon="bullseye">
+    Combine stim generators and rollout configuration for a given prompt.
+  </Card>
+  <Card title="Bakes" icon="fire">
+    Configure and run training jobs that update model weights.
+  </Card>
+</CardGroup>
+
+---
+
+## The Baking Workflow
+
+```
+Create Repo → Set Prompt → Create Target → Run Stim → Run Rollout → Configure Bake → Start Bake
+```
+
+Each step builds on the previous one. The SDK provides methods for each phase, giving you complete control over the process.
+
+---
+
+## SDK vs bgit
+
+**Use the SDK when:**
+- You need programmatic control
+- Building automation or integrations
+- Working with Python applications
+- Need async/concurrent operations
+
+**Use bgit when:**
+- You prefer a git-based workflow
+- Want version control built-in
+- Prefer YAML configuration
+- Need Git history for model evolution
+
+Both tools use the same underlying platform and produce the same baked models.
+
+---
+
+## Related Resources
+
+- [bgit Documentation](/bgit/quickstart) - Git-native interface
+- [API Reference](/api-reference/repo) - REST API documentation
+- [GitHub Repository](https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo) - SDK source code
+

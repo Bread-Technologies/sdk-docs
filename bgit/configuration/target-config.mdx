@@ -1,0 +1,205 @@
+---
+title: "Target Configuration"
+description: "Complete reference for target configuration fields in YAML"
+---
+
+## Overview
+
+Target configuration controls stimulus and rollout generation behavior. In bgit, targets are configured in the `TARGET` section of your `input.yml` file.
+
+<Note>
+**Naming Best Practice**: Always provide a `name` field for your targets. bgit appends a hash to target names (e.g., `my_target` becomes `my_target_abc123def456`) to ensure uniqueness. Named targets are easier to identify in `recipe.yml` and when referencing them in bake configurations.
+</Note>
+
+## Configuration Fields
+
+### Name
+
+<ParamField path="name" type="string">
+  Target name identifier. **Recommended**: Always provide a descriptive name.
+  
+  ```yaml
+  TARGET:
+    name: coding_target
+    generators:
+  ```
+  
+  If omitted, defaults to `target`. The name will be hashed (e.g., `coding_target_abc123def456`) to ensure uniqueness.
+</ParamField>
+
+### Generators
+
+<ParamField path="generators" type="array">
+  List of generator configurations. See [Generators](/bgit/configuration/generators).
+  
+  ```yaml
+  TARGET:
+    name: coding_target
+    generators:
+      - type: oneshot_qs
+        model: claude-sonnet-4-5-20250929
+        numq: 10
+      - type: hardcoded
+        numq: 2
+        questions:
+          - "Question 1"
+          - "Question 2"
+  ```
+</ParamField>
+
+### Model Configuration
+
+<ParamField path="model_name" type="string">
+  The model that will generate the sample responses during rollout. **Optional** - defaults to `PARENT_MODEL` for sequential bakes if not specified.
+  
+  ```yaml
+  TARGET:
+    model_name: Qwen/Qwen3-32B
+  ```
+  
+  This specifies which model is used to generate responses to your stimuli during the rollout phase. If omitted, bgit will automatically use the `PARENT_MODEL` from `.bread` (set after previous bakes) for sequential baking workflows. Using the parent model allows you to preserve the characteristics and behavior from previous bakes in your model evolution chain.
+</ParamField>
+
+### Generation Parameters
+
+<ParamField path="max_tokens" type="integer">
+  Maximum tokens to generate per response
+  
+  ```yaml
+  TARGET:
+    max_tokens: 150
+  ```
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0). Higher = more random/creative.
+  
+  ```yaml
+  TARGET:
+    temperature: 1.0
+  ```
+</ParamField>
+
+<ParamField path="num_traj_per_stimulus" type="integer">
+  Number of trajectories (responses) to generate per stimulus
+  
+  ```yaml
+  TARGET:
+    num_traj_per_stimulus: 5
+  ```
+</ParamField>
+
+### Performance
+
+<ParamField path="max_concurrency" type="integer">
+  Maximum concurrent API requests during rollout
+  
+  ```yaml
+  TARGET:
+    max_concurrency: 50
+  ```
+</ParamField>
+
+### Advanced
+
+<ParamField path="extra_kwargs" type="object">
+  Additional arguments passed to `chat.completions.create()`
+  
+  ```yaml
+  TARGET:
+    extra_kwargs:
+      top_p: 0.9
+      frequency_penalty: 0.5
+  ```
+</ParamField>
+
+---
+
+## Complete Example
+
+```yaml
+TARGET:
+  name: python_expert_target
+  generators:
+    - type: oneshot_qs
+      model: claude-sonnet-4-5-20250929
+      numq: 50
+      temperature: 1.2
+    
+    - type: from_dataset
+      dataset: code_contests
+      numq: 30
+      seed: 42
+  
+  max_tokens: 200
+  temperature: 1.0
+  num_traj_per_stimulus: 3
+  
+  max_concurrency: 100
+  
+  extra_kwargs:
+    top_p: 0.95
+    frequency_penalty: 0.0
+```
+
+---
+
+## Field Reference Table
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `generators` | Array | No | `[]` | List of generator configs |
+| `model_name` | String | No | `PARENT_MODEL` | Model that generates sample responses during rollout (defaults to PARENT_MODEL to preserve characteristics from previous bakes) |
+| `max_tokens` | Integer | No | - | Max tokens per generation |
+| `temperature` | Float | No | `1.0` | Generation temperature |
+| `num_traj_per_stimulus` | Integer | No | `1` | Trajectories per stimulus |
+| `max_concurrency` | Integer | No | `10` | Max concurrent requests |
+| `extra_kwargs` | Object | No | `{}` | Additional model params |
+
+---
+
+## Minimal Example
+
+The simplest target configuration:
+
+```yaml
+TARGET:
+  name: yoda_target
+  generators:
+    - type: oneshot_qs
+      model: claude-sonnet-4-5-20250929
+      numq: 100
+```
+
+<Note>
+**Prompts are configured separately**: Prompts are defined in the `PROMPT` section of your `input.yml`, not in the `TARGET` section. See [Prompt Configuration](/bgit/configuration/prompts) for details.
+</Note>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Prompt Configuration"
+    icon="message"
+    href="/bgit/configuration/prompts"
+  >
+    Configure teacher and student prompts
+  </Card>
+  <Card
+    title="Generators"
+    icon="wand-sparkles"
+    href="/bgit/configuration/generators"
+  >
+    Configure generator types
+  </Card>
+  <Card
+    title="Bake Configuration"
+    icon="fire"
+    href="/bgit/configuration/bake-config"
+  >
+    Configure bake settings
+  </Card>
+</CardGroup>
+

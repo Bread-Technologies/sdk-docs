@@ -1,0 +1,305 @@
+---
+title: "Prompt Configuration"
+description: "Configure teacher and student prompts, conversation history, and tools"
+---
+
+## Overview
+
+Prompts define the behavior you want to bake into your model. In bgit, prompts are configured in the `PROMPT` section of your `input.yml` file.
+
+<Tip>
+**Want to understand the theory?** See [Understanding Prompt Baking](/understanding-baking) for a detailed explanation of how teacher and student prompts work and why baking converts prompts into model weights.
+</Tip>
+
+---
+
+## Configuration Fields
+
+### Teacher Prompt
+
+The **teacher prompt** defines the expert behavior you want to bake into the model.
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are an expert Python developer with deep knowledge of best practices, error handling, and clean code principles."
+```
+
+<ParamField path="PROMPT.teacher.messages" type="array" required>
+  Array of message objects defining the teacher prompt. Each message has:
+  - `role` (string): `"system"`, `"user"`, or `"assistant"`
+  - `content` (string): The message content
+  
+  Contains detailed instructions that define how the model should respond. After baking, the model will exhibit this behavior when given the student prompt (or always, if student is empty).
+</ParamField>
+
+### Student Prompt
+
+The **student prompt** is what the model receives at inference time. It's typically simpler than the teacher prompt, or can be empty for always-on behavior.
+
+```yaml
+PROMPT:
+  student:
+    messages:
+      - role: system
+        content: ""  # Empty = always-on behavior
+```
+
+<ParamField path="PROMPT.student.messages" type="array">
+  Array of message objects defining the student prompt. Can be empty or contain simple messages.
+  
+  After baking, providing the student prompt (or empty string) makes the model respond as if it received the teacher prompt. Empty student prompts result in zero-token, always-on expert behavior.
+</ParamField>
+
+<Tip>
+Use empty `student` content (`""`) to permanently bake behavior into the model without needing any prompt trigger at inference time. This is the ultimate proof that baking modifies model weights!
+</Tip>
+
+---
+
+### Conversation History
+
+You can include conversation history in your prompts by adding multiple messages with different roles. This is particularly useful for encoding behavior at specific workflow steps.
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are a helpful coding assistant."
+      - role: user
+        content: "How do I reverse a string in Python?"
+      - role: assistant
+        content: "You can reverse a string using slicing: `string[::-1]`"
+      - role: user
+        content: "What about a list?"
+```
+
+<ParamField path="messages[].role" type="string" required>
+  Message role. Must be one of:
+  - `"system"`: System-level instructions
+  - `"user"`: User input/questions
+  - `"assistant"`: Assistant responses/examples
+</ParamField>
+
+<ParamField path="messages[].content" type="string" required>
+  The message content text
+</ParamField>
+
+**Use Cases**:
+
+- **Encode behavior at specific workflow steps**: Conversation history allows you to bake in behavior that occurs at a particular point in a multi-step workflow. For example, if your workflow involves gathering user requirements, then generating code, then reviewing it, you can encode how the model should respond at the "review" stage by including the conversation history leading up to that point.
+
+- **Provide examples of desired behavior**: Include example conversations showing how you want the model to respond in similar situations.
+
+- **Show conversation patterns**: Demonstrate multi-turn interaction patterns, such as how to handle follow-up questions or clarifications.
+
+- **Include context or background information**: Add previous messages that provide necessary context for the model's response.
+
+### Tools
+
+Configure tools (function calling) for your prompts. Tools allow the model to call external functions during generation.
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are a helpful assistant that can search the web and perform calculations."
+    tools:
+      - type: function
+        function:
+          name: search_web
+          description: "Search the web for information"
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+                description: "The search query"
+            required:
+              - query
+      - type: function
+        function:
+          name: calculate
+          description: "Perform mathematical calculations"
+          parameters:
+            type: object
+            properties:
+              expression:
+                type: string
+                description: "Mathematical expression to evaluate"
+            required:
+              - expression
+```
+
+<ParamField path="PROMPT.teacher.tools" type="array">
+  Optional array of tool definitions. Each tool follows the OpenAI function calling format:
+  
+  - `type` (string, required): Must be `"function"`
+  - `function` (object, required): Function definition containing:
+    - `name` (string, required): Function name
+    - `description` (string, required): Function description
+    - `parameters` (object, required): JSON Schema object defining function parameters:
+      - `type` (string, required): Must be `"object"`
+      - `properties` (object, required): Object mapping parameter names to their schemas
+      - `required` (array, optional): List of required parameter names
+  
+  The baked model will learn to use these tools appropriately.
+</ParamField>
+
+---
+
+## Complete Examples
+
+The following examples show common prompt configuration patterns:
+
+### Simple Always-On Behavior
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are Yoda. Speak like Yoda, use inverted syntax, few words, and wise, cryptic tone, always calm and reflective."
+  
+  student:
+    messages:
+      - role: system
+        content: ""  # Empty = model ALWAYS acts like Yoda
+```
+
+### With Conversation History
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are an expert Python developer."
+      - role: user
+        content: "How do I handle exceptions?"
+      - role: assistant
+        content: "Use try-except blocks: `try: ... except Exception as e: ...`"
+      - role: user
+        content: "What about multiple exception types?"
+      - role: assistant
+        content: "You can catch multiple types: `except (ValueError, TypeError) as e:`"
+  
+  student:
+    messages:
+      - role: system
+        content: ""  # Always-on Python expert behavior
+```
+
+### With Tools
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are a helpful assistant that can search and calculate."
+    tools:
+      - type: function
+        function:
+          name: search_web
+          description: "Search the web for information"
+          parameters:
+            type: object
+            properties:
+              query:
+                type: string
+                description: "The search query"
+            required:
+              - query
+  
+  student:
+    messages:
+      - role: system
+        content: ""  # Always-on assistant with tool access
+```
+
+### With Student Prompt Trigger
+
+When you provide a non-empty student prompt, the teacher behavior is only triggered when the student prompt is passed as a system prompt to the model at inference time:
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are an expert Python developer with deep knowledge of best practices, error handling, and clean code principles. Always provide detailed explanations with code examples."
+  
+  student:
+    messages:
+      - role: system
+        content: "Activate Python expert mode"  # Trigger phrase
+```
+
+After baking, the model will only exhibit the Python expert behavior when you include `"Activate Python expert mode"` as the system prompt. Without this trigger, the model behaves normally.
+
+---
+
+## Field Reference Table
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `PROMPT.teacher.messages` | Array | Yes | Teacher prompt messages |
+| `PROMPT.teacher.tools` | Array | No | Tool definitions for function calling |
+| `PROMPT.student.messages` | Array | No | Student prompt messages (can be empty) |
+| `messages[].role` | String | Yes | `"system"`, `"user"`, or `"assistant"` |
+| `messages[].content` | String | Yes | Message content text |
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Empty Student for Always-On Behavior" icon="toggle-on">
+    Set student content to `""` to bake behavior permanently into the model without needing any prompt at inference time.
+  </Accordion>
+
+  <Accordion title="Keep Teacher Prompts Detailed" icon="file-text">
+    Teacher prompts should contain comprehensive instructions. The model learns to exhibit this behavior.
+  </Accordion>
+
+  <Accordion title="Use Conversation History for Workflow Steps" icon="comments">
+    Include conversation history in teacher prompts to encode behavior at specific workflow steps or show desired interaction patterns.
+  </Accordion>
+
+  <Accordion title="Test Before Baking" icon="flask">
+    Test your prompts with the base model first to ensure they produce the desired behavior before baking.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Understanding Prompt Baking"
+    icon="lightbulb"
+    href="/understanding-baking"
+  >
+    Learn the theory behind teacher and student prompts
+  </Card>
+  <Card
+    title="Target Configuration"
+    icon="bullseye"
+    href="/bgit/configuration/target-config"
+  >
+    Configure targets that use your prompts
+  </Card>
+  <Card
+    title="Bake Configuration"
+    icon="fire"
+    href="/bgit/configuration/bake-config"
+  >
+    Configure bake settings for training
+  </Card>
+</CardGroup>
+

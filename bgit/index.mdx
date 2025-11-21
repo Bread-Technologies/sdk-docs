@@ -1,0 +1,112 @@
+---
+title: "Welcome to Bread"
+description: "Ship custom AI models as easily as committing code."
+---
+
+
+
+**Prompt Baking encodes prompt behavior directly into model weights. Fine-tune AI models with the convenience of prompt engineering.**
+
+You shouldn't need a PhD to teach your AI what it needs to know or wait for someone else's model update to give you what you need. With Bread, your model permanently inherits the prompted behavior with zero input tokens at inference time.
+
+<Note>
+**The value:** After baking, your model can exhibit prompted behavior with **zero input tokens**. The skills live in the weights, not in runtime prompts.
+</Note>
+
+<CardGroup cols={2}>
+  <Card
+    title="How does Baking work?"
+    icon="lightbulb"
+    href="/understanding-baking"
+  >
+    Learn the four-phase process to baking
+  </Card>
+  <Card
+    title="What is bgit?"
+    icon="diagram-project"
+    href="/bgit/how-bgit-works"
+  >
+    Learn the git-native interface to baking
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/bgit/quickstart"
+  >
+    Run a full bake in 5 minutes
+  </Card>
+  <Card
+    title="Advanced Features"
+    icon="wand-magic-sparkles"
+    href="/bgit/configuration/generators"
+  >
+    Configure generators, targets, and advanced baking options
+  </Card>
+</CardGroup>
+
+
+
+## Core Concepts
+
+<CardGroup cols={3}>
+  <Card title="Repositories" icon="folder-tree">
+    Like GitHub, these repos hold all of a model's bake data
+  </Card>
+  <Card title="Prompts" icon="message">
+    The actual prompts you want to "bake in"
+  </Card>
+  <Card title="Stim Data" icon="sparkles">
+    User prompts the prompted model would receive
+  </Card>
+  <Card title="Rollout Jobs" icon="arrows-turn-right">
+    Responses from the prompted model to the stim data
+  </Card>
+  <Card title="Targets" icon="bullseye">
+    The composition of stim & rollout for a given prompt
+  </Card>
+  <Card title="Bakes" icon="fire">
+    Configuration for your bake with rollout data
+  </Card>
+</CardGroup>
+
+## Full Process: Prompt, Stim, Rollout, Bake
+
+<Steps>
+  
+  <Step title="Prompt">
+    Specify the prompts to bake in
+  </Step>
+  <Step title="Stim">
+    Run stim jobs to create synthetic dataset
+  </Step>
+  <Step title="Rollout">
+    Run rollout jobs to get model responses to stim
+  </Step>
+  <Step title="Bake">
+    Configure and run bake jobs for model training
+  </Step>
+</Steps>
+
+
+## Requirements
+
+- **Python**: 3.8 or higher
+- **Dependencies**: httpx (included), optional aiohttp for async performance
+- **API Key**: Required for authentication
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo">
+    Check out our public repo to start baking today
+  </Card>
+  <Card title="Workflows Guide" icon="diagram-project" href="/guides/workflows">
+    Learn common patterns and workflows
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Handle errors gracefully
+  </Card>
+  <Card title="Advanced Features" icon="gears" href="/guides/advanced-features">
+    Unlock powerful SDK capabilities
+  </Card>
+</CardGroup>
