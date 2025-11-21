@@ -44,7 +44,7 @@
         "tab": "MCP",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Usage",
             "pages": [
               "mcp/index"
             ]
@@ -93,12 +93,6 @@
               "sdk/configuration/target-config",
               "sdk/configuration/bake-config",
               "sdk/configuration/types"
-            ]
-          },
-          {
-            "group": "Tools",
-            "pages": [
-              "tools/mcp-server"
             ]
           }
         ]
