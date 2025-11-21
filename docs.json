@@ -41,6 +41,17 @@
         ]
       },
       {
+        "tab": "MCP",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "mcp/index"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "SDK",
         "groups": [
           {
