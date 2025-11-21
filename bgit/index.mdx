@@ -1,111 +1,112 @@
 ---
-title: "Introduction"
-description: "Git-native version control for AI models"
+title: "Welcome to Bread"
+description: "Ship custom AI models as easily as committing code."
 ---
 
-**bgit** wraps the Bread SDK in a git repository structure, turning model training into a natural git workflow.
 
-## What is bgit?
 
-bgit makes AI model baking feel like regular software development:
+**Prompt Baking encodes prompt behavior directly into model weights. Fine-tune AI models with the convenience of prompt engineering.**
 
-- **One file = One model**: Your entire configuration in a YAML file
-- **Commits = Versions**: Track every model iteration
-- **Branches = Experiments**: Test ideas safely in parallel
-- **Run = Bake**: Run operations manually with `bgit run`
-- **recipe.yml = History**: Auto-generated history tracking all bakes and model lineage
-- **Chat = Test**: Chat with your baked models using `bgit chat`
+You shouldn't need a PhD to teach your AI what it needs to know or wait for someone else's model update to give you what you need. With Bread, your model permanently inherits the prompted behavior with zero input tokens at inference time.
 
-Think of it as **version control for your AI's mind**.
-
----
-
-## Get Started
+<Note>
+**The value:** After baking, your model can exhibit prompted behavior with **zero input tokens**. The skills live in the weights, not in runtime prompts.
+</Note>
 
 <CardGroup cols={2}>
+  <Card
+    title="How does Baking work?"
+    icon="lightbulb"
+    href="/understanding-baking"
+  >
+    Learn the four-phase process to baking
+  </Card>
+  <Card
+    title="What is bgit?"
+    icon="diagram-project"
+    href="/bgit/how-bgit-works"
+  >
+    Learn the git-native interface to baking
+  </Card>
   <Card
     title="Quickstart"
     icon="rocket"
     href="/bgit/quickstart"
   >
-    **Start here!** Install bgit and bake your first model. Includes installation and step-by-step instructions.
+    Run a full bake in 5 minutes
   </Card>
   <Card
-    title="How bgit Works"
-    icon="lightbulb"
-    href="/bgit/how-bgit-works"
-  >
-    Understand git-based model evolution, commits, branches, and how bgit tracks your model's history.
-  </Card>
-  <Card
-    title="Configuration"
-    icon="file-code"
+    title="Advanced Features"
+    icon="wand-magic-sparkles"
     href="/bgit/configuration/generators"
   >
-    Complete YAML configuration reference for generators, targets, and bakes.
-  </Card>
-  <Card
-    title="Workflows"
-    icon="diagram-project"
-    href="/bgit/guides/workflows"
-  >
-    Master iteration, branching, experimentation, and collaboration patterns.
+    Configure generators, targets, and advanced baking options
   </Card>
 </CardGroup>
 
----
+
 
 ## Core Concepts
 
 <CardGroup cols={3}>
-  <Card title="input.yml" icon="pen">
-    Your configuration file. Edit this to define prompts, targets, and bake settings.
+  <Card title="Repositories" icon="folder-tree">
+    Like GitHub, these repos hold all of a model's bake data
   </Card>
-  <Card title="recipe.yml" icon="list-timeline">
-    Auto-generated history tracking all bakes and model lineage.
+  <Card title="Prompts" icon="message">
+    The actual prompts you want to "bake in"
   </Card>
-  <Card title=".bread" icon="database">
-    Internal state mapping your YAML to Bread SDK resources.
+  <Card title="Stim Data" icon="sparkles">
+    User prompts the prompted model would receive
   </Card>
-  <Card title="Commits" icon="code-commit">
-    Each commit represents a model version. Git history tracks weight evolution.
+  <Card title="Rollout Jobs" icon="arrows-turn-right">
+    Responses from the prompted model to the stim data
   </Card>
-  <Card title="Branches" icon="code-branch">
-    Branches are experiments. Test different approaches in parallel.
+  <Card title="Targets" icon="bullseye">
+    The composition of stim & rollout for a given prompt
   </Card>
-  <Card title="Operations" icon="gears">
-    Run stim, rollout, and bake operations to train your model.
+  <Card title="Bakes" icon="fire">
+    Configuration for your bake with rollout data
   </Card>
 </CardGroup>
 
----
+## Full Process: Prompt, Stim, Rollout, Bake
 
-## The bgit Workflow
+<Steps>
+  
+  <Step title="Prompt">
+    Specify the prompts to bake in
+  </Step>
+  <Step title="Stim">
+    Run stim jobs to create synthetic dataset
+  </Step>
+  <Step title="Rollout">
+    Run rollout jobs to get model responses to stim
+  </Step>
+  <Step title="Bake">
+    Configure and run bake jobs for model training
+  </Step>
+</Steps>
 
-```
-Edit input.yml → Commit → Run Operations → Test → Iterate
-```
 
-Every change to your `input.yml` file represents a new model version. Your commit messages document what changed. After successful bakes, `input.yml` is automatically cleared (keeping section headings) for your next iteration.
+## Requirements
 
----
+- **Python**: 3.8 or higher
+- **Dependencies**: httpx (included), optional aiohttp for async performance
+- **API Key**: Required for authentication
 
-## Why Git for AI Models?
+## Need Help?
 
-AI model training has the same version control needs as software:
-
-- Track changes over time
-- Experiment safely
-- Collaborate with teams
-- Roll back mistakes
-- Document decisions
-
-Git already solves these problems perfectly. **bgit** makes git's power available for AI.
-
----
-
-## Related Projects
-
-- [Bread SDK](https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo) - The underlying SDK
-- [Bread Documentation](https://docs.bread.com.ai) - Official docs
-
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo">
+    Check out our public repo to start baking today
+  </Card>
+  <Card title="Workflows Guide" icon="diagram-project" href="/guides/workflows">
+    Learn common patterns and workflows
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Handle errors gracefully
+  </Card>
+  <Card title="Advanced Features" icon="gears" href="/guides/advanced-features">
+    Unlock powerful SDK capabilities
+  </Card>
+</CardGroup>
