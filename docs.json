@@ -46,7 +46,7 @@
           {
             "group": "Usage",
             "pages": [
-              "mcp/index"
+              "mcp-server/index"
             ]
           }
         ]
