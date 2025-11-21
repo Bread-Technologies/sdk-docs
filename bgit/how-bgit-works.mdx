@@ -1,0 +1,352 @@
+---
+title: "How bgit Works"
+description: "Understanding git-based model evolution"
+---
+
+bgit transforms AI model training into a familiar git workflow. Understanding how bgit maps git concepts to model evolution is key to using it effectively.
+
+---
+
+## Core Concept: Git History = Model Evolution
+
+In bgit, your git repository doesn't just track configuration files—it tracks the **evolution of your model's weights**. Each commit represents a point in your model's development journey.
+
+<Note>
+**Key insight**: Commits incrementally grow your model. Branches let you experiment with different evolutionary paths.
+</Note>
+
+---
+
+## Commits = Incremental Model Growth
+
+Every commit in bgit represents a step in your model's evolution:
+
+```
+Commit 1: Initial configuration
+Commit 2: First bake → Model v1 created
+Commit 3: Updated prompts
+Commit 4: Second bake → Model v2 created (builds on v1)
+Commit 5: Adjusted temperature
+Commit 6: Third bake → Model v3 created (builds on v2)
+```
+
+**How it works:**
+
+1. **You commit configuration changes** → This defines what you want to bake
+2. **You run `bgit run`** → This executes the baking operations
+3. **bgit creates a new commit** → This records the resulting model weights
+4. **The cycle repeats** → Each bake builds on the previous one
+
+### Sequential Bakes
+
+When you run multiple bakes sequentially, each bake automatically uses the previous bake's model as the parent:
+
+```yaml
+# First bake creates: user/repo/bake1/120
+# Second bake automatically uses bake1/120 as parent
+# Creates: user/repo/bake2/150 (parent: bake1/120)
+```
+
+The `PARENT_MODEL` is stored in `.bread` and automatically used. This creates a **chain of model evolution** tracked in your git history.
+
+---
+
+## Branches = Experiments
+
+Branches in bgit represent **parallel evolutionary paths** for your model. Each branch can develop independently:
+
+```
+main branch:
+  base → bake1 → bake2 → bake3
+
+experiment/formal-tone branch:
+  base → bake1 → bake2_formal → bake3_formal
+
+experiment/casual-tone branch:
+  base → bake1 → bake2_casual → bake3_casual
+```
+
+**Why branches matter:**
+
+- **Test different approaches**: Try formal vs casual tone on separate branches
+- **Compare results**: Switch between branches to test different models
+- **Safe experimentation**: Experiment without affecting your main model
+- **Choose the winner**: Adopt the best branch's evolution to main
+
+### Branch Merging
+
+When you merge a branch, the incoming branch's `.bread` and `recipe.yml` overwrite the current branch's versions. This ensures `main` reflects the complete model state from the merged branch.
+
+**Important**: You can't merge model weights like code. You choose one evolutionary path or the other.
+
+---
+
+## Git History = Complete Audit Trail
+
+Your git history provides a complete audit trail of your model's development:
+
+### recipe.yml: The Model History File
+
+`recipe.yml` tracks the history of your model up to the current commit:
+
+```yaml
+# This file is auto-generated - do not edit manually
+
+base_model: Qwen/Qwen3-32B
+total_steps: 8
+steps:
+  # First bake cycle
+  - step: 1
+    operation: add_prompt
+    prompt_name: python_expert_teacher
+  - step: 2
+    operation: run_stim
+    target: main_target_abc123
+    output_count: 150
+  - step: 3
+    operation: run_rollout
+    target: main_target_abc123
+    trajectory_count: 750
+  - step: 4
+    operation: bake
+    bake_name: bake1_abc123
+    model_names:
+      - user/repo/bake1_abc123/120
+  
+  # Second bake cycle
+  - step: 5
+    operation: add_prompt
+    prompt_name: python_expert_teacher_v2
+  - step: 6
+    operation: run_stim
+    target: main_target_def456
+    output_count: 200
+  - step: 7
+    operation: run_rollout
+    target: main_target_def456
+    trajectory_count: 1000
+  - step: 8
+    operation: bake
+    bake_name: bake2_def456
+    model_names:
+      - user/repo/bake2_def456/150
+resources:
+  prompts:
+    - python_expert_teacher
+    - python_expert_teacher_v2
+  targets:
+    - main_target_abc123
+    - main_target_def456
+  bakes:
+    - bake_name: bake1_abc123
+      model_names:
+        - user/repo/bake1_abc123/120
+    - bake_name: bake2_def456
+      model_names:
+        - user/repo/bake2_def456/150
+```
+
+**Key properties:**
+
+- **Per-commit**: Each commit has its own `recipe.yml` reflecting bakes up to that point
+- **Auto-updated**: Automatically updated after each successful bake
+- **Read-only**: Never edit manually—bgit maintains it
+- **Cross-branch**: Use `bgit tree` to see bakes across all branches
+
+### .bread: Current State Metadata
+
+`.bread` maintains the mapping between your YAML configuration and Bread SDK resources:
+
+- Tracks prompts, targets, bakes, and their names/IDs
+- Stores `PARENT_MODEL` for sequential bakes
+- Auto-generated—never edit manually
+- Updated by pre-commit hook when YAML files change
+
+---
+
+## The Three Files
+
+<CardGroup cols={3}>
+  <Card title="input.yml" icon="pen">
+    **You Edit**
+    
+    Your configuration file. Define prompts, targets, and bake settings here.
+    
+    After successful bakes, this file is cleared (keeping headings) to prepare for the next iteration.
+  </Card>
+  
+  <Card title="recipe.yml" icon="list-timeline">
+    **Auto-generated**
+    
+    Complete history log tracking all bakes and model lineage.
+    
+    Each commit has its own version showing the evolution up to that point.
+  </Card>
+  
+  <Card title=".bread" icon="database">
+    **Auto-generated**
+    
+    Current state metadata mapping YAML to Bread SDK resources.
+    
+    Tracks the parent model for sequential bakes.
+  </Card>
+</CardGroup>
+
+<Warning>
+**Never edit `.bread` or `recipe.yml` manually.** They're automatically maintained by bgit. Manual edits will be overwritten.
+</Warning>
+
+---
+
+## The Complete Flow
+
+```
+1. Edit input.yml          → Write your configuration
+2. bgit add input.yml      → Stage changes
+3. bgit commit -m "..."    → Commit configuration
+4. bgit run stim           → Generate questions
+5. bgit run rollout        → Generate responses
+6. bgit run bake           → Train model
+   ├─ Updates recipe.yml   → Records bake in history
+   ├─ Updates .bread       → Sets PARENT_MODEL for next bake
+   ├─ Clears input.yml     → Prepares for next iteration
+   └─ Displays results     → Shows model name(s) and loss functions
+7. bgit status             → Check operation status
+8. bgit chat <model>       → Test your model
+9. Repeat                  → Continue iterating
+```
+
+---
+
+## Time Travel with Git
+
+Git's history features work perfectly with bgit. You can inspect and test previous model versions:
+
+```bash
+# See all model versions
+git log --oneline
+
+# View recipe.yml at a specific commit (without checking out)
+git show <commit-hash>:recipe.yml
+
+# Or checkout a previous commit to explore it
+git checkout <commit-hash>
+cat recipe.yml  # Shows bakes up to that commit
+
+# Test that historical model (get model name from recipe.yml)
+bgit chat <model-from-that-commit>
+
+# Return to latest
+git checkout main
+```
+
+**Use cases:**
+
+- Compare current vs previous performance
+- Understand when behavior changed
+- Reproduce specific model states
+- Inspect historical configurations
+
+<Warning>
+**Note**: `git checkout <commit-hash>` puts you in a detached HEAD state. This is fine for viewing/testing, but if you want to permanently undo a bake, use `git revert <commit-hash>` instead. See the README in your repository for more details on reverting bakes.
+</Warning>
+
+---
+
+## Visualizing Model Lineage
+
+Use `bgit tree` to visualize your model's evolution across all branches:
+
+```bash
+bgit tree
+```
+
+This command:
+- Reads `recipe.yml` from all git branches
+- Builds a tree showing parent-child relationships
+- Displays branch information for each bake
+- Shows model names in a hierarchical structure
+
+**Example output:**
+
+```
+Model Tree for my_repo (across all branches)
+
+Base Model: Qwen/Qwen3-32B
+
+└── bake1_abc123
+    └─ user/repo/bake1_abc123/120
+    └── bake2_def456 [main]
+        └─ user/repo/bake2_def456/150
+```
+
+---
+
+## Key Behaviors
+
+### Staging Requirement
+
+`bgit run` (especially `bake`) requires changes to be staged. This ensures you're working with committed configurations:
+
+```bash
+bgit add input.yml  # Required!
+bgit run bake       # Now it works
+```
+
+### Automatic Clearing
+
+`input.yml` is cleared after successful bakes, keeping only section headings and documentation comments. This prepares it for your next iteration.
+
+### Model Lineage
+
+Each bake automatically uses the previous bake's model as the parent (stored in `.bread` as `PARENT_MODEL`). This creates a sequential chain of model evolution.
+
+### Merge Behavior
+
+When merging branches, `.bread` and `recipe.yml` from the incoming branch overwrite the current branch's versions. This ensures the merged branch reflects the complete model state.
+
+---
+
+## Benefits of Git-Based Model Evolution
+
+1. **Full History**: Every bake is a git commit, providing complete audit trail
+2. **Branch Isolation**: Each branch can develop models independently
+3. **Easy Rollback**: Use `git revert` or `git checkout` to go back to any model state
+4. **Collaboration**: Standard git workflows (pull requests, code review) work seamlessly
+5. **Lineage Tracking**: Each commit's `recipe.yml` maintains model relationships
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/bgit/quickstart"
+  >
+    Create your first model
+  </Card>
+  <Card
+    title="Configuration"
+    icon="file-code"
+    href="/bgit/configuration/generators"
+  >
+    Learn about YAML configuration
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/bgit/guides/workflows"
+  >
+    Master iteration and branching
+  </Card>
+  <Card
+    title="Sequential Baking"
+    icon="layer-group"
+    href="/bgit/guides/sequential-baking"
+  >
+    Build models incrementally
+  </Card>
+</CardGroup>
+

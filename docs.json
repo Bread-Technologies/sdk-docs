@@ -11,21 +11,77 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Documentation",
+        "tab": "bgit",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
-              "index",
-              "quickstart",
+              "bgit/index",
+              "bgit/quickstart",
               "understanding-baking",
+              "bgit/how-bgit-works"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "bgit/configuration/prompts",
+              "bgit/configuration/generators",
+              "bgit/configuration/target-config",
+              "bgit/configuration/bake-config"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "bgit/guides/workflows",
+              "bgit/guides/sequential-baking"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDK",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "sdk/index",
+              "understanding-baking",
+              "sdk/quickstart",
               "authentication"
             ]
           },
           {
-            "group": "bgit",
+            "group": "Baking Guides",
             "pages": [
-              "guides/bgit-workflows"
+              "sdk/guides/single-prompt-bake",
+              "sdk/guides/multi-target-baking",
+              "sdk/guides/iterative-baking",
+              "sdk/guides/production-patterns"
+            ]
+          },
+          {
+            "group": "Using Baked Models",
+            "pages": [
+              "sdk/guides/using-baked-models"
+            ]
+          },
+          {
+            "group": "SDK Guides",
+            "pages": [
+              "sdk/guides/error-handling",
+              "sdk/guides/pagination",
+              "sdk/guides/advanced-features"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "sdk/configuration/generators",
+              "sdk/configuration/target-config",
+              "sdk/configuration/bake-config",
+              "sdk/configuration/types"
             ]
           },
           {
@@ -33,129 +89,52 @@
             "pages": [
               "tools/mcp-server"
             ]
-          },
-          {
-            "group": "Baking Guides",
-            "pages": [
-              "guides/single-prompt-bake",
-              "guides/multi-target-baking",
-              "guides/iterative-baking",
-              "guides/production-patterns"
-            ]
-          },
-          {
-            "group": "Using Baked Models",
-            "pages": [
-              "guides/using-baked-models"
-            ]
-          },
-          {
-            "group": "SDK Guides",
-            "pages": [
-              "guides/error-handling",
-              "guides/pagination",
-              "guides/advanced-features"
-            ]
-          },
-          {
-            "group": "Configuration",
-            "pages": [
-              "configuration/generators",
-              "configuration/target-config",
-              "configuration/bake-config",
-              "configuration/types"
-            ]
           }
         ]
       },
       {
-        "tab": "API Reference",
+        "tab": "API",
         "groups": [
           {
-            "group": "Core Resources",
+            "group": "API Reference",
             "pages": [
               "api-reference/repo",
               "api-reference/prompts",
-              "api-reference/health"
-            ]
-          },
-          {
-            "group": "Targets",
-            "pages": [
+              "api-reference/health",
               "api-reference/targets",
               "api-reference/targets-stim",
-              "api-reference/targets-rollout"
+              "api-reference/targets-rollout",
+              "api-reference/bakes"
             ]
           },
           {
-            "group": "Training",
-            "pages": [
-              "api-reference/bakes"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API Playground",
-        "groups": [
-          {
-            "group": "Repositories",
+            "group": "API Playground",
             "pages": [
               "api-playground/list-repos",
               "api-playground/set-repo",
-              "api-playground/get-repo"
-            ]
-          },
-          {
-            "group": "Prompts",
-            "pages": [
+              "api-playground/get-repo",
               "api-playground/list-prompts",
               "api-playground/get-prompt",
               "api-playground/set-prompt",
               "api-playground/batch-set-prompts",
-              "api-playground/delete-prompt"
-            ]
-          },
-          {
-            "group": "Targets",
-            "pages": [
+              "api-playground/delete-prompt",
               "api-playground/list-targets",
               "api-playground/set-target",
               "api-playground/get-target",
               "api-playground/batch-set-targets",
-              "api-playground/delete-target"
-            ]
-          },
-          {
-            "group": "Stim Jobs",
-            "pages": [
+              "api-playground/delete-target",
               "api-playground/run-stim",
               "api-playground/get-stim-status",
-              "api-playground/get-stim-output"
-            ]
-          },
-          {
-            "group": "Rollout Jobs",
-            "pages": [
+              "api-playground/get-stim-output",
               "api-playground/run-rollout",
               "api-playground/get-rollout-status",
-              "api-playground/get-rollout-output"
-            ]
-          },
-          {
-            "group": "Bakes",
-            "pages": [
+              "api-playground/get-rollout-output",
               "api-playground/list-bakes",
               "api-playground/get-bake",
               "api-playground/set-bake",
               "api-playground/batch-set-bakes",
               "api-playground/delete-bake",
-              "api-playground/start-bake"
-            ]
-          },
-          {
-            "group": "Health",
-            "pages": [
+              "api-playground/start-bake",
               "api-playground/health-check"
             ]
           }

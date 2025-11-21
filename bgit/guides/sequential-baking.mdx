@@ -1,0 +1,414 @@
+---
+title: "Sequential Baking"
+description: "Build models incrementally by chaining bakes together"
+---
+
+<Note>
+**New to bgit workflows?** See [bgit Workflows](/bgit/guides/workflows) for the complete guide on iterative baking, file structure, and general best practices.
+</Note>
+
+Sequential baking lets you build models incrementally, where each bake uses the previous bake's model as the parent. This creates a chain of model evolution tracked in your git history.
+
+---
+
+## What is Sequential Baking?
+
+When you run multiple bakes sequentially, bgit automatically uses the previous bake's model as the parent:
+
+```
+First bake:  base_model → bake1 → model_v1
+Second bake: model_v1 → bake2 → model_v2
+Third bake:  model_v2 → bake3 → model_v3
+```
+
+The `PARENT_MODEL` is stored in `.bread` and automatically used for each new bake. You don't need to configure it manually.
+
+**Key benefit**: Each bake builds on the previous one, preserving learned behavior and creating an incremental evolution chain.
+
+---
+
+## Basic Sequential Baking Example
+
+Here's a simple example showing how sequential baking works. For the complete iterative workflow, see [bgit Workflows](/bgit/guides/workflows).
+
+<Steps>
+  <Step title="First Bake">
+    ```yaml
+    PROMPT:
+      teacher:
+        messages:
+          - role: system
+            content: "You are Yoda. Speak like Yoda."
+    
+    TARGET:
+      name: main_target
+      generators:
+        - type: oneshot_qs
+          model: claude-sonnet-4-5-20250929
+          numq: 100
+    
+    BAKE:
+      name: yoda_bake
+      datasets:
+        - target: main_target
+          weight: 1.0
+    ```
+    
+    ```bash
+    bgit add input.yml
+    bgit commit -m "Initial Yoda personality"
+    bgit run stim rollout bake
+    ```
+    
+    Creates: `user/repo/bake1_abc123/120`
+  </Step>
+
+  <Step title="Second Bake">
+    After the first bake completes, `input.yml` is cleared. Edit it for your next iteration:
+    
+    ```yaml
+    PROMPT:
+      teacher:
+        messages:
+          - role: system
+            content: "You are Yoda. Speak like Yoda. Use more wisdom and philosophical depth."
+    
+    TARGET:
+      name: main_target
+      generators:
+        - type: oneshot_qs
+          model: claude-sonnet-4-5-20250929
+          numq: 150  # More questions
+    
+    BAKE:
+      name: yoda_wisdom_bake
+      datasets:
+        - target: main_target
+          weight: 1.0
+    ```
+    
+    ```bash
+    bgit add input.yml
+    bgit commit -m "Add more wisdom and depth to Yoda"
+    bgit run stim rollout bake
+    ```
+    
+    Automatically uses `bake1_abc123/120` as parent.
+    Creates: `user/repo/bake2_def456/150` (parent: `bake1_abc123/120`)
+  </Step>
+
+  <Step title="Third Bake">
+    Continue iterating:
+    
+    ```yaml
+    PROMPT:
+      teacher:
+        messages:
+          - role: system
+            content: "You are Yoda. Speak like Yoda. Use more wisdom, philosophical depth, and reference the Force more often."
+    
+    TARGET:
+      name: main_target
+      generators:
+        - type: oneshot_qs
+          model: claude-sonnet-4-5-20250929
+          numq: 200
+    
+    BAKE:
+      name: yoda_force_bake
+      datasets:
+        - target: main_target
+          weight: 1.0
+    ```
+    
+    ```bash
+    bgit add input.yml
+    bgit commit -m "Add Force references to Yoda"
+    bgit run stim rollout bake
+    ```
+    
+    Automatically uses `bake2_def456/150` as parent.
+    Creates: `user_repo/bake3_ghi789/180` (parent: `bake2_def456/150`)
+  </Step>
+</Steps>
+
+---
+
+## Understanding Parent Models
+
+### How PARENT_MODEL Works
+
+The `PARENT_MODEL` is automatically tracked in `.bread`:
+
+1. **After first bake**: `.bread` stores the model name from the first bake
+2. **Before second bake**: bgit reads `PARENT_MODEL` from `.bread`
+3. **During second bake**: The parent model is automatically used
+4. **After second bake**: `.bread` is updated with the new model name
+
+**You never need to set `PARENT_MODEL` manually**—bgit handles it automatically.
+
+### Viewing Parent Models
+
+Check the parent model in `.bread`:
+
+```bash
+cat .bread | grep PARENT_MODEL
+```
+
+Or use `bgit tree` to visualize the model lineage:
+
+```bash
+bgit tree
+```
+
+---
+
+## Use Cases for Sequential Baking
+
+### Refining Behavior
+
+Start with a basic behavior and refine it over multiple bakes:
+
+```yaml
+# Bake 1: Basic coding assistant
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are a helpful coding assistant."
+
+# Bake 2: Add error handling emphasis
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are a helpful coding assistant. Always include proper error handling in your code."
+
+# Bake 3: Add documentation emphasis
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are a helpful coding assistant. Always include proper error handling and comprehensive documentation."
+```
+
+### Increasing Training Data
+
+Gradually increase the amount of training data:
+
+```yaml
+# Bake 1: 100 questions
+TARGET:
+  name: main_target
+  generators:
+    - type: oneshot_qs
+      numq: 100
+
+# Bake 2: 200 questions
+TARGET:
+  name: main_target
+  generators:
+    - type: oneshot_qs
+      numq: 200
+
+# Bake 3: 500 questions
+TARGET:
+  name: main_target
+  generators:
+    - type: oneshot_qs
+      numq: 500
+```
+
+### Adjusting Training Parameters
+
+Fine-tune training parameters across bakes:
+
+```yaml
+# Bake 1: Default settings
+BAKE:
+  name: default_bake
+  epochs: 1
+
+# Bake 2: More epochs
+BAKE:
+  name: extended_bake
+  epochs: 3
+
+# Bake 3: Higher LoRA rank
+BAKE:
+  name: high_rank_bake
+  epochs: 3
+  model:
+    baked_adapter_config:
+      r: 32  # Increased from default
+```
+
+---
+
+## Best Practices
+
+<Tip>
+For general bgit best practices including commit messages, testing, and workflow patterns, see [bgit Workflows - Best Practices](/bgit/guides/workflows#best-practices).
+</Tip>
+
+### Sequential-Specific Best Practices
+
+**Always verify parent model**: Before starting a sequential bake, check that the previous bake completed successfully:
+
+```bash
+bgit status  # Verify previous bake is complete
+cat .bread | grep PARENT_MODEL  # Check parent model is set
+```
+
+**Test between iterations**: Compare model behavior across sequential bakes to ensure improvements:
+
+```bash
+# Test previous model
+bgit chat <previous-model-name>
+
+# After new bake completes, test new model
+bgit chat <new-model-name>
+```
+
+**Use descriptive bake names**: Since sequential bakes create a chain, use names that reflect the progression:
+
+```yaml
+BAKE:
+  name: yoda_bake          # First bake
+  # ...
+BAKE:
+  name: yoda_wisdom_bake   # Second bake (adds wisdom)
+  # ...
+BAKE:
+  name: yoda_force_bake    # Third bake (adds Force references)
+```
+
+---
+
+## Viewing Sequential History
+
+<Tip>
+For detailed information about `recipe.yml` structure and how to read it, see [bgit Workflows - Understanding Your Files](/bgit/guides/workflows#understanding-your-files-in-depth).
+</Tip>
+
+### Using recipe.yml
+
+Each commit's `recipe.yml` shows the sequential chain. The `resources.bakes` array tracks all bakes in order:
+
+```yaml
+resources:
+  bakes:
+    - bake_name: bake1_abc123
+      model_names:
+        - user/repo/bake1_abc123/120
+    - bake_name: bake2_def456
+      model_names:
+        - user/repo/bake2_def456/150
+    - bake_name: bake3_ghi789
+      model_names:
+        - user/repo/bake3_ghi789/180
+```
+
+Each bake in the array builds on the previous one, creating a sequential chain.
+
+### Using bgit tree
+
+Visualize the complete lineage:
+
+```bash
+bgit tree
+```
+
+Shows parent-child relationships across all branches.
+
+### Using Git History
+
+View the evolution in git:
+
+```bash
+git log --oneline
+
+# Output:
+# abc123 Add Force references to Yoda
+# def456 Add more wisdom and depth to Yoda
+# ghi789 Initial Yoda personality
+```
+
+---
+
+## Troubleshooting
+
+### Parent Model Not Found
+
+If you get an error about parent model:
+
+1. Check `.bread` file:
+   ```bash
+   cat .bread | grep PARENT_MODEL
+   ```
+
+2. Verify previous bake completed:
+   ```bash
+   bgit status
+   ```
+
+3. Check `recipe.yml` for model names:
+   ```bash
+   cat recipe.yml
+   ```
+
+### Starting Fresh
+
+To start a new sequential chain (not building on previous bake), use `git revert` to undo the bake commit(s) that set the `PARENT_MODEL`:
+
+```bash
+# View commit history to find the bake commit(s) you want to revert
+git log --oneline
+
+# Revert the bake commit (this creates a new commit that undoes the bake)
+git revert <commit-hash>
+
+# Or revert multiple commits if needed
+git revert <commit-hash-1> <commit-hash-2>
+```
+
+This will:
+- Remove the bake from `recipe.yml` history
+- Clear the `PARENT_MODEL` from `.bread`
+- Allow you to start a fresh sequential chain from the base model
+
+<Tip>
+**Alternative approach**: Create a new branch from before the bake commit if you want to keep the original sequential chain intact:
+```bash
+git checkout -b fresh-start <commit-before-bake>
+```
+</Tip>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="How bgit Works"
+    icon="lightbulb"
+    href="/bgit/how-bgit-works"
+  >
+    Understand git-based model evolution
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/bgit/guides/workflows"
+  >
+    Master iteration and branching
+  </Card>
+  <Card
+    title="Bake Configuration"
+    icon="fire"
+    href="/bgit/configuration/bake-config"
+  >
+    Configure bake settings
+  </Card>
+</CardGroup>
+

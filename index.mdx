@@ -3,48 +3,132 @@ title: "Welcome to Bread"
 description: "Ship custom AI models as easily as committing code."
 ---
 
-
-
 **Prompt Baking encodes prompt behavior directly into model weights. Fine-tune AI models with the convenience of prompt engineering.**
 
-You shouldn't need a PhD to teach your AI what it needs to know or wait for someone else's model update to give you what you need. With Bread, your model permanently inherits the prompted behavior with zero input tokens at inference time.
+You shouldn't need a PhD to teach your AI what it needs to know or wait for someone else's model update to give you what you need. With Bread, your model permanently inherits the prompted behavior with **zero input tokens** at inference time.
 
 <Note>
 **The value:** After baking, your model can exhibit prompted behavior with **zero input tokens**. The skills live in the weights, not in runtime prompts.
 </Note>
 
-<CardGroup cols={2}>
-  <Card
-    title="How does Baking work?"
-    icon="lightbulb"
-    href="/understanding-baking"
-  >
-    Learn the four-phase process to baking
-  </Card>
-  <Card
-    title="Installation"
-    icon="download"
-    href="/installation"
-  >
-    Install the Bread SDK for your project
-  </Card>
-  <Card
-    title="Quickstart"
-    icon="rocket"
-    href="/quickstart"
-  >
-    Run a full bake in 5 minutes
-  </Card>
-  <Card
-    title="Advanced Features"
-    icon="wand-magic-sparkles"
-    href="/configuration/generators"
-  >
-    Configure generators, targets, and advanced baking options
-  </Card>
-</CardGroup>
+## Choose Your Path
 
+<Tabs>
+  <Tab title="bgit">
+    <CardGroup cols={2}>
+      <Card
+        title="Quickstart"
+        icon="rocket"
+        href="/bgit/quickstart"
+      >
+        Bake your first model with bgit
+      </Card>
+      <Card
+        title="How bgit Works"
+        icon="lightbulb"
+        href="/bgit/how-bgit-works"
+      >
+        Understand git-based model evolution
+      </Card>
+      <Card
+        title="Configuration"
+        icon="file-code"
+        href="/bgit/configuration/generators"
+      >
+        YAML configuration reference
+      </Card>
+      <Card
+        title="Workflows"
+        icon="diagram-project"
+        href="/bgit/guides/workflows"
+      >
+        Advanced workflows and patterns
+      </Card>
+    </CardGroup>
 
+    **bgit** is a git-native interface that makes AI model baking feel like regular software development. Version control your model weights with familiar git commands.
+
+    - One file = One model (YAML configuration)
+    - Commits = Model versions
+    - Branches = Experiments
+    - Git history = Complete audit trail
+  </Tab>
+
+  <Tab title="SDK">
+    <CardGroup cols={2}>
+      <Card
+        title="Understanding Baking"
+        icon="lightbulb"
+        href="/understanding-baking"
+      >
+        Learn the four-phase process to baking
+      </Card>
+      <Card
+        title="Quickstart"
+        icon="rocket"
+        href="/sdk/quickstart"
+      >
+        Run a full bake with Python SDK
+      </Card>
+      <Card
+        title="Guides"
+        icon="book"
+        href="/sdk/guides/single-prompt-bake"
+      >
+        Step-by-step baking guides
+      </Card>
+      <Card
+        title="Configuration"
+        icon="gears"
+        href="/sdk/configuration/generators"
+      >
+        Python SDK configuration reference
+      </Card>
+    </CardGroup>
+
+    Use the **Python SDK** for programmatic control over the baking process. Perfect for automation, integration, and advanced use cases.
+
+    - Full programmatic control
+    - Python-native API
+    - Async support
+    - Complete feature access
+  </Tab>
+
+  <Tab title="API">
+    <CardGroup cols={2}>
+      <Card
+        title="API Reference"
+        icon="code"
+        href="/api-reference/repo"
+      >
+        Complete REST API documentation
+      </Card>
+      <Card
+        title="API Playground"
+        icon="flask"
+        href="/api-playground/list-repos"
+      >
+        Try API endpoints interactively
+      </Card>
+      <Card
+        title="Authentication"
+        icon="key"
+        href="/authentication"
+      >
+        API key setup and security
+      </Card>
+    </CardGroup>
+
+    Use the **REST API** for direct HTTP access to Bread's baking platform. Perfect for custom integrations and non-Python environments.
+
+    - RESTful HTTP API
+    - OpenAPI specification
+    - Interactive playground
+    - Language-agnostic
+  </Tab>
+</Tabs>
+
+---
 
 ## Core Concepts
 
@@ -72,7 +156,6 @@ You shouldn't need a PhD to teach your AI what it needs to know or wait for some
 ## Full Process: Prompt, Stim, Rollout, Bake
 
 <Steps>
-  
   <Step title="Prompt">
     Specify the prompts to bake in
   </Step>
@@ -87,12 +170,7 @@ You shouldn't need a PhD to teach your AI what it needs to know or wait for some
   </Step>
 </Steps>
 
-
-## Requirements
-
-- **Python**: 3.8 or higher
-- **Dependencies**: httpx (included), optional aiohttp for async performance
-- **API Key**: Required for authentication
+---
 
 ## Need Help?
 
@@ -100,13 +178,7 @@ You shouldn't need a PhD to teach your AI what it needs to know or wait for some
   <Card title="GitHub Repository" icon="github" href="https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo">
     Check out our public repo to start baking today
   </Card>
-  <Card title="Workflows Guide" icon="diagram-project" href="/guides/workflows">
-    Learn common patterns and workflows
-  </Card>
-  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
-    Handle errors gracefully
-  </Card>
-  <Card title="Advanced Features" icon="gears" href="/guides/advanced-features">
-    Unlock powerful SDK capabilities
+  <Card title="Understanding Baking" icon="lightbulb" href="/understanding-baking">
+    Learn how prompt baking works
   </Card>
 </CardGroup>

@@ -1,0 +1,208 @@
+---
+title: "Quickstart"
+description: "Get bgit installed and bake your first model"
+---
+
+**bgit** is the primary way to work with Bread. It's a git-native interface that lets you version control AI model weights like you version control code.
+
+<Note>
+**Want to understand the theory first?** Check out [Understanding Baking](/understanding-baking) to learn how prompt baking works.
+</Note>
+
+---
+
+## Prerequisites
+
+Before starting, make sure you have:
+
+- **Node.js 16+** and npm installed
+- **Git** installed and configured
+- **Bread API key** ([contact us](mailto:contact@aibread.com) to get one)
+
+---
+
+## Install bgit
+
+```bash
+# Clone the bgit repository
+git clone https://github.com/Bread-Technologies/bread_sdk_git_interface.git
+cd bread_sdk_git_interface
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Link globally
+npm link
+
+# Verify installation
+bgit --version
+```
+
+---
+
+## Your First Model
+
+Let's bake a Yoda personality model - the simplest possible example:
+
+<Steps>
+  <Step title="Initialize">
+    ```bash
+    bgit init <REPO-NAME>
+    cd <REPO-NAME>
+    ```
+    
+    Enter your API key when prompted. It will be saved to `~/.bgit/config.json`.
+    
+    This creates:
+    - `input.yml` - Your model configuration (already has a Yoda example!)
+    - `README.md` - Auto-generated documentation
+    - `.bread` - Internal state file (stores repository name set during init)
+    - `.git/` - Git repository with hooks
+    
+    **Note**: The repository name is set during `bgit init` and stored in `.bread`. You don't configure it in `input.yml`.
+  </Step>
+
+  <Step title="Commit">
+    ```bash
+    bgit add input.yml
+    bgit commit -m "Initial Yoda personality"
+    ```
+    
+    The `input.yml` file already contains a complete Yoda example. You can use it as-is or customize it.
+  </Step>
+
+  <Step title="Run">
+    ```bash
+    bgit run stim rollout bake
+    ```
+    
+    This will:
+    1. **stim**: Generate questions using your target generators
+    2. **rollout**: Generate Yoda-style responses to those questions
+    3. **bake**: Train the model to speak like Yoda
+    
+    Baking takes 30-60 minutes. Your terminal shows real-time progress.
+    
+    **When the bake completes**, model names are automatically displayed in the terminal output. Look for lines like:
+    ```
+    📦 Model Name(s):
+       1. user/repo/bake1_abc123/120
+    ```
+  </Step>
+
+  <Step title="Test">
+    After your bake completes, use the model name from the terminal output:
+    
+    ```bash
+    bgit chat <model-name>
+    ```
+    
+    For example:
+    ```bash
+    bgit chat user/repo/bake1_abc123/120
+    ```
+    
+    Try: "Teach me about patience"
+    
+    Response: "Patience, you must learn. The Jedi way, slow and sure it is."
+    
+    <Tip>
+    **Can't find the model name?** Check `recipe.yml` (look for `model_names` under the latest bake) or use `bgit models` to list all your models.
+    </Tip>
+  </Step>
+</Steps>
+
+**That's it!** You just baked Yoda's personality into a model's weights.
+
+---
+
+## What's in input.yml?
+
+The generated `input.yml` file contains a complete working example:
+
+```yaml
+PROMPT:
+  teacher:
+    messages:
+      - role: system
+        content: "You are Yoda. Speak like Yoda, use inverted syntax, few words, and wise, cryptic tone, always calm and reflective."
+  
+  student:
+    messages:
+      - role: system
+        content: ""  # Empty = model ALWAYS acts like Yoda
+
+TARGET:
+  name: main_target
+  generators:
+    - type: oneshot_qs
+      model: claude-sonnet-4-5-20250929
+      numq: 100
+
+BAKE:
+  name: yoda_bake
+  datasets:
+    - target: main_target
+      weight: 1.0
+```
+
+**Key points:**
+- **Teacher prompt**: What behavior to bake in (Yoda's speaking style)
+- **Student prompt**: Empty string means the model ALWAYS acts like Yoda (zero tokens!)
+- **Generators**: How to create training questions
+- **Bake**: Training configuration
+
+<Tip>
+**Want to learn more about teacher and student prompts?** See [Understanding Prompt Baking](/understanding-baking) for a detailed explanation of how prompts work and why empty student prompts result in zero-token, always-on behavior.
+</Tip>
+
+---
+
+## What You Just Did
+
+You created a git repository that tracks AI model weights. Each time you:
+
+- Edit `input.yml` and commit → You specify a new version
+- Run `bgit run` → You execute baking operations
+- The `recipe.yml` file grows → Complete audit trail of all operations
+
+Your repo IS your model's weight history.
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="How bgit Works"
+    icon="lightbulb"
+    href="/bgit/how-bgit-works"
+  >
+    Understand commits, branches, and model evolution
+  </Card>
+  <Card
+    title="Configuration"
+    icon="file-code"
+    href="/bgit/configuration/generators"
+  >
+    Learn about generators, targets, and bake settings
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/bgit/guides/workflows"
+  >
+    Master iteration, branching, and collaboration
+  </Card>
+  <Card
+    title="Sequential Baking"
+    icon="layer-group"
+    href="/bgit/guides/sequential-baking"
+  >
+    Build models incrementally
+  </Card>
+</CardGroup>
+

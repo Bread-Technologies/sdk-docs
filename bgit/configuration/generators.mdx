@@ -1,0 +1,296 @@
+---
+title: "Generator Types"
+description: "Configure different generator types for stimulus generation"
+---
+
+## Overview
+
+Generators define how stimuli (questions/tasks) are created. You can use multiple generators in a single target, and they'll be combined.
+
+In bgit, generators are configured in the `TARGET` section of your `input.yml` file.
+
+<Tip>
+**Best Practice**: Always include a `name` field in your `TARGET` section. Target names are hashed (e.g., `my_target` becomes `my_target_abc123def456`) to ensure uniqueness, making them easier to identify in `recipe.yml` and when referencing in bake configurations.
+</Tip>
+
+## Generator Types
+
+### Oneshot
+
+Let a LLM (Anthropic only) generate stimuli for you.
+
+```yaml
+TARGET:
+  name: my_target
+  generators:
+    - type: oneshot_qs
+      model: claude-sonnet-4-5-20250929
+      numq: 50
+      temperature: 1.0
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"oneshot_qs"`
+</ParamField>
+
+<ParamField path="model" type="string">
+  Model name (Only Anthropic models supported e.g., `"claude-sonnet-4-5-20250929"`)
+</ParamField>
+
+<ParamField path="numq" type="integer">
+  Number of questions to generate
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0). Higher = more creative/random
+</ParamField>
+
+**Use Case**: Generate diverse, AI-created questions based on your prompts
+
+---
+
+### Hardcoded
+
+Predefine a list of questions you want the prompted model to respond to.
+
+```yaml
+TARGET:
+  name: hardcoded_target
+  generators:
+    - type: hardcoded
+      numq: 3
+      questions:
+        - "Write a function to reverse a string"
+        - "Implement binary search"
+        - "Create a linked list class"
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"hardcoded"`
+</ParamField>
+
+<ParamField path="questions" type="array" required>
+  List of question strings
+</ParamField>
+
+<ParamField path="numq" type="integer" required>
+  Number of questions (should match length of questions array)
+</ParamField>
+
+**Use Case**: Test with specific, controlled questions
+
+---
+
+### Dataset Questions
+
+Sample from established datasets like SQuAD, GSM8K, MMLU, HellaSwag.
+
+```yaml
+TARGET:
+  name: dataset_target
+  generators:
+    - type: from_dataset
+      dataset: code_contests
+      numq: 100
+      seed: 42
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"from_dataset"`
+</ParamField>
+
+<ParamField path="dataset" type="string" required>
+  Dataset name (e.g., `"squad"`, `"gsm8k"`, `"mmlu"`, `"hellaswag"`, `"code_contests"`)
+</ParamField>
+
+<ParamField path="numq" type="integer">
+  Number of questions to sample from dataset
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducible sampling
+</ParamField>
+
+**Use Case**: Use established benchmarks or datasets
+
+---
+
+### Persona
+
+A dataset curated specifically to bake personas.
+
+```yaml
+TARGET:
+  name: persona_target
+  generators:
+    - type: persona
+      numq: 25
+      seed: 123
+      temperature: 0.9
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"persona"`
+</ParamField>
+
+<ParamField path="numq" type="integer">
+  Number of questions to generate
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducibility
+</ParamField>
+
+<ParamField path="temperature" type="number">
+  Generation temperature (0.0-2.0)
+</ParamField>
+
+**Use Case**: Generate questions from different personas or perspectives
+
+---
+
+### Custom Template
+
+Write your own prompt to a language model to generate stimuli prompts on your behalf.
+
+<Warning>
+**Note**: Custom template generators are currently in development. This feature may not be fully available yet.
+</Warning>
+
+```yaml
+TARGET:
+  name: custom_target
+  generators:
+    - type: custom
+      template_path: "/path/to/template.yaml"
+```
+
+<ParamField path="type" type="string" required>
+  Must be `"custom"`
+</ParamField>
+
+<ParamField path="template_path" type="string" required>
+  Path to custom template file
+</ParamField>
+
+**Use Case**: Advanced custom generation logic
+
+---
+
+## Combining Generators
+
+Combining multiple generators creates more diverse training datasets. Use multiple generators in your `TARGET` section:
+
+```yaml
+TARGET:
+  name: combined_target
+  generators:
+    - type: oneshot_qs
+      model: claude-sonnet-4-5-20250929
+      numq: 30
+    
+    - type: from_dataset
+      dataset: code_contests
+      numq: 20
+      seed: 42
+    
+    - type: hardcoded
+      numq: 2
+      questions:
+        - "Implement a specific edge case"
+        - "Handle this corner case"
+```
+
+<Tip>
+Combined generators create a diverse dataset with AI-generated, benchmark, and custom questions.
+</Tip>
+
+---
+
+## Examples
+
+### Code Generation
+
+```yaml
+TARGET:
+  generators:
+    - type: oneshot_qs
+      model: claude-sonnet-4-5-20250929
+      numq: 100
+      temperature: 1.2
+```
+
+### Math Problems
+
+```yaml
+TARGET:
+  generators:
+    - type: from_dataset
+      dataset: gsm8k
+      numq: 50
+      seed: 42
+```
+
+### Specific Test Cases
+
+```yaml
+TARGET:
+  generators:
+    - type: hardcoded
+      numq: 3
+      questions:
+        - "Handle empty input"
+        - "Process maximum size input"
+        - "Deal with special characters"
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Mix Generator Types" icon="layer-group">
+    Combine different generators for diverse training data
+  </Accordion>
+
+  <Accordion title="Use Seeds for Reproducibility" icon="seedling">
+    Set `seed` values when using `from_dataset` or `persona` for reproducible results
+  </Accordion>
+
+  <Accordion title="Start with Hardcoded" icon="list">
+    Test your pipeline with hardcoded questions before scaling to AI generation
+  </Accordion>
+
+  <Accordion title="Tune Temperature" icon="temperature-half">
+    Adjust temperature based on creativity needs (lower = more focused, higher = more creative)
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Prompt Configuration"
+    icon="message"
+    href="/bgit/configuration/prompts"
+  >
+    Configure teacher and student prompts
+  </Card>
+  <Card
+    title="Target Configuration"
+    icon="bullseye"
+    href="/bgit/configuration/target-config"
+  >
+    Complete target configuration reference
+  </Card>
+  <Card
+    title="Bake Configuration"
+    icon="fire"
+    href="/bgit/configuration/bake-config"
+  >
+    Configure bake settings
+  </Card>
+</CardGroup>
+

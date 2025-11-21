@@ -1,0 +1,131 @@
+---
+title: "SDK Quickstart"
+description: "Get started with the Bread Python SDK"
+---
+
+Use the **Python SDK** for programmatic control over the baking process. Perfect for automation, integration, and advanced use cases.
+
+<Note>
+**Prefer a git-based workflow?** Check out [bgit Quickstart](/bgit/quickstart) for a git-native interface.
+</Note>
+
+---
+
+## Installation
+
+```bash
+pip install bread-sdk-v1
+```
+
+Or install from source:
+
+```bash
+git clone https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo.git
+cd Bread-SDK-Bake-Repo
+pip install -e .
+```
+
+---
+
+## Authentication
+
+Set your API key as an environment variable:
+
+```bash
+export BREAD_API_KEY=your-api-key-here
+```
+
+Or use a `.env` file (see [Authentication](/authentication) for details).
+
+---
+
+## Your First Bake
+
+```python
+from aibread import Bread
+
+# Initialize client
+client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+
+# Set repository
+client.repos.set(repo_name="my_repo", base_model="Qwen/Qwen3-32B")
+
+# Set prompt
+client.prompts.set(
+    prompt_name="yoda_teacher",
+    repo_name="my_repo",
+    messages=[
+        {"role": "system", "content": "You are Yoda. Speak like Yoda."}
+    ]
+)
+
+# Set target
+client.targets.set(
+    target_name="main_target",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "generators": [
+            {"type": "oneshot_qs", "model": "claude-sonnet-4-5-20250929", "numq": 100}
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "yoda_teacher",
+        "v": ""
+    }
+)
+
+# Run stim
+client.targets.run_stim(target_name="main_target", repo_name="my_repo")
+
+# Run rollout
+client.targets.run_rollout(target_name="main_target", repo_name="my_repo")
+
+# Set bake
+client.bakes.set(
+    bake_name="v1",
+    repo_name="my_repo",
+    template="default",
+    overrides={
+        "datasets": [{"target": "main_target", "weight": 1.0}]
+    }
+)
+
+# Start bake
+client.bakes.start(bake_name="v1", repo_name="my_repo")
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Understanding Baking"
+    icon="lightbulb"
+    href="/understanding-baking"
+  >
+    Learn how prompt baking works
+  </Card>
+  <Card
+    title="Single Prompt Bake"
+    icon="rocket"
+    href="/sdk/guides/single-prompt-bake"
+  >
+    Step-by-step guide
+  </Card>
+  <Card
+    title="Configuration"
+    icon="gears"
+    href="/sdk/configuration/generators"
+  >
+    Configure generators, targets, and bakes
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/repo"
+  >
+    Complete API documentation
+  </Card>
+</CardGroup>
+

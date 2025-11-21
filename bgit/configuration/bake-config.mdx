@@ -1,0 +1,348 @@
+---
+title: "Bake Configuration"
+description: "Complete reference for bake (training) configuration in YAML"
+---
+
+## Overview
+
+Bake configuration controls model training behavior, including datasets, training parameters, model adapters, and integrations. In bgit, bakes are configured in the `BAKE` section of your `input.yml` file.
+
+<Note>
+**Naming Best Practice**: Always provide a `name` field for your bakes. bgit appends a hash to bake names (e.g., `v1` becomes `v1_abc123def456`) to ensure uniqueness. Named bakes are easier to identify in `recipe.yml` and when tracking model lineage.
+</Note>
+
+## Core Configuration
+
+### Name
+
+<ParamField path="name" type="string" required>
+  Bake name identifier. **Required**: Always provide a descriptive name.
+  
+  ```yaml
+  BAKE:
+    name: main_bake
+    datasets:
+  ```
+  
+  The name will be hashed (e.g., `main_bake_abc123def456`) to ensure uniqueness. Use meaningful names like `production_bake`, `experiment_formal_tone_bake`, or `yoda_personality_bake`.
+</ParamField>
+
+### Datasets
+
+<ParamField path="datasets" type="array" required>
+  List of targets to use as training data
+  
+  ```yaml
+  BAKE:
+    datasets:
+      - target: coding_target
+        weight: 0.7
+      - target: math_target
+        weight: 0.3
+  ```
+  
+  Each dataset has:
+  - `target` (string, required): Target name
+  - `weight` (float): Sampling weight (higher = more frequently sampled)
+  
+  **Using multiple targets**: Including multiple targets in your bake acts as regularization to preserve past behavior. By combining targets from previous bakes with new targets, you can maintain the model's existing capabilities while adding new ones. This is particularly useful in sequential baking workflows where you want to build on previous work without losing what the model already learned.
+  
+  **Finding past targets**: Use `bgit target ls` to list all available targets, and `bgit target <target_name>` to view details of a specific target. This helps you remember which targets were used in previous bakes so you can reference them in new bake configurations.
+</ParamField>
+
+### Training Parameters
+
+<ParamField path="epochs" type="integer">
+  Number of training epochs
+  
+  ```yaml
+  BAKE:
+    epochs: 3
+  ```
+</ParamField>
+
+<ParamField path="micro_batch_size" type="integer">
+  Micro batch size
+  
+  ```yaml
+  BAKE:
+    micro_batch_size: 1
+  ```
+</ParamField>
+
+<ParamField path="gradient_accumulation_steps" type="integer">
+  Gradient accumulation steps for effective batch size
+  
+  ```yaml
+  BAKE:
+    gradient_accumulation_steps: 4
+  ```
+</ParamField>
+
+<ParamField path="total_trajectories" type="integer">
+  Total number of trajectories to use for training
+  
+  ```yaml
+  BAKE:
+    total_trajectories: 1000
+  ```
+</ParamField>
+
+<ParamField path="seed" type="integer">
+  Random seed for reproducibility
+  
+  ```yaml
+  BAKE:
+    seed: 42
+  ```
+</ParamField>
+
+---
+
+## Model Configuration
+
+<ParamField path="model" type="object">
+  Model and adapter configuration
+  
+  ```yaml
+  BAKE:
+    model:
+      baked_adapter_config:
+        r: 8
+        lora_alpha: 16
+        lora_dropout: 0.05
+        bias: none
+        target_modules: all-linear
+  ```
+  
+  **Important**: In bgit, you don't configure `name_or_path` or `parent_model_name` manually. These are handled automatically:
+  - **First bake**: Uses the repository's base model (set during `bgit init`)
+  - **Sequential bakes**: Automatically uses `PARENT_MODEL` from `.bread` (set after previous bakes)
+  
+  **Fields you can configure**:
+  - `baked_adapter_config`: LoRA configuration (see below)
+  - `adapter_paths`: List of adapter checkpoint paths (advanced)
+  - `parent_peft_dir`: Parent PEFT directory (advanced)
+  - `type`: Model type (advanced, defaults to `"bake"`)
+</ParamField>
+
+### LoRA Configuration
+
+<ParamField path="model.baked_adapter_config" type="object">
+  LoRA (Low-Rank Adaptation) configuration
+  
+  ```yaml
+  BAKE:
+    model:
+      baked_adapter_config:
+        r: 8                    # LoRA rank
+        lora_alpha: 16          # Alpha parameter
+        lora_dropout: 0.05      # Dropout rate
+        bias: none              # Bias handling
+        target_modules: all-linear  # Target modules
+  ```
+</ParamField>
+
+---
+
+## Optimizer & Scheduler
+
+<ParamField path="optimizer" type="object">
+  Optimizer configuration
+  
+  ```yaml
+  BAKE:
+    optimizer:
+      learning_rate: 0.0001
+  ```
+</ParamField>
+
+<ParamField path="scheduler" type="object">
+  Learning rate scheduler
+  
+  ```yaml
+  BAKE:
+    scheduler:
+      type: huggingface
+  ```
+</ParamField>
+
+---
+
+## Integrations
+
+### Weights & Biases
+
+<Warning>
+**Currently in Development**: The Weights & Biases integration is currently in development and may not be fully available.
+</Warning>
+
+<ParamField path="wandb" type="object">
+  W&B logging configuration
+  
+  ```yaml
+  BAKE:
+    wandb:
+      enable: true
+      project: bread-experiments
+      entity: my-team
+      name: coding-v1
+      tags:
+        - experiment
+        - lora
+        - v1
+  ```
+  
+  **Fields**:
+  - `enable` (boolean): Enable W&B logging
+  - `project` (string): Project name
+  - `entity` (string): Team/entity name
+  - `name` (string): Run name
+  - `tags` (array): Tags for this run
+</ParamField>
+
+### DeepSpeed
+
+<ParamField path="deepspeed" type="object">
+  DeepSpeed ZeRO configuration
+  
+  ```yaml
+  BAKE:
+    deepspeed:
+      zero_optimization:
+        stage: 2
+  ```
+  
+  **ZeRO Stages**:
+  - Stage 0: Disabled
+  - Stage 1: Optimizer state partitioning
+  - Stage 2: + Gradient partitioning
+  - Stage 3: + Parameter partitioning
+</ParamField>
+
+---
+
+## Complete Example
+
+```yaml
+BAKE:
+  name: production_bake
+  
+  datasets:
+    - target: coding_target
+      weight: 1.0
+  
+  epochs: 5
+  micro_batch_size: 1
+  gradient_accumulation_steps: 4
+  total_trajectories: 10000
+  seed: 42
+  
+  model:
+    baked_adapter_config:
+      r: 16
+      lora_alpha: 32
+      lora_dropout: 0.1
+      bias: none
+      target_modules: all-linear
+  
+  optimizer:
+    learning_rate: 0.0001
+  
+  scheduler:
+    type: huggingface
+  
+  wandb:
+    enable: true
+    project: my-project
+    entity: my-team
+    name: coding-lora-v1
+    tags:
+      - lora
+      - coding
+      - production
+  
+  deepspeed:
+    zero_optimization:
+      stage: 2
+```
+
+---
+
+## Minimal Example
+
+The simplest bake configuration:
+
+```yaml
+BAKE:
+  name: main_bake
+  datasets:
+    - target: main_target  # References a named target
+      weight: 1.0
+```
+
+This uses default values for all other parameters. Note that `main_target` should be the name of a target defined in your `TARGET` section (e.g., `TARGET: name: main_target`).
+
+---
+
+## Field Reference Table
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | String | Yes | Bake identifier |
+| `datasets` | Array | Yes | Training data sources |
+| `epochs` | Integer | No | Number of training epochs |
+| `micro_batch_size` | Integer | No | Batch size per device |
+| `gradient_accumulation_steps` | Integer | No | Gradient accumulation |
+| `seed` | Integer | No | Random seed |
+| `model` | Object | No | Model configuration |
+| `optimizer` | Object | No | Optimizer settings |
+| `scheduler` | Object | No | LR scheduler |
+| `wandb` | Object | No | W&B integration |
+| `deepspeed` | Object | No | DeepSpeed config |
+
+---
+
+## Sequential Bakes
+
+When running sequential bakes, the `PARENT_MODEL` is automatically set from `.bread`. You don't need to configure it in `input.yml`:
+
+```yaml
+# First bake
+BAKE:
+  name: initial_bake
+  datasets:
+    - target: main_target
+      weight: 1.0
+# Creates: user/repo/initial_bake_abc123/120
+
+# Second bake (automatically uses initial_bake_abc123/120 as parent)
+BAKE:
+  name: refined_bake
+  datasets:
+    - target: main_target
+      weight: 1.0
+# Creates: user/repo/refined_bake_def456/150 (parent: initial_bake_abc123/120)
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Target Configuration"
+    icon="bullseye"
+    href="/bgit/configuration/target-config"
+  >
+    Configure targets
+  </Card>
+  <Card
+    title="Sequential Baking"
+    icon="layer-group"
+    href="/bgit/guides/sequential-baking"
+  >
+    Build models incrementally
+  </Card>
+</CardGroup>
+

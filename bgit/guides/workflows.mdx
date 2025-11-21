@@ -4,7 +4,7 @@ description: "Master iteration, branching, experimentation, and collaboration wi
 ---
 
 <Note>
-**New to bgit?** Start with the [Quickstart](/quickstart) to create your first model.
+**New to bgit?** Start with the [Quickstart](/bgit/quickstart) to create your first model.
 </Note>
 
 Now that you've created your first model, let's dive into how to actually work with bgit: iterating on models, experimenting with branches, and collaborating with teams.
@@ -89,10 +89,6 @@ bgit transforms model training into a familiar git workflow where:
 This is the only file you edit. It specifies what operation to perform next:
 
 ```yaml
-REPO:
-  name: my_model              # Repository name on Bread platform
-  base_model: Qwen/Qwen3-32B  # Base model to build from
-
 PROMPT:
   teacher:                    # What behavior to bake in
     messages:
@@ -105,6 +101,7 @@ PROMPT:
         content: ""           # Empty string = zero-token, permanent behavior
 
 TARGET:
+  name: main_target           # Target name (will be hashed: main_target_abc123...)
   generators:                 # How to generate training data
     - type: oneshot_qs        # AI-generated questions
       model: claude-sonnet-4-5-20250929
@@ -116,13 +113,12 @@ TARGET:
         - "Write an email validator"
         - "Implement LRU cache"
   
-  model_name: Qwen/Qwen3-32B  # Model to use for rollout
   num_traj_per_stimulus: 5     # Responses per question
 
 BAKE:
-  name: v1                    # Bake identifier
+  name: main_bake                    # Bake name (will be hashed: main_bake_abc123...)
   datasets:
-    - target: main_target     # Which target(s) to train on
+    - target: main_target     # References the named target above
       weight: 1.0             # Relative weight
   
   epochs: 1                   # Training epochs
@@ -141,93 +137,165 @@ BAKE:
 
 **Read-only** - automatically updated after operations run.
 
-Shows every step from base model to current state:
+Tracks the history of your model up to the current commit. The file structure includes:
+
+```yaml
+# This file is auto-generated - do not edit manually
+
+base_model: Qwen/Qwen3-32B
+total_steps: 8
+steps:
+  # First bake cycle: prompts → stim → rollout → bake
+  - step: 1
+    operation: add_prompt
+    prompt_name: python_expert_teacher
+  - step: 2
+    operation: run_stim
+    target: main_target_abc123
+    output_count: 150
+  - step: 3
+    operation: run_rollout
+    target: main_target_abc123
+    trajectory_count: 750
+  - step: 4
+    operation: bake
+    bake_name: main_bake_abc123
+    model_names:
+      - user/repo/main_bake_abc123/120
+  
+  # Second bake cycle: new prompt version → stim → rollout → bake
+  - step: 5
+    operation: add_prompt
+    prompt_name: python_expert_teacher_v2
+  - step: 6
+    operation: run_stim
+    target: main_target_def456
+    output_count: 200
+  - step: 7
+    operation: run_rollout
+    target: main_target_def456
+    trajectory_count: 1000
+  - step: 8
+    operation: bake
+    bake_name: refined_bake_def456
+    model_names:
+      - user/repo/refined_bake_def456/150
+resources:
+  prompts:
+    - python_expert_teacher
+    - python_expert_teacher_v2
+  targets:
+    - main_target_abc123
+    - main_target_def456
+  bakes:
+    - bake_name: main_bake_abc123
+      model_names:
+        - user/repo/main_bake_abc123/120
+    - bake_name: refined_bake_def456
+      model_names:
+        - user/repo/refined_bake_def456/150
+```
 
 <Tabs>
-  <Tab title="After Init">
+  <Tab title="After First Bake">
     ```yaml
+    # This file is auto-generated - do not edit manually
+
+    base_model: Qwen/Qwen3-32B
+    total_steps: 4
     steps:
+      # Step 1: Prompts were added to the repository
       - step: 1
-        operation: initialize
-        base_model: Qwen/Qwen3-32B
-        timestamp: 2024-01-15T10:00:00Z
+        operation: add_prompt
+        prompt_name: python_expert_teacher
+      
+      # Step 2: Stim operation generated questions
+      - step: 2
+        operation: run_stim
+        target: main_target_abc123
+        output_count: 150
+      
+      # Step 3: Rollout operation generated responses
+      - step: 3
+        operation: run_rollout
+        target: main_target_abc123
+        trajectory_count: 750
+      
+      # Step 4: Bake operation trained the model
+      - step: 4
+        operation: bake
+        bake_name: main_bake_abc123
+        model_names:
+          - user/repo/main_bake_abc123/120
+    resources:
+      prompts:
+        - python_expert_teacher
+      targets:
+        - main_target_abc123
+      bakes:
+        - bake_name: main_bake_abc123
+          model_names:
+            - user/repo/main_bake_abc123/120
     ```
   </Tab>
   
-  <Tab title="After First Bake">
+  <Tab title="After Second Bake">
     ```yaml
+    # This file is auto-generated - do not edit manually
+
+    base_model: Qwen/Qwen3-32B
+    total_steps: 8
     steps:
+      # First bake cycle
       - step: 1
-        operation: initialize
-        base_model: Qwen/Qwen3-32B
-        timestamp: 2024-01-15T10:00:00Z
-      
-      - step: 2
         operation: add_prompt
         prompt_name: python_expert_teacher
-        content: "You are an expert Python developer..."
-        timestamp: 2024-01-15T10:05:00Z
-      
-      - step: 3
-        operation: add_target
-        target_name: main_target
-        generators: [oneshot_qs, hardcoded]
-        timestamp: 2024-01-15T10:05:01Z
-      
-      - step: 4
+      - step: 2
         operation: run_stim
         target: main_target
         output_count: 150
-        timestamp: 2024-01-15T10:15:00Z
-      
-      - step: 5
+      - step: 3
         operation: run_rollout
         target: main_target
         trajectory_count: 750
-        timestamp: 2024-01-15T10:45:00Z
+      - step: 4
+        operation: bake
+        bake_name: main_bake_abc123
+        model_names:
+          - user/repo/main_bake_abc123/120
       
+      # Second bake cycle (iterating on the model)
+      - step: 5
+        operation: add_prompt
+        prompt_name: python_expert_teacher_v2
       - step: 6
-        operation: run_bake
-        bake_name: v1
-        result_model: user/repo/v1/checkpoint_1
-        training_loss: 0.0000047
-        timestamp: 2024-01-15T11:30:00Z
-    ```
-  </Tab>
-  
-  <Tab title="After Second Iteration">
-    ```yaml
-    steps:
-      # ... steps 1-6 from previous bake ...
-      
-      - step: 7
-        operation: update_prompt
-        prompt_name: python_expert_teacher
-        changes: "Added emphasis on edge cases and error handling"
-        timestamp: 2024-01-16T09:00:00Z
-      
-      - step: 8
         operation: run_stim
-        target: main_target
+        target: main_target_def456
         output_count: 200
-        timestamp: 2024-01-16T09:10:00Z
-      
-      - step: 9
+      - step: 7
         operation: run_rollout
-        target: main_target
+        target: main_target_def456
         trajectory_count: 1000
-        timestamp: 2024-01-16T09:50:00Z
-      
-      - step: 10
-        operation: run_bake
-        bake_name: v1
-        parent_model: user/repo/v1/checkpoint_1
-        result_model: user/repo/v1/checkpoint_2
-        training_loss: 0.0000052
-        timestamp: 2024-01-16T11:15:00Z
+      - step: 8
+        operation: bake
+        bake_name: refined_bake_def456
+        model_names:
+          - user/repo/refined_bake_def456/150
+    resources:
+      prompts:
+        - python_expert_teacher
+      targets:
+        - main_target
+      bakes:
+        - bake_name: main_bake_abc123
+          model_names:
+            - user/repo/main_bake_abc123/120
+        - bake_name: refined_bake_def456
+          model_names:
+            - user/repo/refined_bake_def456/150
     ```
     
-    The file continues growing with each baking cycle.
+    The `steps` array tracks all operations sequentially (prompts, stim, rollout, bake), showing the complete workflow. The `resources.bakes` array maintains the complete list of all bakes that led to the current commit.
   </Tab>
 </Tabs>
 
@@ -283,6 +351,10 @@ Useful for:
 ---
 
 ## Core Workflow: Iterative Baking
+
+<Tip>
+**Sequential Baking**: When you run multiple bakes, each bake automatically uses the previous bake's model as the parent. See [Sequential Baking](/bgit/guides/sequential-baking) for details on building models incrementally.
+</Tip>
 
 <Steps>
   <Step title="Edit Configuration">
@@ -357,25 +429,16 @@ Useful for:
     Once bake completes, test the new weights:
     
     ```bash
-    # Get model name from status
-    bgit status
-    
-    # Chat with new model
+    # Model name is displayed when bake completes
+    # Or check recipe.yml for model_names under the latest bake
     bgit chat user/repo/v1/checkpoint_2
     ```
     
     Verify the behavior changed as expected.
-  </Step>
-
-  <Step title="Commit Updated State">
-    After operations complete, commit the updated metadata:
     
-    ```bash
-    bgit add .
-    bgit commit -m "Bake complete: checkpoint_2 with higher creativity"
-    ```
-    
-    This saves the updated `.bread` and `recipe.yml` to git history.
+    <Note>
+    **Automatic commits**: bgit automatically commits `recipe.yml` after each successful bake. The `.bread` file is committed via the pre-commit hook when you stage changes. You don't need to manually commit these files.
+    </Note>
   </Step>
 
   <Step title="Repeat">
@@ -395,6 +458,10 @@ Useful for:
 
 **Key concept:** Branches in bgit represent **parallel weight evolutions**. Each branch has its own `recipe.yml` tracking independent operations from a common ancestor.
 
+<Tip>
+**Use `--detach` flag when baking on branches**: When working with branches, use the `--detach` flag for bake operations to avoid conflicts with Git state changes. This allows you to switch branches or make commits while the bake runs in the background. Use `bgit fetch` to retrieve results when the bake completes.
+</Tip>
+
 <Warning>
 **bgit doesn't support merging** because model weights can't be combined. You experiment on branches, then **copy the winning branch's files** to main.
 </Warning>
@@ -410,16 +477,22 @@ Useful for:
     # Create first experiment
     git checkout -b experiment/formal-tone
     vim input.yml  # Edit for formal tone
-    bgit commit -am "Experiment: formal business tone"
-    bgit run stim rollout bake
+    bgit add input.yml
+    bgit commit -m "Experiment: formal business tone"
+    bgit run stim rollout bake --detach  # Detach to allow branch switching
     
     # Create second experiment (from main, not formal-tone)
     git checkout main
     git checkout -b experiment/casual-tone
     vim input.yml  # Edit for casual tone
-    bgit commit -am "Experiment: casual friendly tone"
-    bgit run stim rollout bake
+    bgit add input.yml
+    bgit commit -m "Experiment: casual friendly tone"
+    bgit run stim rollout bake --detach  # Detach to allow branch switching
     ```
+    
+    <Note>
+    The `--detach` flag runs the bake operation in the background, allowing you to switch branches or continue working while the bake completes. This is especially useful when running multiple experiments in parallel.
+    </Note>
     
     Each branch now has divergent `recipe.yml` files:
     - `main`: base → prompt1 → bake1
@@ -427,16 +500,38 @@ Useful for:
     - `experiment/casual-tone`: base → prompt1 → bake1 → prompt2_casual → bake2
   </Step>
 
+  <Step title="Retrieve Bake Results">
+    After bakes complete (they run in the background with `--detach`), retrieve the results:
+    
+    ```bash
+    # Switch to the branch you want to check
+    git checkout experiment/formal-tone
+    
+    # Fetch results from detached bake operations
+    bgit fetch
+    
+    # This updates .bread and recipe.yml with the completed bake results
+    # Model names are displayed in the terminal output
+    ```
+    
+    Repeat for other branches:
+    
+    ```bash
+    git checkout experiment/casual-tone
+    bgit fetch  # Retrieve results for this branch's bake
+    ```
+  </Step>
+
   <Step title="Test Both Models">
     ```bash
     # Test formal experiment
     git checkout experiment/formal-tone
-    bgit status  # Get model name
+    # Check recipe.yml or .bread for model name
     bgit chat user/repo/v1/formal_checkpoint
     
     # Test casual experiment
     git checkout experiment/casual-tone
-    bgit status  # Get model name
+    # Check recipe.yml or .bread for model name
     bgit chat user/repo/v1/casual_checkpoint
     ```
   </Step>
@@ -577,6 +672,9 @@ bgit repositories work like any git repository:
 git clone git@github.com:team/customer-support-bot.git
 cd customer-support-bot
 
+# Fetch latest updates from remote
+git fetch origin
+
 # See what they've been doing
 git log
 
@@ -586,9 +684,13 @@ bgit chat <their-model>
 
 # Create your own experiment
 git checkout -b experiment/add-product-knowledge
-vim customer-support-bot.yml  # Add product database prompt
-bgit commit -am "Experiment: integrate product knowledge base"
-bgit run stim rollout bake
+vim input.yml  # Add product database prompt
+bgit add input.yml
+bgit commit -m "Experiment: integrate product knowledge base"
+bgit run stim rollout bake --detach  # Use --detach when on branches
+
+# Retrieve results when complete
+bgit fetch
 
 # Push your experiment for team review
 git push origin experiment/add-product-knowledge
@@ -614,7 +716,7 @@ git push origin experiment/add-product-knowledge
 Initialize a new model repository.
 
 ```bash
-bgit init yoda-model
+bgit init <REPO-NAME>
 ```
 
 Creates:
@@ -662,19 +764,19 @@ bgit status
 
 **Example output:**
 ```
-Repository: yoda-model
+Repository: <REPO-NAME>
 Current state: user/repo/v1/checkpoint_2
 
 Operations:
-  Stim:    ✓ complete (150 stimuli)
-  Rollout: ✓ complete (750 trajectories)
-  Bake:    ⟳ running (45% complete, loss: 0.0000052, ETA: 15 min)
+  Stim:    complete (150 stimuli)
+  Rollout: complete (750 trajectories)
+  Bake:    running (45% complete, loss: 0.0000052, ETA: 15 min)
 
 Latest model: user/repo/v1/checkpoint_2
 Training loss: 0.0000047
 ```
 
-### `bgit run <operations...>`
+### `bgit run <operations...> [--detach]`
 
 Run one or more operations.
 
@@ -689,6 +791,9 @@ bgit run stim rollout bake
 
 # Just run bake (if stim/rollout already complete)
 bgit run bake
+
+# Run with detach flag (recommended for branches)
+bgit run stim rollout bake --detach
 ```
 
 **Operations:**
@@ -696,7 +801,10 @@ bgit run bake
 - `rollout`: Generate model responses
 - `bake`: Train model weights
 
-Updates `.bread` and `recipe.yml` automatically after each operation.
+**Flags:**
+- `--detach`: Run operations in the background. **Recommended when working on branches** to avoid conflicts with Git state changes. Allows you to switch branches or make commits while operations run. Use `bgit fetch` to retrieve results when complete.
+
+Updates `.bread` and `recipe.yml` automatically after each operation completes.
 
 ### `bgit stim [--limit <number>]`
 
@@ -750,15 +858,36 @@ def validate_email(email: str) -> bool:
     ...
 ```
 
+### `bgit fetch`
+
+Retrieve results from detached bake operations.
+
+```bash
+# Fetch results from detached operations
+bgit fetch
+```
+
+**When to use:**
+- After running `bgit run` with `--detach` flag
+- When switching to a branch that had detached operations running
+- To check if background operations have completed
+
+**What it does:**
+- Updates `.bread` and `recipe.yml` with completed operation results
+- Displays model names if bakes completed
+- Shows operation status
+
+<Tip>
+**Best practice**: When working on branches, always use `bgit run ... --detach` and then `bgit fetch` to retrieve results. This prevents Git state conflicts and allows parallel experimentation.
+</Tip>
+
 ### `bgit chat <model-name>`
 
 Start interactive chat session with a baked model.
 
 ```bash
-# Get model name from status
-bgit status
-
-# Start chat
+# Model name is displayed when bake completes
+# Or check recipe.yml (model_names) or use bgit models
 bgit chat user/repo/v1/checkpoint_2
 ```
 
@@ -832,29 +961,6 @@ test/optimal-lora-rank
 - Significant prompt changes
 - Starting from scratch
 - Want fresh training data
-
-### Organizing Experiments
-
-**Single model repo approach:**
-```
-yoda-model/
-├── main branch:          Production model
-├── experiment/formal:    Formal tone experiment
-├── experiment/casual:    Casual tone experiment
-└── feat/add-wisdom:      Add philosophical wisdom
-```
-
-**Multiple model repos approach:**
-```
-~/models/
-├── customer-support-bot/    # One model
-├── code-assistant/          # Another model
-└── content-writer/          # Third model
-```
-
-Choose based on:
-- Single repo: Variations of same base behavior
-- Multiple repos: Completely different models/purposes
 
 ---
 
@@ -957,28 +1063,28 @@ Choose based on:
   <Card
     title="Production Patterns"
     icon="rocket"
-    href="/guides/production-patterns"
+    href="/sdk/guides/production-patterns"
   >
     Deploy bgit workflows in production
   </Card>
   <Card
     title="Using Baked Models"
     icon="download"
-    href="/guides/using-baked-models"
+    href="/sdk/guides/using-baked-models"
   >
     Deploy and serve your baked models
   </Card>
   <Card
     title="Target Configuration"
     icon="bullseye"
-    href="/configuration/target-config"
+    href="/bgit/configuration/target-config"
   >
     Complete target config reference
   </Card>
   <Card
     title="Bake Configuration"
     icon="fire"
-    href="/configuration/bake-config"
+    href="/bgit/configuration/bake-config"
   >
     Complete bake config reference
   </Card>

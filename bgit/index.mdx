@@ -1,0 +1,111 @@
+---
+title: "Introduction"
+description: "Git-native version control for AI models"
+---
+
+**bgit** wraps the Bread SDK in a git repository structure, turning model training into a natural git workflow.
+
+## What is bgit?
+
+bgit makes AI model baking feel like regular software development:
+
+- **One file = One model**: Your entire configuration in a YAML file
+- **Commits = Versions**: Track every model iteration
+- **Branches = Experiments**: Test ideas safely in parallel
+- **Run = Bake**: Run operations manually with `bgit run`
+- **recipe.yml = History**: Auto-generated history tracking all bakes and model lineage
+- **Chat = Test**: Chat with your baked models using `bgit chat`
+
+Think of it as **version control for your AI's mind**.
+
+---
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/bgit/quickstart"
+  >
+    **Start here!** Install bgit and bake your first model. Includes installation and step-by-step instructions.
+  </Card>
+  <Card
+    title="How bgit Works"
+    icon="lightbulb"
+    href="/bgit/how-bgit-works"
+  >
+    Understand git-based model evolution, commits, branches, and how bgit tracks your model's history.
+  </Card>
+  <Card
+    title="Configuration"
+    icon="file-code"
+    href="/bgit/configuration/generators"
+  >
+    Complete YAML configuration reference for generators, targets, and bakes.
+  </Card>
+  <Card
+    title="Workflows"
+    icon="diagram-project"
+    href="/bgit/guides/workflows"
+  >
+    Master iteration, branching, experimentation, and collaboration patterns.
+  </Card>
+</CardGroup>
+
+---
+
+## Core Concepts
+
+<CardGroup cols={3}>
+  <Card title="input.yml" icon="pen">
+    Your configuration file. Edit this to define prompts, targets, and bake settings.
+  </Card>
+  <Card title="recipe.yml" icon="list-timeline">
+    Auto-generated history tracking all bakes and model lineage.
+  </Card>
+  <Card title=".bread" icon="database">
+    Internal state mapping your YAML to Bread SDK resources.
+  </Card>
+  <Card title="Commits" icon="code-commit">
+    Each commit represents a model version. Git history tracks weight evolution.
+  </Card>
+  <Card title="Branches" icon="code-branch">
+    Branches are experiments. Test different approaches in parallel.
+  </Card>
+  <Card title="Operations" icon="gears">
+    Run stim, rollout, and bake operations to train your model.
+  </Card>
+</CardGroup>
+
+---
+
+## The bgit Workflow
+
+```
+Edit input.yml → Commit → Run Operations → Test → Iterate
+```
+
+Every change to your `input.yml` file represents a new model version. Your commit messages document what changed. After successful bakes, `input.yml` is automatically cleared (keeping section headings) for your next iteration.
+
+---
+
+## Why Git for AI Models?
+
+AI model training has the same version control needs as software:
+
+- Track changes over time
+- Experiment safely
+- Collaborate with teams
+- Roll back mistakes
+- Document decisions
+
+Git already solves these problems perfectly. **bgit** makes git's power available for AI.
+
+---
+
+## Related Projects
+
+- [Bread SDK](https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo) - The underlying SDK
+- [Bread Documentation](https://docs.bread.com.ai) - Official docs
+
