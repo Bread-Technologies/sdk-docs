@@ -39,12 +39,17 @@ Target configuration controls stimulus and rollout generation behavior. In bgit,
       - type: oneshot_qs
         model: claude-sonnet-4-5-20250929
         numq: 10
+        template_path: templates/coding_template.txt  # Optional: custom template
       - type: hardcoded
         numq: 2
         questions:
           - "Question 1"
           - "Question 2"
   ```
+  
+  <Tip>
+  **Custom Templates**: For `oneshot_qs` generators, you can use `template_path` to specify custom templates. Create a `templates/` directory in your repo root and store template files there. See [Generators](/bgit/configuration/generators) for details.
+  </Tip>
 </ParamField>
 
 ### Model Configuration

@@ -27,6 +27,7 @@ TARGET:
       model: claude-sonnet-4-5-20250929
       numq: 50
       temperature: 1.0
+      template_path: templates/my_template.txt  # Optional: custom template
 ```
 
 <ParamField path="type" type="string" required>
@@ -45,7 +46,43 @@ TARGET:
   Generation temperature (0.0-2.0). Higher = more creative/random
 </ParamField>
 
-**Use Case**: Generate diverse, AI-created questions based on your prompts
+<ParamField path="template_path" type="string">
+  **Optional**: Path to a custom template file for question generation. Paths are relative to your repository root.
+  
+  **Best Practice**: Create a `templates/` directory in your repo root to organize template files:
+  
+  ```bash
+  mkdir templates
+  # Create your template file
+  cat > templates/my_template.txt << 'EOF'
+  Generate exactly ${numq} questions about:
+  
+  ${prompt_u}
+  
+  Format as numbered list:
+  1. question1?
+  2. question2?
+  ...
+  EOF
+  ```
+  
+  Then reference it in your config:
+  
+  ```yaml
+  generators:
+    - type: oneshot_qs
+      template_path: templates/my_template.txt
+  ```
+  
+  **Template Requirements**:
+  - Must include `${numq}` variable (number of questions)
+  - Must include `${prompt_u}` variable (teacher prompt content)
+  - File size limit: 1MB
+  - Encoding: UTF-8
+  - Uses Python's `string.Template` format
+</ParamField>
+
+**Use Case**: Generate diverse, AI-created questions based on your prompts. Use `template_path` to customize the question generation style and format.
 
 ---
 
@@ -263,6 +300,10 @@ TARGET:
 
   <Accordion title="Tune Temperature" icon="temperature-half">
     Adjust temperature based on creativity needs (lower = more focused, higher = more creative)
+  </Accordion>
+
+  <Accordion title="Use Custom Templates" icon="file-code">
+    For `oneshot_qs` generators, create a `templates/` directory and use `template_path` to customize question generation style. Templates use Python's `string.Template` format with `${numq}` and `${prompt_u}` variables.
   </Accordion>
 </AccordionGroup>
 
