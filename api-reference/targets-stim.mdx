@@ -5,24 +5,21 @@ description: "Generate questions and tasks for model training"
 
 ## Overview
 
-Stimulus (stim) generation creates questions, tasks, or prompts based on the target's generator configuration and teacher prompt (`u`). Stim generates scenarios where the expert behavior would be applied. Stim jobs execute asynchronously and their output is used as input for rollout jobs.
+Stimulus (stim) generation creates questions, tasks, or prompts based on the target's generator configuration and teacher prompt. Stim generates scenarios where the expert behavior would be applied. Stim jobs execute asynchronously and their output is used as input for rollout jobs.
 
-**Resource**: `client.targets.stim`
+## Endpoints
 
-## Methods
-
-### run()
+### Run Stim Job
 
 Start a stim job for the target.
 
 **Endpoint**: `POST /v1/repo/{repo_name}/targets/{target_name}/stim`
 
-```python
-result = client.targets.stim.run(
-    target_name="coding_target",
-    repo_name="my_repo"
-)
-print(result.status)  # Job status
+**Request**:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="target_name" type="string" required>
@@ -34,32 +31,40 @@ print(result.status)  # Job status
 </ParamField>
 
 **Prerequisites**:
-- Target must have stim configuration (generators, `u` teacher prompt, `v` student prompt)
+- Target must have stim configuration (generators, teacher prompt, student prompt)
 
 **Behavior**:
 - Idempotent: repeated calls return current state (no duplicate jobs)
 - Asynchronous: returns immediately, job runs in background
 
-**Returns**: `StimRunResponse`
-- `status`: Job status (not_started, running, complete)
-- `lines`: Number of output lines generated
-- `parameters`: Job parameters
+**Response**: `200 OK`
+
+```json
+{
+  "status": "running",
+  "lines": 0,
+  "parameters": {}
+}
+```
+
+**Response Fields**:
+- `status`: `string` - Job status (not_started, running, complete)
+- `lines`: `number` - Number of output lines generated
+- `parameters`: `object` - Job parameters
 
 ---
 
-### get()
+### Get Stim Status
 
 Get stim job status.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/targets/{target_name}/stim`
 
-```python
-status = client.targets.stim.get(
-    target_name="coding_target",
-    repo_name="my_repo"
-)
-print(f"Status: {status.status}")
-print(f"Lines generated: {status.lines}")
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="target_name" type="string" required>
@@ -70,38 +75,34 @@ print(f"Lines generated: {status.lines}")
   Repository name
 </ParamField>
 
-**Returns**: `StimGetResponse`
-- `status`: not_started | running | complete
-- `lines`: Number of generated stimuli
-- `parameters`: Job configuration
+**Response**: `200 OK`
+
+```json
+{
+  "status": "complete",
+  "lines": 100,
+  "parameters": {}
+}
+```
+
+**Response Fields**:
+- `status`: `string` - not_started | running | complete
+- `lines`: `number` - Number of generated stimuli
+- `parameters`: `object` - Job configuration
 
 ---
 
-### get_output()
+### Get Stim Output
 
 Get paginated stim output data.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/targets/{target_name}/stim/output`
 
-```python
-output = client.targets.stim.get_output(
-    target_name="coding_target",
-    repo_name="my_repo",
-    limit=100,
-    offset=0
-)
+**Request**:
 
-for stimulus in output.output:
-    print(stimulus)
-
-if output.has_more:
-    # Fetch more data with increased offset
-    next_batch = client.targets.stim.get_output(
-        target_name="coding_target",
-        repo_name="my_repo",
-        limit=100,
-        offset=100
-    )
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim/output?limit=100&offset=0" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="target_name" type="string" required>
@@ -120,14 +121,32 @@ if output.has_more:
   Starting line number (0-indexed)
 </ParamField>
 
-**Returns**: `StimGetOutputResponse`
-- `status`: Job status
-- `lines`: Total number of output lines
-- `offset`: Starting line offset
-- `limit`: Page size
-- `has_more`: Whether more data is available
-- `output`: List of generated stimuli
-- `parameters`: Stim configuration
+**Response**: `200 OK`
+
+```json
+{
+  "status": "complete",
+  "lines": 1000,
+  "offset": 0,
+  "limit": 100,
+  "has_more": true,
+  "output": [
+    "Write a function to reverse a string",
+    "Implement binary search",
+    "..."
+  ],
+  "parameters": {}
+}
+```
+
+**Response Fields**:
+- `status`: `string` - Job status
+- `lines`: `number` - Total number of output lines
+- `offset`: `number` - Starting line offset
+- `limit`: `number` - Page size
+- `has_more`: `boolean` - Whether more data is available
+- `output`: `Array<string>` - List of generated stimuli
+- `parameters`: `object` - Stim configuration
 
 ---
 
@@ -135,46 +154,38 @@ if output.has_more:
 
 <Steps>
   <Step title="Start Stim Job">
-    ```python
-    result = client.targets.stim.run(
-        target_name="coding_target",
-        repo_name="my_repo"
-    )
-    print(f"Job started: {result.status}")
+    ```bash
+    curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
     ```
   </Step>
 
   <Step title="Poll Status">
-    ```python
-    import time
-    
-    while True:
-        status = client.targets.stim.get(
-            target_name="coding_target",
-            repo_name="my_repo"
-        )
-        
-        if status.status == "complete":
-            print(f"Complete! Generated {status.lines} stimuli")
-            break
-        elif status.status == "running":
-            print("Still running...")
-        
-        time.sleep(5)  # Poll every 5 seconds
+    ```bash
+    # Poll status every 5 seconds
+    while true; do
+      response=$(curl -s -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim" \
+        -H "Authorization: Bearer $BREAD_API_KEY")
+      
+      status=$(echo "$response" | jq -r '.status')
+      lines=$(echo "$response" | jq -r '.lines')
+      
+      if [ "$status" = "complete" ]; then
+        echo "Complete! Generated $lines stimuli"
+        break
+      elif [ "$status" = "running" ]; then
+        echo "Still running... ($lines lines so far)"
+      fi
+      
+      sleep 5
+    done
     ```
   </Step>
 
   <Step title="Fetch Output">
-    ```python
-    output = client.targets.stim.get_output(
-        target_name="coding_target",
-        repo_name="my_repo",
-        limit=100
-    )
-    
-    print(f"Retrieved {len(output.output)} stimuli")
-    for i, stimulus in enumerate(output.output):
-        print(f"Stimulus {i+1}: {stimulus}")
+    ```bash
+    curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim/output?limit=100" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
     ```
   </Step>
 </Steps>
@@ -183,72 +194,35 @@ if output.has_more:
 
 Fetch all stim output with pagination:
 
-```python
-def get_all_stim_output(target_name: str, repo_name: str):
-    all_output = []
-    offset = 0
-    limit = 1000  # Maximum allowed
-    
-    while True:
-        chunk = client.targets.stim.get_output(
-            target_name=target_name,
-            repo_name=repo_name,
-            offset=offset,
-            limit=limit
-        )
-        
-        all_output.extend(chunk.output)
-        
-        if not chunk.has_more:
-            break
-        
-        offset += limit
-    
-    return all_output
+```bash
+#!/bin/bash
 
-# Usage
-stimuli = get_all_stim_output("coding_target", "my_repo")
-print(f"Total stimuli: {len(stimuli)}")
-```
+# Fetch all stim output
+offset=0
+limit=1000
+all_output=()
 
-## Async Example
+while true; do
+  response=$(curl -s -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/stim/output?limit=$limit&offset=$offset" \
+    -H "Authorization: Bearer $BREAD_API_KEY")
+  
+  # Extract output array
+  output=$(echo "$response" | jq -r '.output[]')
+  has_more=$(echo "$response" | jq -r '.has_more')
+  
+  # Process output
+  while IFS= read -r line; do
+    all_output+=("$line")
+  done <<< "$output"
+  
+  if [ "$has_more" = "false" ]; then
+    break
+  fi
+  
+  offset=$((offset + limit))
+done
 
-Using the async client:
-
-```python
-import asyncio
-from aibread import AsyncBread
-
-async def run_stim_job():
-    async with AsyncBread() as client:
-        # Start job
-        result = await client.targets.stim.run(
-            target_name="coding_target",
-            repo_name="my_repo"
-        )
-        
-        # Poll status
-        while True:
-            status = await client.targets.stim.get(
-                target_name="coding_target",
-                repo_name="my_repo"
-            )
-            
-            if status.status == "complete":
-                break
-            
-            await asyncio.sleep(5)
-        
-        # Get output
-        output = await client.targets.stim.get_output(
-            target_name="coding_target",
-            repo_name="my_repo"
-        )
-        
-        return output.output
-
-# Run
-stimuli = asyncio.run(run_stim_job())
+echo "Total stimuli: ${#all_output[@]}"
 ```
 
 ## Job Status States
@@ -287,18 +261,33 @@ stimuli = asyncio.run(run_stim_job())
 
 ## Error Handling
 
-```python
-import aibread
+### Not Found (404)
 
-try:
-    result = client.targets.stim.run(
-        target_name="coding_target",
-        repo_name="my_repo"
-    )
-except aibread.NotFoundError:
-    print("Target not found")
-except aibread.APIStatusError as e:
-    print(f"API error: {e.status_code} - {e.response}")
+Target doesn't exist:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets/nonexistent/stim" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `404 Not Found`
+
+```json
+{
+  "error": "Target not found"
+}
+```
+
+### Missing Configuration (400)
+
+Target missing required stim configuration:
+
+**Response**: `400 Bad Request`
+
+```json
+{
+  "error": "Target must have generators and teacher prompt configured"
+}
 ```
 
 ## Next Steps
@@ -312,11 +301,11 @@ except aibread.APIStatusError as e:
     Generate trajectories from stim output
   </Card>
   <Card
-    title="Pagination Guide"
-    icon="book"
-    href="/guides/pagination"
+    title="SDK Quickstart"
+    icon="code"
+    href="/sdk/quickstart"
   >
-    Learn pagination patterns
+    Use the SDK for programmatic control
   </Card>
 </CardGroup>
 

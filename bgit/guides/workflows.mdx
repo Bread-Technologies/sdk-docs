@@ -139,14 +139,14 @@ BAKE:
 
 Tracks the history of your model up to the current commit. The file structure includes:
 
-```yaml
+    ```yaml
 # This file is auto-generated - do not edit manually
 
 base_model: Qwen/Qwen3-32B
 total_steps: 8
-steps:
+    steps:
   # First bake cycle: prompts → stim → rollout → bake
-  - step: 1
+      - step: 1
     operation: add_prompt
     prompt_name: python_expert_teacher
   - step: 2

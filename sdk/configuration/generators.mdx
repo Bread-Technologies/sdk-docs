@@ -167,7 +167,9 @@ Write your own prompt to a language model to generate stimuli prompts on your be
 
 Combining multiple generators creates more diverse training datasets. Use multiple generators for a target:
 
-```python
+<CodeGroup>
+
+```python Python
 target = client.targets.set(
     target_name="multi_gen_target",
     repo_name="my_repo",
@@ -199,6 +201,40 @@ target = client.targets.set(
     }
 )
 ```
+
+```typescript TypeScript
+const target = await client.targets.create('my_repo', {
+  target_name: 'multi_gen_target',
+  template: 'default',
+  overrides: {
+    generators: [
+      {
+        type: 'oneshot_qs',
+        model: 'claude-sonnet-4-5-20250929',
+        numq: 30,
+      },
+      {
+        type: 'from_dataset',
+        dataset: 'code_contests',
+        numq: 20,
+      },
+      {
+        type: 'hardcoded',
+        numq: 2,
+        questions: [
+          'Implement a specific edge case',
+          'Handle this corner case',
+        ],
+      },
+    ],
+    model_name: 'Qwen/Qwen3-32B',
+    u: 'system_prompt',  // Teacher: behavior to bake
+    v: 'user_prompt',    // Student: trigger (or '' for empty)
+  },
+});
+```
+
+</CodeGroup>
 
 <Tip>
 Combined generators create a diverse dataset with AI-generated, benchmark, and custom questions.
@@ -268,7 +304,7 @@ Combined generators create a diverse dataset with AI-generated, benchmark, and c
   <Card
     title="Target Configuration"
     icon="bullseye"
-    href="/configuration/target-config"
+    href="/sdk/configuration/target-config"
   >
     Complete target configuration reference
   </Card>

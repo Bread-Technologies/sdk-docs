@@ -23,7 +23,9 @@ Stim and rollout outputs support pagination for efficiently handling large datas
 
 ## Basic Pagination
 
-```python
+<CodeGroup>
+
+```python Python
 # First page
 output = client.targets.stim.get_output(
     target_name="my_target",
@@ -45,9 +47,34 @@ if output.has_more:
     )
 ```
 
+```typescript TypeScript
+// First page
+let output = await client.targets.stim.getOutput('my_target', {
+  repo_name: 'my_repo',
+  limit: 100,
+  offset: 0,
+});
+
+console.log(`Retrieved ${output.output.length} items`);
+console.log(`Has more: ${output.has_more}`);
+
+// Next page
+if (output.has_more) {
+  const nextPage = await client.targets.stim.getOutput('my_target', {
+    repo_name: 'my_repo',
+    limit: 100,
+    offset: 100,
+  });
+}
+```
+
+</CodeGroup>
+
 ## Fetch All Results
 
-```python
+<CodeGroup>
+
+```python Python
 def get_all_output(target_name: str, repo_name: str, output_type: str = "stim"):
     """Fetch all stim or rollout output with pagination"""
     all_output = []
@@ -82,9 +109,61 @@ stimuli = get_all_output("my_target", "my_repo", "stim")
 trajectories = get_all_output("my_target", "my_repo", "rollout")
 ```
 
+```typescript TypeScript
+async function getAllOutput(
+  targetName: string,
+  repoName: string,
+  outputType: 'stim' | 'rollout' = 'stim'
+): Promise<any[]> {
+  /**
+   * Fetch all stim or rollout output with pagination
+   */
+  const allOutput: any[] = [];
+  let offset = 0;
+  const limit = 1000;  // Maximum allowed
+  
+  while (true) {
+    let chunk;
+    if (outputType === 'stim') {
+      chunk = await client.targets.stim.getOutput(targetName, {
+        repo_name: repoName,
+        limit,
+        offset,
+      });
+    } else {
+      chunk = await client.targets.rollout.getOutput(targetName, {
+        repo_name: repoName,
+        limit,
+        offset,
+      });
+    }
+    
+    allOutput.push(...chunk.output);
+    
+    console.log(`Fetched ${chunk.output.length} items (total: ${allOutput.length})`);
+    
+    if (!chunk.has_more) {
+      break;
+    }
+    
+    offset += limit;
+  }
+  
+  return allOutput;
+}
+
+// Usage
+const stimuli = await getAllOutput('my_target', 'my_repo', 'stim');
+const trajectories = await getAllOutput('my_target', 'my_repo', 'rollout');
+```
+
+</CodeGroup>
+
 ## Async Pagination
 
-```python
+<CodeGroup>
+
+```python Python
 import asyncio
 from aibread import AsyncBread
 
@@ -116,11 +195,51 @@ async def get_all_output_async(target_name: str, repo_name: str):
 output = asyncio.run(get_all_output_async("my_target", "my_repo"))
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+async function getAllOutputAsync(
+  targetName: string,
+  repoName: string
+): Promise<any[]> {
+  /** Async pagination for better performance */
+  const client = new Bread();
+  const allOutput: any[] = [];
+  let offset = 0;
+  const limit = 1000;
+  
+  while (true) {
+    const chunk = await client.targets.stim.getOutput(targetName, {
+      repo_name: repoName,
+      limit,
+      offset,
+    });
+    
+    allOutput.push(...chunk.output);
+    
+    if (!chunk.has_more) {
+      break;
+    }
+    
+    offset += limit;
+  }
+  
+  return allOutput;
+}
+
+// Run
+const output = await getAllOutputAsync('my_target', 'my_repo');
+```
+
+</CodeGroup>
+
 ## Generator Pattern
 
-Use Python generators for memory-efficient iteration:
+Use generators/iterators for memory-efficient iteration:
 
-```python
+<CodeGroup>
+
+```python Python
 def iterate_output(target_name: str, repo_name: str, chunk_size: int = 1000):
     """Generator that yields chunks of output"""
     offset = 0
@@ -146,9 +265,47 @@ for chunk in iterate_output("my_target", "my_repo"):
         process(item)  # Process items without loading all into memory
 ```
 
+```typescript TypeScript
+async function* iterateOutput(
+  targetName: string,
+  repoName: string,
+  chunkSize: number = 1000
+): AsyncGenerator<any[], void, unknown> {
+  /** Generator that yields chunks of output */
+  let offset = 0;
+  
+  while (true) {
+    const chunk = await client.targets.stim.getOutput(targetName, {
+      repo_name: repoName,
+      limit: chunkSize,
+      offset,
+    });
+    
+    yield chunk.output;
+    
+    if (!chunk.has_more) {
+      break;
+    }
+    
+    offset += chunkSize;
+  }
+}
+
+// Usage
+for await (const chunk of iterateOutput('my_target', 'my_repo')) {
+  for (const item of chunk) {
+    process(item);  // Process items without loading all into memory
+  }
+}
+```
+
+</CodeGroup>
+
 ## Progress Tracking
 
-```python
+<CodeGroup>
+
+```python Python
 def fetch_with_progress(target_name: str, repo_name: str):
     """Fetch output with progress tracking"""
     # Get total count first
@@ -188,6 +345,54 @@ def fetch_with_progress(target_name: str, repo_name: str):
     return all_output
 ```
 
+```typescript TypeScript
+async function fetchWithProgress(
+  targetName: string,
+  repoName: string
+): Promise<any[]> {
+  /** Fetch output with progress tracking */
+  // Get total count first
+  const initial = await client.targets.stim.getOutput(targetName, {
+    repo_name: repoName,
+    limit: 1,
+    offset: 0,
+  });
+  const totalLines = initial.lines;
+  
+  const allOutput: any[] = [];
+  let offset = 0;
+  const limit = 1000;
+  
+  console.log(`Total items: ${totalLines}`);
+  
+  while (true) {
+    const chunk = await client.targets.stim.getOutput(targetName, {
+      repo_name: repoName,
+      limit,
+      offset,
+    });
+    
+    allOutput.push(...chunk.output);
+    
+    // Progress percentage
+    const progress = (allOutput.length / totalLines) * 100;
+    console.log(
+      `Progress: ${progress.toFixed(1)}% (${allOutput.length}/${totalLines})`
+    );
+    
+    if (!chunk.has_more) {
+      break;
+    }
+    
+    offset += limit;
+  }
+  
+  return allOutput;
+}
+```
+
+</CodeGroup>
+
 ## Best Practices
 
 <AccordionGroup>
@@ -216,16 +421,16 @@ def fetch_with_progress(target_name: str, repo_name: str):
 
 <CardGroup cols={2}>
   <Card
-    title="Workflows"
-    icon="diagram-project"
-    href="/guides/workflows"
+    title="Production Patterns"
+    icon="shield"
+    href="/sdk/guides/production-patterns"
   >
     Complete workflow examples
   </Card>
   <Card
     title="Advanced Features"
     icon="wand-magic-sparkles"
-    href="/guides/advanced-features"
+    href="/sdk/guides/advanced-features"
   >
     Advanced SDK capabilities
   </Card>

@@ -5,9 +5,11 @@ description: "Advanced SDK capabilities and customization"
 
 ## Raw Response Access
 
-Access raw HTTP response data by prefixing methods with `.with_raw_response.`:
+Access raw HTTP response data:
 
-```python
+<CodeGroup>
+
+```python Python
 response = client.repo.with_raw_response.list()
 
 # Access response metadata
@@ -20,11 +22,26 @@ repos = response.parse()
 print(repos.repos)
 ```
 
+```typescript TypeScript
+// Access raw response through the response object
+const response = await client.repo.list();
+
+// Access response metadata (if SDK exposes it)
+console.log(response.statusCode);
+console.log(response.headers?.['X-Custom-Header']);
+console.log(response.rawResponse);
+
+// Response data is already parsed
+console.log(response.repos);
+```
+
+</CodeGroup>
+
 **Available Properties**:
-- `status_code`: HTTP status code
+- `statusCode`: HTTP status code
 - `headers`: Response headers
-- `http_response`: Raw `httpx.Response`
-- `parse()`: Parse response body
+- `rawResponse`: Raw response object
+- Response data is automatically parsed
 
 ---
 
@@ -32,7 +49,9 @@ print(repos.repos)
 
 Stream response bodies instead of loading entirely into memory:
 
-```python
+<CodeGroup>
+
+```python Python
 with client.repo.with_streaming_response.list() as response:
     print(response.headers.get("X-My-Header"))
     
@@ -40,19 +59,73 @@ with client.repo.with_streaming_response.list() as response:
         print(line)
 ```
 
+```typescript TypeScript
+// Use fetch streaming API or SDK streaming support
+const response = await fetch(apiUrl, {
+  method: 'GET',
+  headers: { Authorization: `Bearer ${apiKey}` },
+});
+
+console.log(response.headers.get('X-My-Header'));
+
+const reader = response.body?.getReader();
+const decoder = new TextDecoder();
+
+if (reader) {
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n');
+    for (const line of lines) {
+      if (line) console.log(line);
+    }
+  }
+}
+```
+
+</CodeGroup>
+
 **Async Streaming**:
-```python
+
+<CodeGroup>
+
+```python Python
 async with client.repo.with_streaming_response.list() as response:
     async for line in response.iter_lines():
         print(line)
 ```
 
-**Available Methods**:
-- `iter_bytes()`: Iterate raw bytes
-- `iter_text()`: Iterate text
-- `iter_lines()`: Iterate lines
-- `read()`: Read all content
-- `parse()`: Parse to typed object
+```typescript TypeScript
+// Async streaming in TypeScript
+async function streamResponse() {
+  const response = await fetch(apiUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+  
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line) console.log(line);
+      }
+    }
+  }
+}
+
+await streamResponse();
+```
+
+</CodeGroup>
 
 ---
 
@@ -60,7 +133,9 @@ async with client.repo.with_streaming_response.list() as response:
 
 Override the HTTP client for proxies, custom transports, and advanced configurations:
 
-```python
+<CodeGroup>
+
+```python Python
 import httpx
 from aibread import Bread, DefaultHttpxClient
 
@@ -73,9 +148,29 @@ client = Bread(
 )
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+import { Agent } from 'https';
+
+// Custom HTTP client configuration
+const client = new Bread({
+  baseURL: 'http://my-server.com:8083',
+  httpClient: {
+    // Configure custom agent, proxy, etc.
+    agent: new Agent({
+      keepAlive: true,
+    }),
+  },
+});
+```
+
+</CodeGroup>
+
 ### Proxy Configuration
 
-```python
+<CodeGroup>
+
+```python Python
 import httpx
 from aibread import Bread, DefaultHttpxClient
 
@@ -95,20 +190,54 @@ client = Bread(
 )
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+
+// Simple proxy
+const client = new Bread({
+  httpClient: {
+    agent: new HttpsProxyAgent('http://proxy.example.com:8080'),
+  },
+});
+
+// With proxy authentication
+const authenticatedClient = new Bread({
+  httpClient: {
+    agent: new HttpsProxyAgent('http://user:pass@proxy.example.com:8080'),
+  },
+});
+```
+
+</CodeGroup>
+
 ---
 
 ## Timeout Configuration
 
 <CodeGroup>
 
-```python Global Timeout
+```python Python
 from aibread import Bread
 
 # Simple timeout (seconds)
 client = Bread(timeout=20.0)
 ```
 
-```python Granular Control
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// Simple timeout (milliseconds)
+const client = new Bread({ timeout: 20000 });
+```
+
+</CodeGroup>
+
+**Granular Control**:
+
+<CodeGroup>
+
+```python Python
 import httpx
 from aibread import Bread
 
@@ -122,11 +251,37 @@ client = Bread(
 )
 ```
 
-```python Per-Request Override
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread({
+  timeout: {
+    total: 60000,    // Total timeout (ms)
+    connect: 2000,   // Connection timeout (ms)
+    read: 5000,      // Read timeout (ms)
+    write: 10000,    // Write timeout (ms)
+  },
+});
+```
+
+</CodeGroup>
+
+**Per-Request Override**:
+
+<CodeGroup>
+
+```python Python
 client = Bread()
 
 # Override for single request
 repos = client.with_options(timeout=5.0).repo.list()
+```
+
+```typescript TypeScript
+const client = new Bread();
+
+// Override for single request (if SDK supports it)
+const repos = await client.repo.list({ timeout: 5000 });
 ```
 
 </CodeGroup>
@@ -139,7 +294,7 @@ repos = client.with_options(timeout=5.0).repo.list()
 
 <CodeGroup>
 
-```python Global Configuration
+```python Python
 from aibread import Bread
 
 # Default: 2 retries
@@ -152,10 +307,36 @@ client = Bread(max_retries=0)
 client = Bread(max_retries=5)
 ```
 
-```python Per-Request Override
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// Default: 2 retries
+const client = new Bread({ maxRetries: 2 });
+
+// Disable retries
+const clientNoRetries = new Bread({ maxRetries: 0 });
+
+// More aggressive retries
+const clientAggressive = new Bread({ maxRetries: 5 });
+```
+
+</CodeGroup>
+
+**Per-Request Override**:
+
+<CodeGroup>
+
+```python Python
 client = Bread()
 
 repos = client.with_options(max_retries=3).repo.list()
+```
+
+```typescript TypeScript
+const client = new Bread();
+
+// Override for single request (if SDK supports it)
+const repos = await client.repo.list({ maxRetries: 3 });
 ```
 
 </CodeGroup>
@@ -175,28 +356,59 @@ repos = client.with_options(max_retries=3).repo.list()
 
 ### Extra Headers
 
-```python
+<CodeGroup>
+
+```python Python
 repos = client.repo.list(
     extra_headers={"X-Custom-Header": "value"}
 )
 ```
 
+```typescript TypeScript
+const repos = await client.repo.list({
+  extraHeaders: { 'X-Custom-Header': 'value' },
+});
+```
+
+</CodeGroup>
+
 ### Extra Query Parameters
 
-```python
+<CodeGroup>
+
+```python Python
 repos = client.repo.list(
     extra_query={"custom_param": "value"}
 )
 ```
 
+```typescript TypeScript
+const repos = await client.repo.list({
+  extraQuery: { custom_param: 'value' },
+});
+```
+
+</CodeGroup>
+
 ### Extra Body Fields
 
-```python
+<CodeGroup>
+
+```python Python
 repo = client.repo.set(
     repo_name="my_repo",
     extra_body={"additional_field": "value"}
 )
 ```
+
+```typescript TypeScript
+const repo = await client.repo.create({
+  repo_name: 'my_repo',
+  extraBody: { additional_field: 'value' },
+});
+```
+
+</CodeGroup>
 
 ---
 
@@ -204,7 +416,9 @@ repo = client.repo.set(
 
 Make requests to undocumented endpoints:
 
-```python
+<CodeGroup>
+
+```python Python
 import httpx
 
 response = client.post(
@@ -216,13 +430,31 @@ response = client.post(
 print(response.status_code)
 ```
 
+```typescript TypeScript
+// Use fetch or SDK's low-level request method if available
+const response = await fetch(`${baseURL}/custom/endpoint`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ my_param: true }),
+});
+
+console.log(response.status);
+```
+
+</CodeGroup>
+
 ---
 
 ## Undocumented Response Properties
 
 Access undocumented fields in responses:
 
-```python
+<CodeGroup>
+
+```python Python
 response = client.repo.get("my_repo")
 
 # Access unknown property
@@ -232,6 +464,18 @@ extra_field = response.unknown_prop
 extras = response.model_extra
 ```
 
+```typescript TypeScript
+const response = await client.repo.get('my_repo');
+
+// Access unknown property (TypeScript may require type assertion)
+const extraField = (response as any).unknownProp;
+
+// Get all extra fields if SDK exposes them
+const extras = (response as any).extraFields || {};
+```
+
+</CodeGroup>
+
 ---
 
 ## Context Manager Usage
@@ -240,20 +484,69 @@ Automatically manage HTTP connections:
 
 <CodeGroup>
 
-```python Sync
+```python Python
 from aibread import Bread
 
+# Sync context manager
 with Bread() as client:
     repos = client.repo.list()
 # HTTP client is now closed
 ```
 
-```python Async
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// TypeScript SDK manages connections automatically
+// No explicit cleanup needed - connections are managed by the runtime
+const client = new Bread();
+const repos = await client.repo.list();
+
+// For explicit cleanup, you can implement a custom pattern:
+class BreadClient {
+  private client: Bread;
+  
+  constructor() {
+    this.client = new Bread();
+  }
+  
+  async close() {
+    // Cleanup if SDK provides close method
+    // await this.client.close?.();
+  }
+}
+
+// Usage with explicit cleanup
+const clientWrapper = new BreadClient();
+try {
+  const repos = await clientWrapper.client.repo.list();
+} finally {
+  await clientWrapper.close();
+}
+```
+
+</CodeGroup>
+
+**Async Context Manager**:
+
+<CodeGroup>
+
+```python Python
 from aibread import AsyncBread
 
 async with AsyncBread() as client:
     repos = await client.repo.list()
 # HTTP client is now closed
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// TypeScript SDK is async by default
+// Connections are managed automatically
+const client = new Bread();
+const repos = await client.repo.list();
+
+// No explicit cleanup needed
 ```
 
 </CodeGroup>
@@ -264,7 +557,9 @@ async with AsyncBread() as client:
 
 Modify client settings for a single request:
 
-```python
+<CodeGroup>
+
+```python Python
 client = Bread()
 
 # Override multiple options
@@ -275,13 +570,28 @@ response = client.with_options(
 ).repo.list()
 ```
 
+```typescript TypeScript
+const client = new Bread();
+
+// Override options per request (if SDK supports it)
+const response = await client.repo.list({
+  timeout: 5000,
+  maxRetries: 3,
+  // Custom HTTP client options
+});
+```
+
+</CodeGroup>
+
 ---
 
 ## Type Handling
 
 ### Response Serialization
 
-```python
+<CodeGroup>
+
+```python Python
 repo = client.repo.get("my_repo")
 
 # Serialize to JSON
@@ -294,14 +604,48 @@ data_with_api_names = repo.to_dict(use_api_names=True)
 data_all_fields = repo.to_dict(exclude_unset=False)
 ```
 
+```typescript TypeScript
+const repo = await client.repo.get('my_repo');
+
+// Serialize to JSON
+const jsonStr = JSON.stringify(repo, null, 2);  // Pretty-printed
+const compactJson = JSON.stringify(repo);  // Compact
+
+// Convert to plain object (already a plain object in TypeScript)
+const dataObj = { ...repo };
+
+// Type-safe access
+const repoName: string = repo.repo_name;
+```
+
+</CodeGroup>
+
 ### Check Fields Set
 
-```python
+<CodeGroup>
+
+```python Python
 repo = client.repo.get("my_repo")
 
 if 'base_model' not in repo.model_fields_set:
     print('base_model was not in API response')
 ```
+
+```typescript TypeScript
+const repo = await client.repo.get('my_repo');
+
+// Check if field exists
+if (!('base_model' in repo)) {
+  console.log('base_model was not in API response');
+}
+
+// Type-safe check
+if (repo.base_model === undefined) {
+  console.log('base_model was not in API response');
+}
+```
+
+</CodeGroup>
 
 ---
 
@@ -309,17 +653,42 @@ if 'base_model' not in repo.model_fields_set:
 
 Enable debug logging:
 
-```bash
+<CodeGroup>
+
+```bash Python
 export BREAD_LOG=debug
 ```
 
+```bash TypeScript
+export BREAD_LOG=debug
+```
+
+</CodeGroup>
+
 Or in code:
 
-```python
+<CodeGroup>
+
+```python Python
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 ```
+
+```typescript TypeScript
+// Enable debug logging
+process.env.BREAD_LOG = 'debug';
+
+// Or use a logging library
+import winston from 'winston';
+
+const logger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.json(),
+});
+```
+
+</CodeGroup>
 
 **Log Levels**:
 - `info`: Basic request/response info
@@ -353,7 +722,9 @@ client = Bread(
 
 Set default headers/query params for all requests:
 
-```python
+<CodeGroup>
+
+```python Python
 from aibread import Bread
 
 client = Bread(
@@ -362,29 +733,54 @@ client = Bread(
 )
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread({
+  defaultHeaders: { 'X-Custom': 'header' },
+  defaultQuery: { param: 'value' },
+});
+```
+
+</CodeGroup>
+
 ---
 
 ## Version Check
 
 Check installed SDK version:
 
-```python
+<CodeGroup>
+
+```python Python
 import aibread
 
 print(aibread.__version__)
 ```
 
----
+```typescript TypeScript
+import Bread from '@aibread/sdk';
 
-## Async with aiohttp
-
-For better async performance, use aiohttp:
-
-```bash
-pip install aibread[aiohttp]
+console.log(Bread.version || 'Version not available');
+// Or check package.json
+// import packageJson from '@aibread/sdk/package.json';
+// console.log(packageJson.version);
 ```
 
-```python
+</CodeGroup>
+
+---
+
+## Async HTTP Client
+
+For better async performance, use custom HTTP clients:
+
+<CodeGroup>
+
+```python Python
+# Install aiohttp support
+# pip install aibread[aiohttp]
+
 from aibread import AsyncBread, DefaultAioHttpClient
 
 async with AsyncBread(
@@ -392,6 +788,24 @@ async with AsyncBread(
 ) as client:
     repos = await client.repo.list()
 ```
+
+```typescript TypeScript
+// TypeScript SDK uses native fetch/async by default
+import Bread from '@aibread/sdk';
+
+// All methods are async by default
+const client = new Bread();
+const repos = await client.repo.list();
+
+// For custom HTTP client, configure in client options
+const customClient = new Bread({
+  httpClient: {
+    // Custom fetch implementation or HTTP library
+  },
+});
+```
+
+</CodeGroup>
 
 ---
 
@@ -425,14 +839,14 @@ async with AsyncBread(
   <Card
     title="Error Handling"
     icon="triangle-exclamation"
-    href="/guides/error-handling"
+    href="/sdk/guides/error-handling"
   >
     Comprehensive error handling guide
   </Card>
   <Card
-    title="Workflows"
-    icon="diagram-project"
-    href="/guides/workflows"
+    title="Production Patterns"
+    icon="shield"
+    href="/sdk/guides/production-patterns"
   >
     Production-ready workflow examples
   </Card>

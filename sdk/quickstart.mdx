@@ -1,9 +1,9 @@
 ---
 title: "SDK Quickstart"
-description: "Get started with the Bread Python SDK"
+description: "Get started with the Bread SDK"
 ---
 
-Use the **Python SDK** for programmatic control over the baking process. Perfect for automation, integration, and advanced use cases.
+Use the **Bread SDK** for programmatic control over the baking process. Available in **Python** and **TypeScript**. Perfect for automation, integration, and advanced use cases.
 
 <Note>
 **Prefer a git-based workflow?** Check out [bgit Quickstart](/bgit/quickstart) for a git-native interface.
@@ -13,17 +13,30 @@ Use the **Python SDK** for programmatic control over the baking process. Perfect
 
 ## Installation
 
-```bash
-pip install bread-sdk-v1
-```
+<CodeGroup>
 
-Or install from source:
+```bash Python
+# Install from PyPI
+pip install aibread
 
-```bash
+# Or using uv
+uv pip install aibread
+
+# Or install from source
 git clone https://github.com/Bread-Technologies/Bread-SDK-Bake-Repo.git
 cd Bread-SDK-Bake-Repo
 pip install -e .
 ```
+
+```bash TypeScript
+# Install from npm
+npm install @aibread/sdk
+
+# Or using yarn
+yarn add @aibread/sdk
+```
+
+</CodeGroup>
 
 ---
 
@@ -41,14 +54,17 @@ Or use a `.env` file (see [Authentication](/authentication) for details).
 
 ## Your First Bake
 
-```python
+<CodeGroup>
+
+```python Python
+import os
 from aibread import Bread
 
 # Initialize client
 client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
 
 # Set repository
-client.repos.set(repo_name="my_repo", base_model="Qwen/Qwen3-32B")
+client.repo.set(repo_name="my_repo", base_model="Qwen/Qwen3-32B")
 
 # Set prompt
 client.prompts.set(
@@ -75,10 +91,16 @@ client.targets.set(
 )
 
 # Run stim
-client.targets.run_stim(target_name="main_target", repo_name="my_repo")
+client.targets.stim.run(
+    target_name="main_target",
+    repo_name="my_repo"
+)
 
 # Run rollout
-client.targets.run_rollout(target_name="main_target", repo_name="my_repo")
+client.targets.rollout.run(
+    target_name="main_target",
+    repo_name="my_repo"
+)
 
 # Set bake
 client.bakes.set(
@@ -90,9 +112,72 @@ client.bakes.set(
     }
 )
 
-# Start bake
-client.bakes.start(bake_name="v1", repo_name="my_repo")
+# Run bake
+client.bakes.run(bake_name="v1", repo_name="my_repo")
 ```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// Initialize client
+const client = new Bread({
+  apiKey: process.env.BREAD_API_KEY,
+});
+
+// Create repository
+await client.repo.create({
+  repo_name: 'my_repo',
+  base_model: 'Qwen/Qwen3-32B',
+});
+
+// Create prompt
+await client.prompts.create('my_repo', {
+  prompt_name: 'yoda_teacher',
+  messages: [
+    { role: 'system', content: 'You are Yoda. Speak like Yoda.' }
+  ],
+});
+
+// Create target
+await client.targets.create('my_repo', {
+  target_name: 'main_target',
+  template: 'default',
+  overrides: {
+    generators: [
+      { type: 'oneshot_qs', model: 'claude-sonnet-4-5-20250929', numq: 100 }
+    ],
+    model_name: 'Qwen/Qwen3-32B',
+    u: 'yoda_teacher',
+    v: '',
+  },
+});
+
+// Run stim
+await client.targets.stim.run('my_repo', {
+  target_name: 'main_target',
+});
+
+// Run rollout
+await client.targets.rollout.run('my_repo', {
+  target_name: 'main_target',
+});
+
+// Create bake
+await client.bakes.create('my_repo', {
+  bake_name: 'v1',
+  template: 'default',
+  overrides: {
+    datasets: [{ target: 'main_target', weight: 1.0 }],
+  },
+});
+
+// Run bake
+await client.bakes.run('v1', {
+  repo_name: 'my_repo',
+});
+```
+
+</CodeGroup>
 
 ---
 

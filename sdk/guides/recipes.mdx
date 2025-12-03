@@ -1,0 +1,408 @@
+---
+title: "Model Lineage & Recipes"
+description: "Understand bake dependencies and recreate models using recipe endpoints"
+---
+
+Recipe endpoints help you understand model lineage, visualize dependencies between bakes, and recreate complex model hierarchies. This guide shows how to use recipe functionality with the SDK.
+
+<Note>
+**SDK Support**: 
+- **TypeScript SDK**: `getDependencyGraph()` and `getRecreationPlan()` are available via `client.recipes`
+- **Python SDK**: Recipe endpoints are not yet available. Use the REST API directly or check for future SDK updates.
+</Note>
+
+## Understanding Model Lineage
+
+When bakes depend on other bakes (using checkpoints), they form a lineage tree. Recipe endpoints help you:
+
+- **Visualize dependencies**: See how bakes, targets, and prompts connect
+- **Recreate models**: Get step-by-step plans to rebuild complex model hierarchies
+- **Track evolution**: View the complete model lineage tree for a repository
+
+---
+
+## Get Dependency Graph
+
+The dependency graph shows all resources needed to recreate a specific bake, including parent bakes and all transitive dependencies.
+
+<CodeGroup>
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread({
+  apiKey: process.env.BREAD_API_KEY,
+});
+
+// Get dependency graph for a bake
+const graph = await client.recipes.getDependencyGraph('my_bake', {
+  repo_name: 'my_repo',
+});
+
+console.log(`Base model: ${graph.base_model}`);
+console.log(`\nBakes:`);
+for (const [name, config] of Object.entries(graph.bakes)) {
+  console.log(`  ${name}:`, config);
+}
+
+console.log(`\nTargets:`);
+for (const [name, config] of Object.entries(graph.targets)) {
+  console.log(`  ${name}:`, config);
+}
+
+console.log(`\nPrompts:`);
+for (const [name, path] of Object.entries(graph.prompts)) {
+  console.log(`  ${name}: ${path}`);
+}
+
+console.log(`\nDependency edges:`);
+for (const edge of graph.edges) {
+  const [sourceType, sourceName, targetType, targetName] = edge;
+  console.log(`  ${sourceType}:${sourceName} -> ${targetType}:${targetName}`);
+}
+```
+
+```python Python
+# Note: Recipe endpoints are not yet available in the Python SDK.
+# Use the REST API directly or check for future SDK updates.
+
+import os
+import requests
+
+response = requests.get(
+    "https://bapi.bread.com.ai/v1/repo/my_repo/recipe/my_bake/dependency-graph",
+    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"}
+)
+
+graph = response.json()
+
+print(f"Base model: {graph['base_model']}")
+print("\nBakes:")
+for name, config in graph['bakes'].items():
+    print(f"  {name}: {config}")
+
+print("\nTargets:")
+for name, config in graph['targets'].items():
+    print(f"  {name}: {config}")
+
+print("\nPrompts:")
+for name, path in graph['prompts'].items():
+    print(f"  {name}: {path}")
+
+print("\nDependency edges:")
+for edge in graph['edges']:
+    source_type, source_name, target_type, target_name = edge
+    print(f"  {source_type}:{source_name} -> {target_type}:{target_name}")
+```
+
+</CodeGroup>
+
+**Use Cases**:
+- Understanding what resources a bake depends on
+- Debugging missing dependencies
+- Documenting model architecture
+- Planning migrations or recreations
+
+---
+
+## Get Recreation Plan
+
+The recreation plan provides a step-by-step, topologically sorted list of actions needed to recreate a bake and all its dependencies.
+
+<CodeGroup>
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread({
+  apiKey: process.env.BREAD_API_KEY,
+});
+
+// Get recreation plan
+const plan = await client.recipes.getRecreationPlan('my_bake', {
+  repo_name: 'my_repo',
+});
+
+console.log(`Base model: ${plan.base_model}`);
+console.log(`Total steps: ${plan.total_steps}`);
+console.log(`\nResources needed:`);
+console.log(`  Prompts: ${plan.resources.prompts.join(', ')}`);
+console.log(`  Targets: ${plan.resources.targets.join(', ')}`);
+console.log(`  Bakes: ${plan.resources.bakes.join(', ')}`);
+
+console.log(`\nExecution plan:`);
+for (const step of plan.steps) {
+  console.log(`\nStep ${step.step}: ${step.action}`);
+  console.log(`  Resource: ${step.resource_type}:${step.resource_name}`);
+  if (step.dependencies.length > 0) {
+    console.log(`  Depends on: ${step.dependencies.join(', ')}`);
+  }
+  console.log(`  Config:`, JSON.stringify(step.config, null, 2));
+}
+```
+
+```python Python
+# Note: Recipe endpoints are not yet available in the Python SDK.
+# Use the REST API directly or check for future SDK updates.
+
+import os
+import json
+import requests
+
+response = requests.get(
+    "https://bapi.bread.com.ai/v1/repo/my_repo/recipe/my_bake/recreation-plan",
+    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"}
+)
+
+plan = response.json()
+
+print(f"Base model: {plan['base_model']}")
+print(f"Total steps: {plan['total_steps']}")
+print("\nResources needed:")
+print(f"  Prompts: {', '.join(plan['resources']['prompts'])}")
+print(f"  Targets: {', '.join(plan['resources']['targets'])}")
+print(f"  Bakes: {', '.join(plan['resources']['bakes'])}")
+
+print("\nExecution plan:")
+for step in plan['steps']:
+    print(f"\nStep {step['step']}: {step['action']}")
+    print(f"  Resource: {step['resource_type']}:{step['resource_name']}")
+    if step['dependencies']:
+        print(f"  Depends on: {', '.join(step['dependencies'])}")
+    print(f"  Config: {json.dumps(step['config'], indent=2)}")
+```
+
+</CodeGroup>
+
+**Use Cases**:
+- Recreating a bake in a new repository
+- Understanding execution order for complex workflows
+- Automating model recreation
+- Documentation and training
+
+---
+
+## Get Repository Tree
+
+The repository tree shows the complete model lineage for all bakes in a repository, including parent-child relationships and status.
+
+<CodeGroup>
+
+```typescript TypeScript
+// Note: getRepoTree() is not yet available in the TypeScript SDK.
+// Use the REST API directly or check for future SDK updates.
+
+import Bread from '@aibread/sdk';
+
+const client = new Bread({
+  apiKey: process.env.BREAD_API_KEY,
+});
+
+// Use raw HTTP request until SDK method is available
+const response = await fetch('https://bapi.bread.com.ai/v1/repo/my_repo/tree', {
+  headers: {
+    'Authorization': `Bearer ${process.env.BREAD_API_KEY}`,
+  },
+});
+
+const tree = await response.json();
+
+// Visualize lineage
+function printBake(bake: any, indent = 0) {
+  const prefix = '  '.repeat(indent);
+  const statusIcon = bake.status === 'complete' ? '✓' : bake.status === 'running' ? '⟳' : '○';
+  console.log(`${prefix}${statusIcon} ${bake.name} (${bake.status})`);
+  
+  if (bake.model_name && bake.model_name.length > 0) {
+    console.log(`${prefix}  Models: ${bake.model_name.join(', ')}`);
+  }
+  
+  if (bake.children && bake.children.length > 0) {
+    console.log(`${prefix}  Children:`);
+    for (const childName of bake.children) {
+      const child = tree.bakes.find((b: any) => b.name === childName);
+      if (child) {
+        printBake(child, indent + 2);
+      }
+    }
+  }
+}
+
+// Find root bakes (no parent)
+const rootBakes = tree.bakes.filter((bake: any) => !bake.parent);
+console.log('Model Lineage Tree:\n');
+for (const bake of rootBakes) {
+  printBake(bake);
+}
+```
+
+```python Python
+# Note: Recipe endpoints are not yet available in the Python SDK.
+# Use the REST API directly or check for future SDK updates.
+
+import os
+import requests
+
+response = requests.get(
+    "https://bapi.bread.com.ai/v1/repo/my_repo/tree",
+    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"}
+)
+
+tree = response.json()
+
+def print_bake(bake, indent=0):
+    prefix = '  ' * indent
+    status_icon = '✓' if bake['status'] == 'complete' else '⟳' if bake['status'] == 'running' else '○'
+    print(f"{prefix}{status_icon} {bake['name']} ({bake['status']})")
+    
+    if bake['model_name']:
+        print(f"{prefix}  Models: {', '.join(bake['model_name'])}")
+    
+    if bake['children']:
+        print(f"{prefix}  Children:")
+        for child_name in bake['children']:
+            child = next((b for b in tree['bakes'] if b['name'] == child_name), None)
+            if child:
+                print_bake(child, indent + 2)
+
+# Find root bakes (no parent)
+root_bakes = [b for b in tree['bakes'] if not b['parent']]
+print('Model Lineage Tree:\n')
+for bake in root_bakes:
+    print_bake(bake)
+```
+
+</CodeGroup>
+
+**Use Cases**:
+- Visualizing complete model evolution
+- Finding all child models derived from a base bake
+- Tracking model status across the repository
+- Understanding model relationships without specifying a starting point
+
+---
+
+## Example: Recreating a Model
+
+Here's a complete example of using the recreation plan to recreate a bake:
+
+<CodeGroup>
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread({
+  apiKey: process.env.BREAD_API_KEY,
+});
+
+async function recreateBake(sourceRepo: string, targetRepo: string, bakeName: string) {
+  // Get recreation plan
+  const plan = await client.recipes.getRecreationPlan(bakeName, {
+    repo_name: sourceRepo,
+  });
+
+  // Ensure target repo exists
+  await client.repo.create({
+    repo_name: targetRepo,
+    base_model: plan.base_model,
+  });
+
+  // Execute steps in order
+  for (const step of plan.steps) {
+    console.log(`Executing step ${step.step}: ${step.action} ${step.resource_type}:${step.resource_name}`);
+    
+    switch (step.resource_type) {
+      case 'prompt':
+        await client.prompts.create(targetRepo, {
+          prompt_name: step.resource_name,
+          messages: step.config.messages as any,
+        });
+        break;
+        
+      case 'target':
+        await client.targets.create(targetRepo, {
+          target_name: step.resource_name,
+          template: 'default',
+          overrides: step.config as any,
+        });
+        break;
+        
+      case 'bake':
+        await client.bakes.create(targetRepo, {
+          bake_name: step.resource_name,
+          template: 'default',
+          overrides: step.config as any,
+        });
+        break;
+    }
+  }
+
+  console.log(`\nRecreation complete! Bake '${bakeName}' is ready in repo '${targetRepo}'`);
+}
+
+// Usage
+recreateBake('source_repo', 'target_repo', 'my_bake');
+```
+
+```python Python
+# Note: Recipe endpoints are not yet available in the Python SDK.
+# Use the REST API directly or check for future SDK updates.
+
+import os
+import requests
+from aibread import Bread
+
+client = Bread(api_key=os.environ.get('BREAD_API_KEY'))
+
+def recreate_bake(source_repo: str, target_repo: str, bake_name: str):
+    # Get recreation plan via REST API
+    response = requests.get(
+        f"https://bapi.bread.com.ai/v1/repo/{source_repo}/recipe/{bake_name}/recreation-plan",
+        headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"}
+    )
+    plan = response.json()
+    
+    # Ensure target repo exists
+    client.repo.set(repo_name=target_repo, base_model=plan['base_model'])
+    
+    # Execute steps in order
+    for step in plan['steps']:
+        print(f"Executing step {step['step']}: {step['action']} {step['resource_type']}:{step['resource_name']}")
+        
+        if step['resource_type'] == 'prompt':
+            client.prompts.set(
+                prompt_name=step['resource_name'],
+                repo_name=target_repo,
+                messages=step['config']['messages']
+            )
+        elif step['resource_type'] == 'target':
+            client.targets.set(
+                target_name=step['resource_name'],
+                repo_name=target_repo,
+                template='default',
+                overrides=step['config']
+            )
+        elif step['resource_type'] == 'bake':
+            client.bakes.set(
+                bake_name=step['resource_name'],
+                repo_name=target_repo,
+                template='default',
+                overrides=step['config']
+            )
+    
+    print(f"\nRecreation complete! Bake '{bake_name}' is ready in repo '{target_repo}'")
+
+# Usage
+recreate_bake('source_repo', 'target_repo', 'my_bake')
+```
+
+</CodeGroup>
+
+---
+
+## Related Documentation
+
+- [API Reference: Recipes](/api-reference/recipes) - Complete REST API documentation
+- [Using Baked Models](/sdk/guides/using-baked-models) - Load and use your baked models
+- [Production Patterns](/sdk/guides/production-patterns) - Best practices for production workflows
+

@@ -1,0 +1,275 @@
+---
+title: "Recipes (Model Lineage)"
+description: "Get dependency graphs, recreation plans, and model lineage trees"
+---
+
+## Overview
+
+Recipe endpoints provide insights into model lineage and dependencies. They help you understand how bakes relate to each other, what resources are needed to recreate a bake, and visualize the complete model evolution tree.
+
+<Note>
+**SDK Guide**: For detailed SDK examples, use cases, and workflows, see the [Model Lineage & Recipes](/sdk/guides/recipes) guide in the SDK section.
+</Note>
+
+## Endpoints
+
+### Get Dependency Graph
+
+Get the dependency graph for a specific bake. Returns all resources (bakes, targets, prompts) and their dependencies needed to recreate this bake, including parent bakes and all transitive dependencies.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/recipe/{bake_name}/dependency-graph`
+
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/recipe/my_bake/dependency-graph" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+<Note>
+**SDK Usage**: 
+- TypeScript: `client.recipes.getDependencyGraph('my_bake', { repo_name: 'my_repo' })`
+- Python: Not yet available. Use REST API directly.
+
+See [SDK Guide](/sdk/guides/recipes) for detailed examples.
+</Note>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+**Response**: `200 OK`
+
+```json
+{
+  "base_model": "Qwen/Qwen3-32B",
+  "bakes": {
+    "parent_bake": {
+      "datasets": [{"target": "coding_target", "weight": 1.0}],
+      "epochs": 3
+    },
+    "my_bake": {
+      "datasets": [{"target": "advanced_target", "weight": 1.0}],
+      "checkpoint": "parent_bake"
+    }
+  },
+  "targets": {
+    "coding_target": {
+      "model_name": "Qwen/Qwen3-32B",
+      "teacher_prompt": "system_prompt",
+      "student_prompt": "user_prompt"
+    },
+    "advanced_target": {
+      "model_name": "Qwen/Qwen3-32B",
+      "teacher_prompt": "system_prompt_advanced",
+      "student_prompt": "user_prompt_advanced"
+    }
+  },
+  "prompts": {
+    "system_prompt": "prompts/system_prompt.yml",
+    "user_prompt": "prompts/user_prompt.yml",
+    "system_prompt_advanced": "prompts/system_prompt_advanced.yml",
+    "user_prompt_advanced": "prompts/user_prompt_advanced.yml"
+  },
+  "edges": [
+    ["bake", "my_bake", "bake", "parent_bake"],
+    ["bake", "parent_bake", "target", "coding_target"],
+    ["bake", "my_bake", "target", "advanced_target"],
+    ["target", "coding_target", "prompt", "system_prompt"],
+    ["target", "coding_target", "prompt", "user_prompt"]
+  ]
+}
+```
+
+**Response Fields**:
+- `base_model`: `string` - Base model name
+- `bakes`: `object` - Dictionary of bake configs
+- `targets`: `object` - Dictionary of target configs
+- `prompts`: `object` - Dictionary of prompt names to file paths
+- `edges`: `Array<[source_type, source_name, target_type, target_name]>` - List of dependency edges
+
+The graph is built using BFS traversal starting from the specified bake.
+
+---
+
+### Get Recreation Plan
+
+Get a step-by-step plan to recreate a bake, including all dependencies. The plan includes all prompts, targets, and bakes needed, in the correct execution order.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/recipe/{bake_name}/recreation-plan`
+
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/recipe/my_bake/recreation-plan" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+<Note>
+**SDK Usage**: 
+- TypeScript: `client.recipes.getRecreationPlan('my_bake', { repo_name: 'my_repo' })`
+- Python: Not yet available. Use REST API directly.
+
+See [SDK Guide](/sdk/guides/recipes) for detailed examples.
+</Note>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+**Response**: `200 OK`
+
+```json
+{
+  "base_model": "Qwen/Qwen3-32B",
+  "total_steps": 5,
+  "steps": [
+    {
+      "step": 1,
+      "type": "prompt",
+      "name": "system_prompt",
+      "config": {
+        "messages": [
+          {"role": "system", "content": "You are a helpful assistant."}
+        ]
+      }
+    },
+    {
+      "step": 2,
+      "type": "prompt",
+      "name": "user_prompt",
+      "config": {
+        "messages": [
+          {"role": "user", "content": "Complete this task: {task}"}
+        ]
+      }
+    },
+    {
+      "step": 3,
+      "type": "target",
+      "name": "coding_target",
+      "config": {
+        "model_name": "Qwen/Qwen3-32B",
+        "teacher_prompt": "system_prompt",
+        "student_prompt": "user_prompt"
+      }
+    },
+    {
+      "step": 4,
+      "type": "bake",
+      "name": "parent_bake",
+      "config": {
+        "datasets": [{"target": "coding_target", "weight": 1.0}],
+        "epochs": 3
+      }
+    },
+    {
+      "step": 5,
+      "type": "bake",
+      "name": "my_bake",
+      "config": {
+        "datasets": [{"target": "advanced_target", "weight": 1.0}],
+        "checkpoint": "parent_bake"
+      }
+    }
+  ],
+  "resources": {
+    "prompts": ["system_prompt", "user_prompt"],
+    "targets": ["coding_target", "advanced_target"],
+    "bakes": [
+      {
+        "name": "parent_bake",
+        "model_name": "user/repo/parent_bake/42"
+      },
+      {
+        "name": "my_bake",
+        "model_name": "user/repo/my_bake/35"
+      }
+    ]
+  }
+}
+```
+
+**Response Fields**:
+- `base_model`: `string` - Base model name (e.g., 'Qwen/Qwen3-32B')
+- `total_steps`: `number` - Total number of steps
+- `steps`: `Array<RecreationPlanStep>` - Ordered list of steps to recreate the bake
+  - `step`: `number` - Step number
+  - `type`: `string` - Resource type: 'prompt', 'target', or 'bake'
+  - `name`: `string` - Resource name
+  - `config`: `object` - Resource configuration
+- `resources`: `object` - Summary of all resources
+  - `prompts`: `Array<string>` - List of prompt names
+  - `targets`: `Array<string>` - List of target names
+  - `bakes`: `Array<BakeResource>` - List of bake resources with model names
+
+The plan is topologically sorted to ensure dependencies are created before dependents. Parent bake checkpoints are assumed to use the final checkpoint from each bake. All configurations are cleaned and ready for use (no internal file paths).
+
+---
+
+### Get Repo Tree
+
+Get the complete model lineage tree for a repository. Returns all bakes in the repository with their parent-child relationships, status, checkpoints, and full model paths.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/tree`
+
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/tree" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+<Note>
+**SDK Usage**: 
+- TypeScript: Not yet available. Use REST API directly.
+- Python: Not yet available. Use REST API directly.
+
+See [SDK Guide](/sdk/guides/recipes) for detailed examples.
+</Note>
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+**Response**: `200 OK`
+
+```json
+{
+  "bakes": [
+    {
+      "name": "parent_bake",
+      "status": "complete",
+      "model_name": ["user/repo/parent_bake/42"],
+      "parent": null,
+      "children": ["my_bake"]
+    },
+    {
+      "name": "my_bake",
+      "status": "running",
+      "model_name": null,
+      "parent": "parent_bake",
+      "children": []
+    }
+  ]
+}
+```
+
+**Response Fields**:
+- `bakes`: `Array<BakeNode>` - List of bakes with lineage information
+  - `name`: `string` - Bake name
+  - `status`: `string` - Bake status: 'not_started', 'running', 'complete', or 'failed'
+  - `model_name`: `Array<string> | null` - List of model checkpoints (when complete)
+  - `parent`: `string | null` - Parent bake name (if any)
+  - `children`: `Array<string>` - List of child bake names
+
+This provides a complete view of model evolution without requiring a specific starting bake. Unlike dependency-graph which starts from a specific bake, this endpoint returns the entire repository's model lineage tree in a single call.
+

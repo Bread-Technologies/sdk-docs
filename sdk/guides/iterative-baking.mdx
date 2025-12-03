@@ -6,7 +6,7 @@ description: "Refine and improve already-baked models with additional training"
 Iterative baking allows you to bake already-baked models. Improve specific behaviors, add new capabilities, or fix issues your previous bake didn't capture.
 
 <Note>
-Iterative baking builds on [single-prompt](/guides/single-prompt-bake) and [multi-target](/guides/multi-target-baking) baking. Complete those first.
+Iterative baking builds on [single-prompt](/sdk/guides/single-prompt-bake) and [multi-target](/sdk/guides/multi-target-baking) baking. Complete those first.
 </Note>
 
 ## Why Iterative Baking?
@@ -59,15 +59,27 @@ Your Yoda model (v1) works well but needs improvement:
   <Step title="Identify Your Base Model">
     Use your previously baked model as the starting point:
     
-    ```python
-    import os
-    from aibread import Bread
-    
-    client = Bread()
-    
-    # Baked model path, for example: "johndoe/yoda_repo/bake1/35"
-    previous_baked_model = "[username]/[repo]/[bake]/[checkpoint_num]"
-    ```
+    <CodeGroup>
+
+```python Python
+from aibread import Bread
+
+client = Bread()
+
+# Baked model path, for example: "johndoe/yoda_repo/bake1/35"
+previous_baked_model = "[username]/[repo]/[bake]/[checkpoint_num]"
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Baked model path, for example: "johndoe/yoda_repo/bake1/35"
+const previousBakedModel = '[username]/[repo]/[bake]/[checkpoint_num]';
+```
+
+</CodeGroup>
     
     <Info>
     Use a model from a previous bake in the repo
@@ -77,69 +89,142 @@ Your Yoda model (v1) works well but needs improvement:
   <Step title="Create Refinement Prompts">
     Define prompts that address specific improvements:
     
-    ```python
-    client.repo.set(repo_name="yoda_v2")
-    
-    # Teacher: More specific, refined guidance
-    client.prompts.set(
-        prompt_name="yoda_teacher_prompt_2",
-        repo_name="yoda_v2",
-        messages=[{
-            "role": "system",
-            "content": """
-            You are Yoda at peak wisdom. 
-            - Speak in 1-2 short sentences maximum
-            - Use inverted syntax consistently
-            - Reference the Force in mystical, cryptic ways
-            - Maintain absolute calm even when provoked
-            """
-        }]
-    )
-    
-    # Student: Still empty for always-on behavior
-    client.prompts.set(
-        prompt_name="empty_student",
-        repo_name="yoda_v2",
-        messages=[{"role": "system", "content": ""}]
-    )
-    ```
+    <CodeGroup>
+
+```python Python
+client.repo.set(repo_name="yoda_v2")
+
+# Teacher: More specific, refined guidance
+client.prompts.set(
+    prompt_name="yoda_teacher_prompt_2",
+    repo_name="yoda_v2",
+    messages=[{
+        "role": "system",
+        "content": """
+        You are Yoda at peak wisdom. 
+        - Speak in 1-2 short sentences maximum
+        - Use inverted syntax consistently
+        - Reference the Force in mystical, cryptic ways
+        - Maintain absolute calm even when provoked
+        """
+    }]
+)
+
+# Student: Still empty for always-on behavior
+client.prompts.set(
+    prompt_name="empty_student",
+    repo_name="yoda_v2",
+    messages=[{"role": "system", "content": ""}]
+)
+```
+
+```typescript TypeScript
+await client.repo.create({ repo_name: 'yoda_v2' });
+
+// Teacher: More specific, refined guidance
+await client.prompts.create('yoda_v2', {
+  prompt_name: 'yoda_teacher_prompt_2',
+  messages: [{
+    role: 'system',
+    content: `You are Yoda at peak wisdom. 
+- Speak in 1-2 short sentences maximum
+- Use inverted syntax consistently
+- Reference the Force in mystical, cryptic ways
+- Maintain absolute calm even when provoked`,
+  }],
+});
+
+// Student: Still empty for always-on behavior
+await client.prompts.create('yoda_v2', {
+  prompt_name: 'empty_student',
+  messages: [{ role: 'system', content: '' }],
+});
+```
+
+</CodeGroup>
   </Step>
 
   <Step title="Generate Targeted Training Data">
     Create training examples that target your improvements:
     
-    ```python
-    # Add stim prompts to ellicit more Yoda-like behavior
-    client.targets.set(
-        target_name="yoda_target_2",
-        repo_name="yoda_v2",
-        template="default",
-        overrides={
-            "generators": [{
-                "type": "hardcoded",
-                "numq": 3,
-                "questions": [
-                    "Explain the Force in detail",  # Was too verbose
-                    "You're wrong about the dark side!",  # Test calmness
-                    "Why should I trust you?"  # Needs mystical response
-                ]
-            },
-            {
-                "type": "oneshot_qs", # LLM-generated stim prompts
-                "numq": 400,
-                "model": "claude-sonnet-4-5-20250929",
-                "temperature": 0.6
-            }],
-            "model_name": previous_baked_model,  # Use Yoda v1 as base
-            "u": "yoda_teacher_prompt_2",
-            "v": "empty_student"
-        }
-    )
-    
-    # Generate training data
-    client.targets.stim.run("yoda_target_2", "yoda_v2")
-    client.targets.rollout.run("yoda_target_2", "yoda_v2")
-    ```
+    <CodeGroup>
+
+```python Python
+# Add stim prompts to ellicit more Yoda-like behavior
+client.targets.set(
+    target_name="yoda_target_2",
+    repo_name="yoda_v2",
+    template="default",
+    overrides={
+        "generators": [{
+            "type": "hardcoded",
+            "numq": 3,
+            "questions": [
+                "Explain the Force in detail",  # Was too verbose
+                "You're wrong about the dark side!",  # Test calmness
+                "Why should I trust you?"  # Needs mystical response
+            ]
+        },
+        {
+            "type": "oneshot_qs",  # LLM-generated stim prompts
+            "numq": 400,
+            "model": "claude-sonnet-4-5-20250929",
+            "temperature": 0.6
+        }],
+        "model_name": previous_baked_model,  # Use Yoda v1 as base
+        "u": "yoda_teacher_prompt_2",
+        "v": "empty_student"
+    }
+)
+
+# Generate training data
+client.targets.stim.run(
+    target_name="yoda_target_2",
+    repo_name="yoda_v2"
+)
+client.targets.rollout.run(
+    target_name="yoda_target_2",
+    repo_name="yoda_v2"
+)
+```
+
+```typescript TypeScript
+// Add stim prompts to ellicit more Yoda-like behavior
+await client.targets.create('yoda_v2', {
+  target_name: 'yoda_target_2',
+  template: 'default',
+  overrides: {
+    generators: [{
+      type: 'hardcoded',
+      numq: 3,
+      questions: [
+        'Explain the Force in detail',  // Was too verbose
+        'You\'re wrong about the dark side!',  // Test calmness
+        'Why should I trust you?',  // Needs mystical response
+      ],
+    },
+    {
+      type: 'oneshot_qs',  // LLM-generated stim prompts
+      numq: 400,
+      model: 'claude-sonnet-4-5-20250929',
+      temperature: 0.6,
+    }],
+    model_name: previousBakedModel,  // Use Yoda v1 as base
+    u: 'yoda_teacher_prompt_2',
+    v: 'empty_student',
+  },
+});
+
+// Generate training data
+await client.targets.stim.run('yoda_target_2', {
+  repo_name: 'yoda_v2',
+});
+await client.targets.rollout.run('yoda_target_2', {
+  repo_name: 'yoda_v2',
+});
+```
+
+</CodeGroup>
     
     <Warning>
     Use your baked model (`previous_baked_model`) here, not the original base model. This ensures refinement builds on existing behavior.
@@ -149,28 +234,59 @@ Your Yoda model (v1) works well but needs improvement:
   <Step title="Bake More Prompts">
     Bake additional prompts into your baked model:
     
-    ```python
-    bake = client.bakes.set(
-        bake_name="yoda_bake_v2",
-        repo_name="yoda_v2",
-        template="default",
-        overrides={
-            "datasets": [
-                {"target": "yoda_target_2", "weight": 1.0}
-            ],
-            "model": {
-                "type": "bake",
-                "name_or_path": previous_baked_model,  # Start from Yoda v1
-                "baked_adapter_config": {
-                    "r": 8,
-                    "lora_alpha": 16
-                }
+    <CodeGroup>
+
+```python Python
+bake = client.bakes.set(
+    bake_name="yoda_bake_v2",
+    repo_name="yoda_v2",
+    template="default",
+    overrides={
+        "datasets": [
+            {"target": "yoda_target_2", "weight": 1.0}
+        ],
+        "model": {
+            "type": "bake",
+            "name_or_path": previous_baked_model,  # Start from Yoda v1
+            "baked_adapter_config": {
+                "r": 8,
+                "lora_alpha": 16
             }
         }
-    )
-    
-    client.bakes.run("yoda_bake_v2", "yoda_v2")
-    ```
+    }
+)
+
+client.bakes.run(
+    bake_name="yoda_bake_v2",
+    repo_name="yoda_v2"
+)
+```
+
+```typescript TypeScript
+await client.bakes.create('yoda_v2', {
+  bake_name: 'yoda_bake_v2',
+  template: 'default',
+  overrides: {
+    datasets: [
+      { target: 'yoda_target_2', weight: 1.0 },
+    ],
+    model: {
+      type: 'bake',
+      name_or_path: previousBakedModel,  // Start from Yoda v1
+      baked_adapter_config: {
+        r: 8,
+        lora_alpha: 16,
+      },
+    },
+  },
+});
+
+await client.bakes.run('yoda_bake_v2', {
+  repo_name: 'yoda_v2',
+});
+```
+
+</CodeGroup>
     
     <Success>
     Yoda v2 training started! This refines v1's behavior without forgetting what it already learned.
@@ -300,11 +416,12 @@ targets = [
 
 ## Complete Example: Three Iterations
 
-```python
-import os
+<CodeGroup>
+
+```python Python
 from aibread import Bread
 
-client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+client = Bread()
 
 # Iteration 1: Initial Yoda
 # [Run full single-prompt bake workflow]
@@ -323,6 +440,30 @@ client.repo.set(repo_name="yoda_v3")
 # Result: yoda_v3 (brief + Yoda + mystical)
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Iteration 1: Initial Yoda
+// [Run full single-prompt bake workflow]
+// Result: yoda_v1
+
+// Iteration 2: Add conciseness
+await client.repo.create({ repo_name: 'yoda_v2' });
+// [Create refinement target focused on brevity]
+// Use yoda_v1 as base model
+// Result: yoda_v2 (brief + Yoda)
+
+// Iteration 3: Add mysticism
+await client.repo.create({ repo_name: 'yoda_v3' });
+// [Create refinement target focused on Force wisdom]
+// Use yoda_v2 as base model
+// Result: yoda_v3 (brief + Yoda + mystical)
+```
+
+</CodeGroup>
+
 ---
 
 ## Next Steps
@@ -331,28 +472,28 @@ client.repo.set(repo_name="yoda_v3")
   <Card
     title="Production Patterns"
     icon="shield"
-    href="/guides/production-patterns"
+    href="/sdk/guides/production-patterns"
   >
     Add monitoring to track model improvements
   </Card>
   <Card
     title="Bake Configuration"
     icon="gear"
-    href="/configuration/bake-config"
+    href="/sdk/configuration/bake-config"
   >
     Fine-tune hyperparameters for refinement
   </Card>
   <Card
     title="Multi-Target Baking"
     icon="layer-group"
-    href="/guides/multi-target-baking"
+    href="/sdk/guides/multi-target-baking"
   >
     Combine multiple refinements in one bake
   </Card>
   <Card
     title="Generators"
     icon="wand-sparkles"
-    href="/configuration/generators"
+    href="/sdk/configuration/generators"
   >
     Generate focused training data for refinements
   </Card>

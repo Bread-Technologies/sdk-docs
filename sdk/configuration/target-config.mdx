@@ -12,7 +12,7 @@ Target configuration controls stimulus and rollout generation behavior. Targets 
 ### Generators
 
 <ParamField path="generators" type="array">
-  List of generator configurations. See [Generators](/configuration/generators).
+  List of generator configurations. See [Generators](/sdk/configuration/generators).
   
   ```python
   "generators": [
@@ -110,7 +110,9 @@ Use empty `v` (`""`) to permanently bake behavior into the model without needing
 
 ## Complete Example
 
-```python
+<CodeGroup>
+
+```python Python
 target = client.targets.set(
     target_name="advanced_target",
     repo_name="my_repo",
@@ -156,6 +158,53 @@ target = client.targets.set(
 )
 ```
 
+```typescript TypeScript
+const target = await client.targets.create('my_repo', {
+  target_name: 'advanced_target',
+  template: 'default',
+  overrides: {
+    // Generators
+    generators: [
+      {
+        type: 'oneshot_qs',
+        model: 'claude-sonnet-4-5-20250929',
+        numq: 50,
+        temperature: 1.2,
+      },
+      {
+        type: 'from_dataset',
+        dataset: 'code_contests',
+        numq: 30,
+        seed: 42,
+      },
+    ],
+    
+    // Prompts
+    u: 'system_prompt_expert',
+    v: 'user_prompt_detailed',
+    
+    // Model
+    model_name: 'Qwen/Qwen3-32B',
+    
+    // Generation params
+    max_tokens: 200,
+    temperature: 1.0,
+    num_traj_per_stimulus: 3,
+    
+    // Performance
+    max_concurrency: 100,
+    
+    // Advanced
+    extra_kwargs: {
+      top_p: 0.95,
+      frequency_penalty: 0.0,
+    },
+  },
+});
+```
+
+</CodeGroup>
+
 ## Field Reference Table
 
 | Field | Type | Required | Default | Description |
@@ -174,7 +223,9 @@ target = client.targets.set(
 
 Targets can inherit from other targets:
 
-```python
+<CodeGroup>
+
+```python Python
 # Base target
 client.targets.set(
     target_name="base_target",
@@ -198,13 +249,37 @@ client.targets.set(
 )
 ```
 
+```typescript TypeScript
+// Base target
+await client.targets.create('my_repo', {
+  target_name: 'base_target',
+  template: 'default',
+  overrides: {
+    model_name: 'Qwen/Qwen3-32B',
+    temperature: 1.0,
+    max_tokens: 150,
+  },
+});
+
+// Inherit and override
+await client.targets.create('my_repo', {
+  target_name: 'high_temp_target',
+  template: 'base_target',  // Inherit from base_target
+  overrides: {
+    temperature: 1.5,  // Override only temperature
+  },
+});
+```
+
+</CodeGroup>
+
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card
     title="Generators"
     icon="wand-sparkles"
-    href="/configuration/generators"
+    href="/sdk/configuration/generators"
   >
     Configure generator types
   </Card>

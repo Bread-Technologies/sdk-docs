@@ -180,7 +180,9 @@ Bake configuration controls model training behavior, including datasets, trainin
 
 ## Complete Example
 
-```python
+<CodeGroup>
+
+```python Python
 bake = client.bakes.set(
     bake_name="production_bake",
     repo_name="my_repo",
@@ -240,6 +242,67 @@ bake = client.bakes.set(
 )
 ```
 
+```typescript TypeScript
+const bake = await client.bakes.create('my_repo', {
+  bake_name: 'production_bake',
+  template: 'default',
+  overrides: {
+    // Datasets
+    datasets: [
+      { target: 'coding_target', weight: 1.0 },
+    ],
+    
+    // Training params
+    epochs: 5,
+    micro_batch_size: 1,
+    gradient_accumulation_steps: 4,
+    total_trajectories: 10000,
+    seed: 42,
+    
+    // Model with LoRA
+    model: {
+      type: 'bake',
+      name_or_path: 'Qwen/Qwen3-32B',
+      baked_adapter_config: {
+        r: 16,
+        lora_alpha: 32,
+        lora_dropout: 0.1,
+        bias: 'none',
+        target_modules: 'all-linear',
+      },
+    },
+    
+    // Optimizer
+    optimizer: {
+      learning_rate: 0.0001,
+    },
+    
+    // Scheduler
+    scheduler: {
+      type: 'huggingface',
+    },
+    
+    // W&B logging
+    wandb: {
+      enable: true,
+      project: 'my-project',
+      entity: 'my-team',
+      name: 'coding-lora-v1',
+      tags: ['lora', 'coding', 'production'],
+    },
+    
+    // DeepSpeed
+    deepspeed: {
+      zero_optimization: {
+        stage: 2,
+      },
+    },
+  },
+});
+```
+
+</CodeGroup>
+
 ## Field Reference Table
 
 | Field | Type | Required | Description |
@@ -257,7 +320,9 @@ bake = client.bakes.set(
 
 ## Template Inheritance
 
-```python
+<CodeGroup>
+
+```python Python
 # Base configuration
 client.bakes.set(
     bake_name="base_bake",
@@ -280,6 +345,29 @@ client.bakes.set(
 )
 ```
 
+```typescript TypeScript
+// Base configuration
+await client.bakes.create('my_repo', {
+  bake_name: 'base_bake',
+  template: 'default',
+  overrides: {
+    epochs: 3,
+    micro_batch_size: 1,
+  },
+});
+
+// Inherit and override
+await client.bakes.create('my_repo', {
+  bake_name: 'long_bake',
+  template: 'base_bake',
+  overrides: {
+    epochs: 10,  // Override epochs only
+  },
+});
+```
+
+</CodeGroup>
+
 ## Next Steps
 
 <CardGroup cols={2}>
@@ -291,9 +379,9 @@ client.bakes.set(
     Bakes API reference
   </Card>
   <Card
-    title="Workflows"
-    icon="diagram-project"
-    href="/guides/workflows"
+    title="Production Patterns"
+    icon="shield"
+    href="/sdk/guides/production-patterns"
   >
     Training workflow examples
   </Card>

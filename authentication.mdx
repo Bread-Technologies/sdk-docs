@@ -6,46 +6,104 @@ description: "Advanced authentication patterns for production deployments"
 Production deployments need secure credential management, environment-specific configurations, and proper secret handling. This guide covers advanced authentication patterns.
 
 <Note>
-For basic SDK setup, see the [Quickstart](/quickstart). This page covers production-ready authentication patterns.
+For basic SDK setup, see the [Quickstart](/sdk/quickstart). This page covers production-ready authentication patterns.
 </Note>
 
 ## Using .env Files for Local Development
 
-For local development, use [python-dotenv](https://pypi.org/project/python-dotenv/) to manage environment variables in a `.env` file:
+For local development, use environment variable management tools to load secrets from a `.env` file:
 
-**1. Install python-dotenv:**
-
-<CodeGroup>
-
-```bash MacOS/Linux
-pip install python-dotenv
-```
-
-```cmd Windows (Command Prompt)
-pip install python-dotenv
-```
-
-```powershell Windows (PowerShell)
-python -m pip install python-dotenv
-```
-
-</CodeGroup>
-
-**2. Create a `.env` file with your api key:**
+**1. Create a `.env` file with your api key:**
 ```bash .env
 BREAD_API_KEY=your_api_key_here
 ```
 
-**3. Load in your application:**
-```python
-import os
-from dotenv import load_dotenv
-from aibread import Bread
+**2. Load in your application:**
 
-load_dotenv()  # Loads .env file
-
-client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
-```
+<Tabs>
+  <Tab title="Python">
+    Install [python-dotenv](https://pypi.org/project/python-dotenv/):
+    
+    ```bash
+    pip install python-dotenv
+    ```
+    
+    Or using `uv`:
+    
+    ```bash
+    uv pip install python-dotenv
+    ```
+    
+    Then load in your application:
+    
+    ```python
+    import os
+    from dotenv import load_dotenv
+    from aibread import Bread
+    
+    load_dotenv()  # Loads .env file
+    
+    client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+    ```
+    
+    <Info>
+    **Note**: If `BREAD_API_KEY` is already set as an environment variable (e.g., in production), you don't need `python-dotenv`. The SDK will automatically read from the environment variable if you instantiate without passing `api_key`:
+    
+    ```python
+    from aibread import Bread
+    
+    # SDK automatically reads BREAD_API_KEY from environment
+    client = Bread()
+    ```
+    </Info>
+  </Tab>
+  
+  <Tab title="TypeScript">
+    **Option 1: Using environment variables directly (no package needed)**
+    
+    If `BREAD_API_KEY` is already set as an environment variable, you can use it directly:
+    
+    ```typescript
+    import Bread from '@aibread/sdk';
+    
+    // SDK automatically reads BREAD_API_KEY from process.env
+    const client = new Bread();
+    ```
+    
+    Or explicitly pass it:
+    
+    ```typescript
+    import Bread from '@aibread/sdk';
+    
+    const client = new Bread({
+      apiKey: process.env.BREAD_API_KEY,
+    });
+    ```
+    
+    **Option 2: Loading from .env file (for local development)**
+    
+    If you want to load from a `.env` file, install [dotenv](https://www.npmjs.com/package/dotenv):
+    
+    ```bash
+    npm install dotenv
+    ```
+    
+    Then load in your application:
+    
+    ```typescript
+    import 'dotenv/config';
+    import Bread from '@aibread/sdk';
+    
+    const client = new Bread({
+      apiKey: process.env.BREAD_API_KEY,
+    });
+    ```
+    
+    <Info>
+    **Note**: Many frameworks (Next.js, Vercel, etc.) automatically load `.env` files, so you may not need `dotenv` if you're using one of these frameworks. Check your framework's documentation for environment variable handling.
+    </Info>
+  </Tab>
+</Tabs>
 
 <Warning>
 Add `.env` to your `.gitignore` to prevent committing secrets to version control:
@@ -97,40 +155,84 @@ The SDK reads these environment variables:
 
 For production deployments, use secure secret management:
 
-<CodeGroup>
-
-```python AWS Secrets Manager
-import boto3
-from aibread import Bread
-
-def get_secret():
-    client = boto3.client('secretsmanager', region_name='us-east-1')
-    response = client.get_secret_value(SecretId='bread/api_key')
-    return response['SecretString']
-
-bread_client = Bread(api_key=get_secret())
-```
-
-```python Docker Secrets
-import os
-from aibread import Bread
-
-# Docker secret mounted at /run/secrets/bread_api_key
-with open('/run/secrets/bread_api_key', 'r') as f:
-    api_key = f.read().strip()
-
-client = Bread(api_key=api_key)
-```
-
-```python Kubernetes Secrets
-import os
-from aibread import Bread
-
-# Kubernetes secret injected as environment variable
-client = Bread(api_key=os.environ['BREAD_API_KEY'])
-```
-
-</CodeGroup>
+<Tabs>
+  <Tab title="Python">
+    <CodeGroup>
+    
+    ```python AWS Secrets Manager
+    import boto3
+    from aibread import Bread
+    
+    def get_secret():
+        client = boto3.client('secretsmanager', region_name='us-east-1')
+        response = client.get_secret_value(SecretId='bread/api_key')
+        return response['SecretString']
+    
+    bread_client = Bread(api_key=get_secret())
+    ```
+    
+    ```python Docker Secrets
+    import os
+    from aibread import Bread
+    
+    # Docker secret mounted at /run/secrets/bread_api_key
+    with open('/run/secrets/bread_api_key', 'r') as f:
+        api_key = f.read().strip()
+    
+    client = Bread(api_key=api_key)
+    ```
+    
+    ```python Kubernetes Secrets
+    import os
+    from aibread import Bread
+    
+    # Kubernetes secret injected as environment variable
+    client = Bread(api_key=os.environ['BREAD_API_KEY'])
+    ```
+    
+    </CodeGroup>
+  </Tab>
+  
+  <Tab title="TypeScript">
+    <CodeGroup>
+    
+    ```typescript AWS Secrets Manager
+    import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+    import Bread from '@aibread/sdk';
+    
+    async function getSecret(): Promise<string> {
+      const client = new SecretsManagerClient({ region: 'us-east-1' });
+      const command = new GetSecretValueCommand({ SecretId: 'bread/api_key' });
+      const response = await client.send(command);
+      return response.SecretString ?? '';
+    }
+    
+    const apiKey = await getSecret();
+    const breadClient = new Bread({ apiKey });
+    ```
+    
+    ```typescript Docker Secrets
+    import { readFileSync } from 'fs';
+    import Bread from '@aibread/sdk';
+    
+    // Docker secret mounted at /run/secrets/bread_api_key
+    const apiKey = readFileSync('/run/secrets/bread_api_key', 'utf-8').trim();
+    
+    const client = new Bread({ apiKey });
+    ```
+    
+    ```typescript Kubernetes Secrets
+    import Bread from '@aibread/sdk';
+    
+    // Kubernetes secret injected as environment variable
+    const client = new Bread({
+      apiKey: process.env.BREAD_API_KEY,
+    });
+    ```
+    
+    </CodeGroup>
+  </Tab>
+</Tabs>
 
 ## Next Steps
 
@@ -138,21 +240,21 @@ client = Bread(api_key=os.environ['BREAD_API_KEY'])
   <Card
     title="Production Patterns"
     icon="shield"
-    href="/guides/production-patterns"
+    href="/sdk/guides/production-patterns"
   >
     Add error handling, retries, and monitoring
   </Card>
   <Card
     title="Error Handling"
     icon="triangle-exclamation"
-    href="/guides/error-handling"
+    href="/sdk/guides/error-handling"
   >
     Handle authentication and API errors
   </Card>
   <Card
     title="Complete Your First Bake"
     icon="fire"
-    href="/guides/single-prompt-bake"
+    href="/sdk/guides/single-prompt-bake"
   >
     Start baking with the authenticated SDK
   </Card>

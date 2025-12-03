@@ -5,71 +5,178 @@ description: "SDK type definitions and data models"
 
 ## Overview
 
-The Bread SDK uses Pydantic models for responses and TypedDicts for request parameters, providing full type safety.
+The Bread SDK uses Pydantic models for responses and TypedDicts for request parameters (Python), or TypeScript interfaces and types (TypeScript), providing full type safety.
 
 ## Response Types
 
 ### RepoResponse
 
-```python
+<CodeGroup>
+
+```python Python
 class RepoResponse:
     repo_name: str   # Repository name
     base_model: str  # Base model identifier
 ```
 
+```typescript TypeScript
+interface RepoResponse {
+  repo_name: string;  // Repository name
+  base_model: string; // Base model identifier
+}
+```
+
+</CodeGroup>
+
 ### PromptResponse
 
-```python
+<CodeGroup>
+
+```python Python
 class PromptResponse:
-    prompt_name: str           # Prompt identifier
-    messages: List[Message]    # List of messages
+    prompt_name: str                                    # Prompt identifier
+    messages: List[Message]                            # List of messages
+    tools: Optional[List[Dict[str, object]]] = None    # List of available tools/functions (OpenAI format)
 ```
+
+```typescript TypeScript
+interface PromptResponse {
+  prompt_name: string;                              // Prompt identifier
+  messages: Message[];                              // List of messages
+  tools?: Array<{ [key: string]: unknown }> | null; // List of available tools/functions (OpenAI format)
+}
+```
+
+</CodeGroup>
 
 ### Message
 
-```python
+<CodeGroup>
+
+```python Python
 class Message:
-    role: str       # "system", "user", or "assistant"
-    content: str    # Message content
+    role: str                                          # "system", "user", or "assistant"
+    content: Union[str, List[Dict[str, object]], None] # Message content (can be null for assistant with tool_calls)
 ```
+
+```typescript TypeScript
+interface Message {
+  role: string;                                        // "system", "user", or "assistant"
+  content?: string | Array<{ [key: string]: unknown }> | null; // Message content (can be null for assistant with tool_calls)
+  [k: string]: unknown;                                // Additional properties allowed
+}
+```
+
+</CodeGroup>
 
 ### TargetResponse
 
-```python
+<CodeGroup>
+
+```python Python
 class TargetResponse:
     target_name: str              # Target name
-    config: TargetConfigBase      # Configuration
+    config: Config                # Target configuration
+
+class Config:
+    generators: Optional[List[Generator]]
+    model_name: Optional[str]
+    teacher_prompt: Optional[str]    # Teacher prompt name (unconditioned stimulus)
+    student_prompt: Optional[str]     # Student prompt name (conditioned stimulus)
+    max_concurrency: Optional[int]
+    max_tokens: Optional[int]
+    num_traj_per_stimulus: Optional[int]
+    temperature: Optional[float]
+    extra_kwargs: Optional[Dict[str, Any]]
 ```
+
+```typescript TypeScript
+interface TargetResponse {
+  target_name: string;        // Target name
+  config: TargetResponse.Config; // Target configuration
+}
+
+namespace TargetResponse {
+  export interface Config {
+    generators?: Array<Generator> | null;
+    model_name?: string | null;
+    teacher_prompt?: string | null;  // Teacher prompt name (unconditioned stimulus)
+    student_prompt?: string | null;  // Student prompt name (conditioned stimulus)
+    max_concurrency?: number | null;
+    max_tokens?: number | null;
+    num_traj_per_stimulus?: number | null;
+    temperature?: number | null;
+    extra_kwargs?: { [key: string]: unknown } | null;
+  }
+}
+```
+
+</CodeGroup>
 
 ### BakeResponse
 
-```python
+<CodeGroup>
+
+```python Python
 class BakeResponse:
-    bake_name: str              # Bake name
-    status: str                 # "incomplete" or "complete"
-    config: Config              # Bake configuration
-    job: Optional[str]          # Job type if running
+    status: str                              # Job status: "not_started", "running", "complete", "failed"
+    config: Optional[Dict[str, object]]     # Job config parameters
+    error: Optional[str]                    # Error message if job failed
+    job_id: Optional[int]                   # Coordinator job ID (if job is queued/running)
+    lines: Optional[int]                    # Number of output lines (not applicable for bakes)
+    progress_percent: Optional[float]        # Job progress percentage (0-100) if job is running
+    loss: Optional[Dict[str, float]]         # Loss values from training (latest_loss, final_loss, min_loss, max_loss)
+    model_name: Optional[List[str]]          # List of model names in format 'user/repo/bake_name/checkpoint' (only when status is 'complete')
 ```
+
+```typescript TypeScript
+interface BakeResponse {
+  status: string;                                    // Job status: "not_started", "running", "complete", "failed"
+  config?: { [key: string]: unknown } | null;       // Job config parameters
+  error?: string | null;                            // Error message if job failed
+  job_id?: number | null;                            // Coordinator job ID (if job is queued/running)
+  lines?: number | null;                             // Number of output lines (not applicable for bakes)
+  progress_percent?: number | null;                  // Job progress percentage (0-100) if job is running
+  loss?: { [key: string]: number } | null;           // Loss values from training (latest_loss, final_loss, min_loss, max_loss)
+  model_name?: Array<string> | null;                 // List of model names in format 'user/repo/bake_name/checkpoint' (only when status is 'complete')
+}
+```
+
+</CodeGroup>
 
 ### HealthCheckResponse
 
-```python
+<CodeGroup>
+
+```python Python
 class HealthCheckResponse:
     status: str   # "healthy" or "degraded"
     api: str      # API name
     version: str  # API version
 ```
 
+```typescript TypeScript
+interface HealthCheckResponse {
+  status: string;  // "healthy" or "degraded"
+  api: string;     // API name
+  version: string; // API version
+}
+```
+
+</CodeGroup>
+
 ## Request Parameter Types
 
 ### MessageParam
 
-```python
+<CodeGroup>
+
+```python Python
 from aibread.types import MessageParam
 
-class MessageParam(TypedDict):
-    role: str       # Required: "system", "user", "assistant"
-    content: str    # Required: Message content
+class MessageParam(TypedDict, total=False):
+    role: str                                          # Required: "system", "user", "assistant"
+    content: Optional[Union[str, List[Dict[str, object]]]]  # Message content (can be null for assistant with tool_calls)
 
 # Usage
 messages: List[MessageParam] = [
@@ -78,16 +185,36 @@ messages: List[MessageParam] = [
 ]
 ```
 
+```typescript TypeScript
+interface MessageParam {
+  role: string;                                        // Required: "system", "user", "assistant"
+  content?: string | Array<{ [key: string]: unknown }> | null; // Message content (can be null for assistant with tool_calls)
+  [k: string]: unknown;                                // Additional properties allowed
+}
+
+// Usage
+const messages: MessageParam[] = [
+  { role: 'system', content: 'You are helpful' },
+  { role: 'user', content: 'Hello' },
+];
+```
+
+</CodeGroup>
+
 ### TargetConfigBaseParam
 
-```python
+<CodeGroup>
+
+```python Python
 from aibread.types import TargetConfigBaseParam
 
 class TargetConfigBaseParam(TypedDict, total=False):
-    generators: Optional[List[Generator]]
+    generators: Optional[Iterable[GeneratorParam]]
     model_name: Optional[str]
-    u: Optional[str]
-    v: Optional[str]
+    teacher_prompt: Optional[str]    # Teacher prompt name (unconditioned stimulus)
+    student_prompt: Optional[str]     # Student prompt name (conditioned stimulus)
+    u: Optional[str]                 # [DEPRECATED] Use 'teacher_prompt' instead
+    v: Optional[str]                 # [DEPRECATED] Use 'student_prompt' instead
     max_concurrency: Optional[int]
     max_tokens: Optional[int]
     num_traj_per_stimulus: Optional[int]
@@ -95,28 +222,82 @@ class TargetConfigBaseParam(TypedDict, total=False):
     extra_kwargs: Optional[Dict[str, Any]]
 ```
 
+```typescript TypeScript
+interface TargetConfigBase {
+  generators?: Array<Generator> | null;
+  model_name?: string | null;
+  teacher_prompt?: string | null;  // Teacher prompt name (unconditioned stimulus)
+  student_prompt?: string | null;  // Student prompt name (conditioned stimulus)
+  u?: string | null;               // [DEPRECATED] Use 'teacher_prompt' instead
+  v?: string | null;               // [DEPRECATED] Use 'student_prompt' instead
+  max_concurrency?: number | null;
+  max_tokens?: number | null;
+  num_traj_per_stimulus?: number | null;
+  temperature?: number | null;
+  extra_kwargs?: { [key: string]: unknown } | null;
+}
+```
+
+</CodeGroup>
+
 ### BakeConfigBaseParam
 
-```python
+<CodeGroup>
+
+```python Python
 from aibread.types import BakeConfigBaseParam
 
 class BakeConfigBaseParam(TypedDict, total=False):
-    datasets: Optional[List[DatasetItemParam]]
+    datasets: Optional[Iterable[DatasetItemParam]]
     epochs: Optional[int]
     micro_batch_size: Optional[int]
     gradient_accumulation_steps: Optional[int]
+    total_trajectories: Optional[int]
+    seed: Optional[int]
     model: Optional[ModelConfigParam]
     optimizer: Optional[OptimizerConfigParam]
     scheduler: Optional[SchedulerConfigParam]
     wandb: Optional[WandbConfigParam]
     deepspeed: Optional[DeepspeedConfigParam]
+    checkpoint: Optional[Iterable[CheckpointConfigParam]]
+    data: Optional[DataConfigParam]
+    eval_interval: Optional[int]
+    train_log_iter_interval: Optional[int]
+    type: Optional[str]
+    model_name: Optional[str]
 ```
+
+```typescript TypeScript
+interface BakeConfigBase {
+  datasets?: Array<DatasetItem> | null;
+  epochs?: number | null;
+  micro_batch_size?: number | null;
+  gradient_accumulation_steps?: number | null;
+  total_trajectories?: number | null;
+  seed?: number | null;
+  model?: ModelConfig | null;
+  optimizer?: OptimizerConfig | null;
+  scheduler?: SchedulerConfig | null;
+  wandb?: WandbConfig | null;
+  deepspeed?: DeepspeedConfig | null;
+  checkpoint?: Array<CheckpointConfig> | null;
+  data?: DataConfig | null;
+  eval_interval?: number | null;
+  train_log_iter_interval?: number | null;
+  type?: string | null;
+  model_name?: string | null;
+}
+```
+
+</CodeGroup>
 
 ## Working with Types
 
 ### Type Imports
 
-```python
+<CodeGroup>
+
+```python Python
 from aibread import Bread
 from aibread.types import (
     RepoResponse,
@@ -129,11 +310,29 @@ from aibread.types import (
 )
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+import type {
+  RepoResponse,
+  PromptResponse,
+  TargetResponse,
+  BakeResponse,
+  Message,
+  MessageParam,
+  HealthCheckResponse,
+} from '@aibread/sdk';
+```
+
+</CodeGroup>
+
 ### Type Hints
 
-```python
+<CodeGroup>
+
+```python Python
 from aibread import Bread
 from aibread.types import RepoResponse, PromptResponse
+from typing import List
 
 def get_repository(name: str) -> RepoResponse:
     client = Bread()
@@ -145,12 +344,41 @@ def create_prompt(
     messages: List[MessageParam]
 ) -> PromptResponse:
     client = Bread()
-    return client.prompts.set(name, repo, messages)
+    return client.prompts.set(
+        prompt_name=name,
+        repo_name=repo,
+        messages=messages
+    )
 ```
+
+```typescript TypeScript
+import Bread, { PromptResponse, MessageParam } from '@aibread/sdk';
+
+async function getRepository(name: string): Promise<RepoResponse> {
+  const client = new Bread();
+  return await client.repo.get(name);
+}
+
+async function createPrompt(
+  name: string,
+  repo: string,
+  messages: MessageParam[]
+): Promise<PromptResponse> {
+  const client = new Bread();
+  return await client.prompts.create(repo, {
+    prompt_name: name,
+    messages,
+  });
+}
+```
+
+</CodeGroup>
 
 ### Response Serialization
 
-```python
+<CodeGroup>
+
+```python Python
 repo = client.repo.get("my_repo")
 
 # To JSON
@@ -162,18 +390,51 @@ data = repo.to_dict()
 data_all = repo.to_dict(exclude_unset=False)
 ```
 
+```typescript TypeScript
+const repo = await client.repo.get('my_repo');
+
+// To JSON
+const jsonStr = JSON.stringify(repo, null, 2);  // Pretty-printed
+const compact = JSON.stringify(repo);  // Compact
+
+// To plain object (already a plain object in TypeScript)
+const data = { ...repo };
+```
+
+</CodeGroup>
+
 ### Check Fields Set
 
-```python
+<CodeGroup>
+
+```python Python
 repo = client.repo.get("my_repo")
 
 if 'base_model' not in repo.model_fields_set:
     print('Field was not in API response')
 ```
 
+```typescript TypeScript
+const repo = await client.repo.get('my_repo');
+
+// Check if field exists
+if (!('base_model' in repo)) {
+  console.log('Field was not in API response');
+}
+
+// Type-safe check
+if (repo.base_model === undefined) {
+  console.log('Field was not in API response');
+}
+```
+
+</CodeGroup>
+
 ### Access Extra Fields
 
-```python
+<CodeGroup>
+
+```python Python
 response = client.repo.get("my_repo")
 
 # Access unknown property
@@ -183,9 +444,23 @@ extra = response.unknown_prop
 all_extras = response.model_extra
 ```
 
+```typescript TypeScript
+const response = await client.repo.get('my_repo');
+
+// Access unknown property (TypeScript may require type assertion)
+const extra = (response as any).unknownProp;
+
+// Get all extra fields if SDK exposes them
+const allExtras = (response as any).extraFields || {};
+```
+
+</CodeGroup>
+
 ## Generator Types
 
-```python
+<CodeGroup>
+
+```python Python
 # Oneshot QS
 {
     "type": "oneshot_qs",
@@ -224,9 +499,60 @@ all_extras = response.model_extra
 }
 ```
 
+```typescript TypeScript
+// Oneshot QS
+interface OneshotGenerator {
+  type: 'oneshot_qs';
+  model: string;
+  numq: number;
+  temperature: number;
+}
+
+// Hardcoded
+interface HardcodedGenerator {
+  type: 'hardcoded';
+  numq: number;
+  questions: string[];
+}
+
+// From Dataset
+interface FromDatasetGenerator {
+  type: 'from_dataset';
+  dataset: string;
+  numq: number;
+  seed: number;
+}
+
+// Persona
+interface PersonaGenerator {
+  type: 'persona';
+  numq: number;
+  seed: number;
+  temperature: number;
+}
+
+// Custom
+interface CustomGenerator {
+  type: 'custom';
+  template_path: string;
+}
+
+// Union type for all generators
+type Generator = 
+  | OneshotGenerator 
+  | HardcodedGenerator 
+  | FromDatasetGenerator 
+  | PersonaGenerator 
+  | CustomGenerator;
+```
+
+</CodeGroup>
+
 ## Type Safety Example
 
-```python
+<CodeGroup>
+
+```python Python
 from typing import List
 from aibread import Bread
 from aibread.types import MessageParam, PromptResponse
@@ -248,6 +574,31 @@ def create_coding_prompts(repo_name: str) -> List[PromptResponse]:
     
     return [response]
 ```
+
+```typescript TypeScript
+import Bread, { MessageParam, PromptResponse } from '@aibread/sdk';
+
+async function createCodingPrompts(
+  repoName: string
+): Promise<PromptResponse[]> {
+  /** Type-safe prompt creation */
+  const client = new Bread();
+  
+  const prompts: MessageParam[] = [
+    { role: 'system', content: 'You are a coder' },
+    { role: 'user', content: 'Task: {task}' },
+  ];
+  
+  const response: PromptResponse = await client.prompts.create(repoName, {
+    prompt_name: 'coding_prompt',
+    messages: prompts,
+  });
+  
+  return [response];
+}
+```
+
+</CodeGroup>
 
 ## Best Practices
 
@@ -280,9 +631,9 @@ def create_coding_prompts(repo_name: str) -> List[PromptResponse]:
     Explore API methods
   </Card>
   <Card
-    title="Guides"
-    icon="book"
-    href="/guides/workflows"
+    title="Production Patterns"
+    icon="shield"
+    href="/sdk/guides/production-patterns"
   >
     Learn common patterns
   </Card>
