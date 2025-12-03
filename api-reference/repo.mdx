@@ -7,60 +7,82 @@ description: "Repository management API reference"
 
 Repositories are the top-level containers for your AI projects. Each repository has a base model configuration and contains prompts, targets, and bakes.
 
-**Resource**: `client.repo`
+## Endpoints
 
-## Methods
-
-### list()
+### List Repositories
 
 List all repositories visible to your team.
 
 **Endpoint**: `GET /v1/repo`
 
-```python
-repos = client.repo.list()
-for repo_name in repos.repos:
-    print(repo_name)
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
-**Returns**: `RepoList`
-- `repos`: `List[str]` - List of repository names
+**Response**: `200 OK`
+
+```json
+{
+  "repos": ["my_repo", "another_repo", "project_v1"]
+}
+```
+
+**Response Fields**:
+- `repos`: `Array<string>` - List of repository names
 
 ---
 
-### get()
+### Get Repository
 
 Get repository configuration and metadata.
 
 **Endpoint**: `GET /v1/repo/{repo_name}`
 
-```python
-repo = client.repo.get("my_repo")
-print(f"Repository: {repo.repo_name}")
-print(f"Base Model: {repo.base_model}")
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="repo_name" type="string" required>
   Repository name to retrieve
 </ParamField>
 
-**Returns**: `RepoResponse`
-- `repo_name`: `str` - Repository name
-- `base_model`: `str` - Base model identifier
+**Response**: `200 OK`
+
+```json
+{
+  "repo_name": "my_repo",
+  "base_model": "Qwen/Qwen3-32B"
+}
+```
+
+**Response Fields**:
+- `repo_name`: `string` - Repository name
+- `base_model`: `string` - Base model identifier
 
 ---
 
-### set()
+### Create or Update Repository
 
 Create or update a repository. This operation is idempotent.
 
-**Endpoint**: `PUT /v1/repo`
+**Endpoint**: `POST /v1/repo`
 
-```python
-repo = client.repo.set(
-    repo_name="my_repo",
-    base_model="Qwen/Qwen3-32B"
-)
+**Request**:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_name": "my_repo",
+    "base_model": "Qwen/Qwen3-32B"
+  }'
 ```
 
 <ParamField path="repo_name" type="string" required>
@@ -75,7 +97,36 @@ repo = client.repo.set(
 The `base_model` cannot be changed after initial creation. Attempting to modify it will return a **409 Conflict** error.
 </Warning>
 
-**Returns**: `RepoResponse`
+**Response**: `200 OK`
+
+```json
+{
+  "repo_name": "my_repo",
+  "base_model": "Qwen/Qwen3-32B"
+}
+```
+
+---
+
+### Create or Update Repository (Deprecated)
+
+<Warning>
+**Deprecated**: Use `POST /v1/repo` instead. This endpoint will be removed in a future version.
+</Warning>
+
+**Endpoint**: `PUT /v1/repo`
+
+**Request**:
+
+```bash
+curl -X PUT "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_name": "my_repo",
+    "base_model": "Qwen/Qwen3-32B"
+  }'
+```
 
 ---
 
@@ -83,90 +134,97 @@ The `base_model` cannot be changed after initial creation. Attempting to modify 
 
 ### Create Repository with Base Model
 
-```python
-from aibread import Bread
-
-client = Bread()
-
-# Create new repository
-repo = client.repo.set(
-    repo_name="coding_project",
-    base_model="Qwen/Qwen3-32B"
-)
-
-print(f"Created repository: {repo.repo_name}")
-print(f"Base model: {repo.base_model}")
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_name": "coding_project",
+    "base_model": "Qwen/Qwen3-32B"
+  }'
 ```
 
 ### Check if Repository Exists
 
-```python
-import aibread
+```bash
+# Get repository (returns 404 if not found)
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 
-try:
-    repo = client.repo.get("my_repo")
-    print(f"Repository exists: {repo.repo_name}")
-except aibread.NotFoundError:
-    # Create it if it doesn't exist
-    repo = client.repo.set(repo_name="my_repo")
-    print(f"Created repository: {repo.repo_name}")
+# If 404, create it
+curl -X POST "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_name": "my_repo"
+  }'
 ```
 
 ### List All Repositories
 
-```python
-response = client.repo.list()
-
-print(f"Found {len(response.repos)} repositories:")
-for repo_name in response.repos:
-    print(f"  - {repo_name}")
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 ## Error Handling
 
-<CodeGroup>
+### Conflict Error (409)
 
-```python Handle Conflicts
-import aibread
+Attempting to change `base_model` of an existing repository:
 
-try:
-    # Attempt to change base_model
-    repo = client.repo.set(
-        repo_name="existing_repo",
-        base_model="different_model"
-    )
-except aibread.ConflictError:
-    print("Cannot change base_model of existing repository")
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_name": "existing_repo",
+    "base_model": "different_model"
+  }'
 ```
 
-```python Handle Not Found
-import aibread
+**Response**: `409 Conflict`
 
-try:
-    repo = client.repo.get("nonexistent_repo")
-except aibread.NotFoundError:
-    print("Repository not found")
-    # Create it
-    repo = client.repo.set(repo_name="nonexistent_repo")
+```json
+{
+  "error": "Cannot change base_model of existing repository"
+}
 ```
 
-</CodeGroup>
+### Not Found Error (404)
+
+Getting a non-existent repository:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/nonexistent_repo" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `404 Not Found`
+
+```json
+{
+  "error": "Repository not found"
+}
+```
 
 ## Response Types
 
 ### RepoResponse
 
-```python
-class RepoResponse:
-    repo_name: str   # Repository name
-    base_model: str  # Base model identifier
+```json
+{
+  "repo_name": "string",
+  "base_model": "string"
+}
 ```
 
 ### RepoListResponse
 
-```python
-class RepoListResponse:
-    items: List[Item]  # List of repository items
+```json
+{
+  "repos": ["string"]
+}
 ```
 
 ## Best Practices
@@ -181,7 +239,7 @@ class RepoListResponse:
   </Accordion>
 
   <Accordion title="Check Before Creating" icon="magnifying-glass">
-    Use `get()` to check if a repository exists before creating it, or rely on `set()`'s idempotent behavior.
+    Use `get()` to check if a repository exists before creating it, or rely on `POST /v1/repo`'s idempotent behavior.
   </Accordion>
 </AccordionGroup>
 

@@ -7,37 +7,42 @@ description: "Configure and run model training jobs"
 
 Bakes represent model training jobs that use rollout data as training datasets. They are composed from a base template plus per-bake overrides and support advanced features like LoRA adapters, DeepSpeed, and Weights & Biases integration.
 
-**Resource**: `client.bakes`
+## Endpoints
 
-## Methods
-
-### list()
+### List Bakes
 
 List all bakes in a repository.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/bakes`
 
-```python
-bakes = client.bakes.list("my_repo")
-for item in bakes.items:
-    print(item.bake_name)
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `200 OK`
+
+```json
+{
+  "bakes": ["bake_v1", "bake_v2", "production_bake"]
+}
 ```
 
 ---
 
-### get()
+### Get Bake
 
 Get bake definition and metadata.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/bakes/{bake_name}`
 
-```python
-bake = client.bakes.get(
-    bake_name="my_bake",
-    repo_name="my_repo"
-)
-print(f"Status: {bake.status}")  # incomplete | complete
-print(f"Job: {bake.job}")
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="bake_name" type="string" required>
@@ -48,102 +53,80 @@ print(f"Job: {bake.job}")
   Repository name
 </ParamField>
 
-**Returns**: `BakeResponse`
-- `bake_name`: `str` - Bake identifier
-- `status`: `str` - 'incomplete' or 'complete'
-- `config`: `Config` - Bake configuration
-- `job`: `Optional[str]` - Job type if running
+**Response**: `200 OK`
+
+```json
+{
+  "status": "complete",
+  "config": {
+    "datasets": [{"target": "coding_target", "weight": 1.0}],
+    "epochs": 3
+  },
+  "model_name": ["user/repo/bake_name/35"],
+  "progress_percent": 100.0
+}
+```
+
+**Response Fields**:
+- `status`: `string` - 'not_started', 'running', 'complete', or 'failed'
+- `config`: `object` - Bake configuration
+- `model_name`: `Array<string>` - List of model checkpoints (when complete)
+- `progress_percent`: `number` - Job progress (0-100)
 
 ---
 
-### set()
+### Create or Update Bake
 
 Create or update a bake configuration.
 
-**Endpoint**: `PUT /v1/repo/{repo_name}/bakes/{bake_name}`
+**Endpoint**: `POST /v1/repo/{repo_name}/bakes`
 
-<CodeGroup>
+**Request**:
 
-```python Minimal Configuration
-bake = client.bakes.set(
-    bake_name="my_bake",
-    repo_name="my_repo",
-    template="default",
-    overrides={
-        "datasets": [
-            {"target": "coding_target", "weight": 1.0}
-        ],
-        "epochs": 3,
-        "micro_batch_size": 1
-    }
-)
-```
-
-```python Full Configuration
-bake = client.bakes.set(
-    bake_name="my_bake",
-    repo_name="my_repo",
-    template="default",
-    overrides={
-        "datasets": [
-            {"target": "coding_target", "weight": 1.0}
-        ],
-        "epochs": 3,
-        "micro_batch_size": 1,
-        "gradient_accumulation_steps": 4,
-        "total_trajectories": 1000,
-        "seed": 42,
-        "model": {
-            "type": "bake",
-            "name_or_path": "Qwen/Qwen3-32B",
-            "baked_adapter_config": {
-                "r": 8,
-                "lora_alpha": 16,
-                "lora_dropout": 0.05,
-                "bias": "none",
-                "target_modules": "all-linear"
-            }
-        },
-        "optimizer": {
-            "learning_rate": 0.0001
-        },
-        "scheduler": {
-            "type": "huggingface"
-        },
-        "wandb": {
-            "enable": True,
-            "project": "my-project",
-            "entity": "my-team",
-            "name": "my-run",
-            "tags": ["experiment", "v1"]
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bake_name": "my_bake",
+    "template": "default",
+    "overrides": {
+      "datasets": [
+        {"target": "coding_target", "weight": 1.0}
+      ],
+      "epochs": 3,
+      "micro_batch_size": 1,
+      "gradient_accumulation_steps": 4,
+      "model": {
+        "type": "bake",
+        "name_or_path": "Qwen/Qwen3-32B",
+        "baked_adapter_config": {
+          "r": 8,
+          "lora_alpha": 16,
+          "lora_dropout": 0.05,
+          "bias": "none",
+          "target_modules": "all-linear"
         }
+      },
+      "optimizer": {
+        "learning_rate": 0.0001
+      },
+      "wandb": {
+        "enable": true,
+        "project": "my-project",
+        "entity": "my-team",
+        "name": "my-run"
+      }
     }
-)
+  }'
 ```
-
-```python Multiple Datasets
-bake = client.bakes.set(
-    bake_name="multi_dataset_bake",
-    repo_name="my_repo",
-    template="default",
-    overrides={
-        "datasets": [
-            {"target": "coding_target", "weight": 0.6},
-            {"target": "math_target", "weight": 0.4}
-        ],
-        "epochs": 5
-    }
-)
-```
-
-</CodeGroup>
-
-<ParamField path="bake_name" type="string" required>
-  Bake name
-</ParamField>
 
 <ParamField path="repo_name" type="string" required>
   Repository name
+</ParamField>
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
 </ParamField>
 
 <ParamField path="template" type="string" required>
@@ -151,23 +134,32 @@ bake = client.bakes.set(
 </ParamField>
 
 <ParamField path="overrides" type="object">
-  Bake configuration overrides. See [Bake Configuration](/configuration/bake-config).
+  Bake configuration overrides. See [Bake Configuration](/sdk/configuration/bake-config).
 </ParamField>
 
 ---
 
-### run()
+### Start Bake
 
 Start a bake (training) job.
 
-**Endpoint**: `POST /v1/repo/{repo_name}/bakes/{bake_name}/start`
+**Endpoint**: `POST /v1/repo/{repo_name}/bakes/{bake_name}`
 
-```python
-result = client.bakes.run(
-    bake_name="my_bake",
-    repo_name="my_repo"
-)
-print(result.message)
+**Request**:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `200 OK`
+
+```json
+{
+  "status": "running",
+  "job_id": 12345,
+  "progress_percent": 0
+}
 ```
 
 <ParamField path="bake_name" type="string" required>
@@ -191,48 +183,106 @@ Ensure all target rollouts are complete before starting bake
 - Asynchronous: returns immediately
 - Poll `get()` to monitor status
 
-**Returns**: `BakeRunResponse`
-- `message`: Job execution message
+**Returns**: `BakeResponse`
+- `status`: Job status ('not_started', 'running', 'complete', 'failed')
+- `job_id`: Coordinator job ID (if queued/running)
+- `progress_percent`: Job progress (0-100)
 
 ---
 
-### batch_set()
+### Batch Create or Update Bakes
 
 Create or update multiple bakes.
 
-**Endpoint**: `PUT /v1/repo/{repo_name}/bakes/batch`
+**Endpoint**: `POST /v1/repo/{repo_name}/bakes/batch`
 
-```python
-result = client.bakes.batch_set(
-    repo_name="my_repo",
-    bakes=[
-        {
-            "bake_name": "bake_v1",
-            "template": "default",
-            "overrides": {"epochs": 3}
-        },
-        {
-            "bake_name": "bake_v2",
-            "template": "bake_v1",
-            "overrides": {"epochs": 5}
-        }
+**Request**:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/batch" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bakes": [
+      {
+        "bake_name": "bake_v1",
+        "template": "default",
+        "overrides": {"epochs": 3}
+      },
+      {
+        "bake_name": "bake_v2",
+        "template": "bake_v1",
+        "overrides": {"epochs": 5}
+      }
     ]
-)
+  }'
 ```
 
 ---
 
-### delete()
+### Create or Update Bake (Deprecated)
+
+<Warning>
+**Deprecated**: Use `POST /v1/repo/{repo_name}/bakes` instead. This endpoint will be removed in a future version.
+</Warning>
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/bakes/{bake_name}`
+
+**Request**:
+
+```bash
+curl -X PUT "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "template": "default",
+    "overrides": {
+      "datasets": [{"target": "coding_target", "weight": 1.0}],
+      "epochs": 3
+    }
+  }'
+```
+
+---
+
+### Batch Create or Update Bakes (Deprecated)
+
+<Warning>
+**Deprecated**: Use `POST /v1/repo/{repo_name}/bakes/batch` instead. This endpoint will be removed in a future version.
+</Warning>
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/bakes/batch`
+
+**Request**:
+
+```bash
+curl -X PUT "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/batch" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bakes": [
+      {
+        "bake_name": "bake_v1",
+        "template": "default",
+        "overrides": {"epochs": 3}
+      }
+    ]
+  }'
+```
+
+---
+
+### Delete Bake
 
 Delete a bake from the repository.
 
 **Endpoint**: `DELETE /v1/repo/{repo_name}/bakes/{bake_name}`
 
-```python
-result = client.bakes.delete(
-    bake_name="old_bake",
-    repo_name="my_repo"
-)
+**Request**:
+
+```bash
+curl -X DELETE "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/old_bake" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 ---
@@ -241,69 +291,54 @@ result = client.bakes.delete(
 
 <Steps>
   <Step title="Verify Rollouts Complete">
-    ```python
+    ```bash
     # Check target rollout status
-    rollout_status = client.targets.rollout.get(
-        target_name="coding_target",
-        repo_name="my_repo"
-    )
+    curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/rollout" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
     
-    if rollout_status.status != "complete":
-        print("Rollout must complete before training")
-        exit(1)
+    # Response should show status: "complete"
     ```
   </Step>
 
   <Step title="Configure Bake">
-    ```python
-    bake = client.bakes.set(
-        bake_name="my_bake",
-        repo_name="my_repo",
-        template="default",
-        overrides={
-            "datasets": [
-                {"target": "coding_target", "weight": 1.0}
-            ],
-            "epochs": 3,
-            "micro_batch_size": 1,
-            "model": {
-                "type": "bake",
-                "name_or_path": "Qwen/Qwen3-32B"
-            },
-            "optimizer": {
-                "learning_rate": 0.0001
-            }
+    ```bash
+    curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
+      -H "Authorization: Bearer $BREAD_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "bake_name": "my_bake",
+        "template": "default",
+        "overrides": {
+          "datasets": [{"target": "coding_target", "weight": 1.0}],
+          "epochs": 3,
+          "micro_batch_size": 1,
+          "model": {
+            "type": "bake",
+            "name_or_path": "Qwen/Qwen3-32B"
+          },
+          "optimizer": {
+            "learning_rate": 0.0001
+          }
         }
-    )
+      }'
     ```
   </Step>
 
   <Step title="Start Training">
-    ```python
-    result = client.bakes.run(
-        bake_name="my_bake",
-        repo_name="my_repo"
-    )
-    print("Training started")
+    ```bash
+    curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
     ```
   </Step>
 
   <Step title="Monitor Progress">
-    ```python
-    import time
+    ```bash
+    # Poll bake status
+    curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
     
-    while True:
-        bake_status = client.bakes.get(
-            bake_name="my_bake",
-            repo_name="my_repo"
-        )
-        
-        if bake_status.status == "complete":
-            print("Training complete!")
-            break
-        
-        print(f"Status: {bake_status.status}, Job: {bake_status.job}")
-        time.sleep(30)  # Check every 30 seconds
+    # Check status field: "not_started", "running", "complete", or "failed"
+    # Check progress_percent for completion percentage
     ```
   </Step>
 </Steps>
@@ -312,72 +347,57 @@ result = client.bakes.delete(
 
 ### LoRA Training
 
-```python
-bake = client.bakes.set(
-    bake_name="lora_bake",
-    repo_name="my_repo",
-    template="default",
-    overrides={
-        "datasets": [{"target": "coding_target", "weight": 1.0}],
-        "epochs": 3,
-        "model": {
-            "type": "bake",
-            "name_or_path": "Qwen/Qwen3-32B",
-            "baked_adapter_config": {
-                "r": 16,              # LoRA rank
-                "lora_alpha": 32,     # Alpha parameter
-                "lora_dropout": 0.1,  # Dropout rate
-                "bias": "none",
-                "target_modules": "all-linear"
-            }
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bake_name": "lora_bake",
+    "template": "default",
+    "overrides": {
+      "datasets": [{"target": "coding_target", "weight": 1.0}],
+      "epochs": 3,
+      "model": {
+        "type": "bake",
+        "name_or_path": "Qwen/Qwen3-32B",
+        "baked_adapter_config": {
+          "r": 16,
+          "lora_alpha": 32,
+          "lora_dropout": 0.1,
+          "bias": "none",
+          "target_modules": "all-linear"
         }
+      }
     }
-)
+  }'
 ```
 
 ### Weights & Biases Integration
 
-```python
-bake = client.bakes.set(
-    bake_name="wandb_bake",
-    repo_name="my_repo",
-    template="default",
-    overrides={
-        "datasets": [{"target": "coding_target", "weight": 1.0}],
-        "epochs": 5,
-        "wandb": {
-            "enable": True,
-            "project": "bread-experiments",
-            "entity": "my-team",
-            "name": "coding-v1",
-            "tags": ["coding", "experiment", "v1"]
-        }
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bake_name": "wandb_bake",
+    "template": "default",
+    "overrides": {
+      "datasets": [{"target": "coding_target", "weight": 1.0}],
+      "epochs": 5,
+      "wandb": {
+        "enable": true,
+        "project": "bread-experiments",
+        "entity": "my-team",
+        "name": "coding-v1",
+        "tags": ["coding", "experiment", "v1"]
+      }
     }
-)
-```
-
-### DeepSpeed Configuration
-
-```python
-bake = client.bakes.set(
-    bake_name="deepspeed_bake",
-    repo_name="my_repo",
-    template="default",
-    overrides={
-        "datasets": [{"target": "coding_target", "weight": 1.0}],
-        "epochs": 3,
-        "deepspeed": {
-            "zero_optimization": {
-                "stage": 2  # ZeRO stage 2
-            }
-        }
-    }
-)
+  }'
 ```
 
 ## Key Configuration Fields
 
-See [Bake Configuration Reference](/configuration/bake-config) for complete details.
+See [Bake Configuration Reference](/sdk/configuration/bake-config) for complete details.
 
 ### Dataset Configuration
 
@@ -431,21 +451,33 @@ See [Bake Configuration Reference](/configuration/bake-config) for complete deta
 
 ## Error Handling
 
-```python
-import aibread
+### Not Found (404)
 
-try:
-    result = client.bakes.run(
-        bake_name="my_bake",
-        repo_name="my_repo"
-    )
-except aibread.NotFoundError:
-    print("Bake not found - configure it first")
-except aibread.APIStatusError as e:
-    if "rollout" in str(e.response).lower():
-        print("Target rollouts must complete first")
-    else:
-        print(f"Error: {e.status_code} - {e.response}")
+Starting a bake that doesn't exist:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/nonexistent" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `404 Not Found`
+
+```json
+{
+  "error": "Bake not found"
+}
+```
+
+### Prerequisites Not Met
+
+Starting a bake when rollouts aren't complete:
+
+**Response**: `400 Bad Request`
+
+```json
+{
+  "error": "Target rollouts must complete before starting bake"
+}
 ```
 
 ## Next Steps
@@ -454,16 +486,16 @@ except aibread.APIStatusError as e:
   <Card
     title="Bake Configuration"
     icon="gear"
-    href="/configuration/bake-config"
+    href="/sdk/configuration/bake-config"
   >
     Complete bake configuration reference
   </Card>
   <Card
-    title="Complete Workflows"
-    icon="diagram-project"
-    href="/guides/workflows"
+    title="SDK Quickstart"
+    icon="code"
+    href="/sdk/quickstart"
   >
-    End-to-end training examples
+    Use the SDK for programmatic control
   </Card>
 </CardGroup>
 

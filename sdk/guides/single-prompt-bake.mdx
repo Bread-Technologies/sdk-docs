@@ -6,7 +6,7 @@ description: "Bake Yoda's personality into a model in 4 steps"
 Bake your first model to act like Yoda into a model's weights. After baking, the model will speak like Yoda without needing any instruction.
 
 <Note>
-Completed the [Quickstart](/quickstart)? You're ready to bake. Otherwise, set up the SDK first.
+Completed the [Quickstart](/sdk/quickstart)? You're ready to bake. Otherwise, set up the SDK first.
 </Note>
 
 ## The Goal
@@ -19,36 +19,69 @@ Bake Yoda's personality into a model so it ALWAYS speaks like Yoda: no system pr
 
 <Steps>
   <Step title="Create Repository & Prompts">
-    Begin by creating a new repository using `client.repo.set()` and then creating the student and teacher prompt using `client.prompts.set()`.
-    ```python
-    import os
-    from aibread import Bread
+    Begin by creating a new repository and then creating the student and teacher prompts.
     
-    client = Bread()
-    
-    # Create repository
-    repo = client.repo.set(repo_name="yoda_model")
-    
-    # Teacher prompt (u): The personality to bake in
-    client.prompts.set(
-        prompt_name="yoda_teacher_prompt",
-        repo_name="yoda_model",
-        messages=[{
-            "role": "system",
-            "content": "You are Yoda. Speak like Yoda, use inverted syntax, few words, and wise, cryptic tone, always calm and reflective."
-        }]
-    )
-    
-    # Student prompt (v): Empty for always-on behavior
-    client.prompts.set(
-        prompt_name="empty_student_prompt",
-        repo_name="yoda_model",
-        messages=[{
-            "role": "system",
-            "content": ""  # Empty = model ALWAYS acts like Yoda
-        }]
-    )
-    ```
+    <CodeGroup>
+
+```python Python
+from aibread import Bread
+
+client = Bread()
+
+# Create repository
+repo = client.repo.set(repo_name="yoda_model")
+
+# Teacher prompt (u): The personality to bake in
+client.prompts.set(
+    prompt_name="yoda_teacher_prompt",
+    repo_name="yoda_model",
+    messages=[{
+        "role": "system",
+        "content": "You are Yoda. Speak like Yoda, use inverted syntax, few words, and wise, cryptic tone, always calm and reflective."
+    }]
+)
+
+# Student prompt (v): Empty for always-on behavior
+client.prompts.set(
+    prompt_name="empty_student_prompt",
+    repo_name="yoda_model",
+    messages=[{
+        "role": "system",
+        "content": ""  # Empty = model ALWAYS acts like Yoda
+    }]
+)
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Create repository
+await client.repo.create({
+  repo_name: 'yoda_model',
+});
+
+// Teacher prompt (u): The personality to bake in
+await client.prompts.create('yoda_model', {
+  prompt_name: 'yoda_teacher_prompt',
+  messages: [{
+    role: 'system',
+    content: 'You are Yoda. Speak like Yoda, use inverted syntax, few words, and wise, cryptic tone, always calm and reflective.',
+  }],
+});
+
+// Student prompt (v): Empty for always-on behavior
+await client.prompts.create('yoda_model', {
+  prompt_name: 'empty_student_prompt',
+  messages: [{
+    role: 'system',
+    content: '',  // Empty = model ALWAYS acts like Yoda
+  }],
+});
+```
+
+</CodeGroup>
     
     <Tip>
     Empty student prompts (`v = ""`) mean the model exhibits the baked behavior with **zero input tokens**. The personality is truly in the weights, not the prompts.
@@ -56,91 +89,163 @@ Bake Yoda's personality into a model so it ALWAYS speaks like Yoda: no system pr
   </Step>
 
   <Step title="Configure Target">
-    Configure a target via `client.targets.set()` that captures Yoda's personality using a variety of stim generators. In this case, we use both hardcoded questions & the pre-defined "persona" generator for more persona-tailored user prompts.
+    Configure a target that captures Yoda's personality using a variety of stim generators. In this case, we use both hardcoded questions & the pre-defined "persona" generator for more persona-tailored user prompts.
     
-    ```python
-    target = client.targets.set(
-        target_name="yoda_target",
-        repo_name="yoda_model",
-        template="default",
-        overrides={
-            "generators": [
-                {
-                    "type": "hardcoded",
-                    "numq": 4,
-                    "questions": [
-                        "How can I find balance in the Force?",
-                        "Hello, this is Anakin Skywalker",
-                        "How tall are you?",
-                        "Teach me about patience."
-                    ]
-                },
-                {
-                    "type": "persona",
-                    "numq": 450
-                }
-            ],
-            "model_name": "Qwen/Qwen3-32B",
-            "u": "yoda_teacher_prompt",    # Teacher: Yoda personality
-            "v": "empty_student_prompt"    # Student: empty (always-on)
-        }
-    )
-    ```
+    <CodeGroup>
+
+```python Python
+target = client.targets.set(
+    target_name="yoda_target",
+    repo_name="yoda_model",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "hardcoded",
+                "numq": 4,
+                "questions": [
+                    "How can I find balance in the Force?",
+                    "Hello, this is Anakin Skywalker",
+                    "How tall are you?",
+                    "Teach me about patience."
+                ]
+            },
+            {
+                "type": "persona",
+                "numq": 450
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "u": "yoda_teacher_prompt",    # Teacher: Yoda personality
+        "v": "empty_student_prompt"    # Student: empty (always-on)
+    }
+)
+```
+
+```typescript TypeScript
+await client.targets.create('yoda_model', {
+  target_name: 'yoda_target',
+  template: 'default',
+  overrides: {
+    generators: [
+      {
+        type: 'hardcoded',
+        numq: 4,
+        questions: [
+          'How can I find balance in the Force?',
+          'Hello, this is Anakin Skywalker',
+          'How tall are you?',
+          'Teach me about patience.',
+        ],
+      },
+      {
+        type: 'persona',
+        numq: 450,
+      },
+    ],
+    model_name: 'Qwen/Qwen3-32B',
+    u: 'yoda_teacher_prompt',    // Teacher: Yoda personality
+    v: 'empty_student_prompt',    // Student: empty (always-on)
+  },
+});
+```
+
+</CodeGroup>
     
     <Info>
-    The `generators` create questions (stimuli) that will provoke Yoda-like responses. In production, use many [generators](/configuration/generators) for more data diversity.
+    The `generators` create questions (stimuli) that will provoke Yoda-like responses. In production, use many [generators](/sdk/configuration/generators) for more data diversity.
     </Info>
   </Step>
 
   <Step title="Generate Training Data">
-    Run stim with `client.targets.stim.run()` and rollout (which generates responses from the Yoda-prompted model) with `client.targets.rollout.run`:
+    Run stim and rollout (which generates responses from the Yoda-prompted model):
     
-    ```python
-    # Generate stimuli (questions)
-    client.targets.stim.run(
-        target_name="yoda_target",
-        repo_name="yoda_model"
-    )
-    
-    # Generate trajectories (Yoda's responses to questions)
-    client.targets.rollout.run(
-        target_name="yoda_target",
-        repo_name="yoda_model"
-    )
-    ```
+    <CodeGroup>
+
+```python Python
+# Generate stimuli (questions)
+client.targets.stim.run(
+    target_name="yoda_target",
+    repo_name="yoda_model"
+)
+
+# Generate trajectories (Yoda's responses to questions)
+client.targets.rollout.run(
+    target_name="yoda_target",
+    repo_name="yoda_model"
+)
+```
+
+```typescript TypeScript
+// Generate stimuli (questions)
+await client.targets.stim.run('yoda_target', {
+  repo_name: 'yoda_model',
+});
+
+// Generate trajectories (Yoda's responses to questions)
+await client.targets.rollout.run('yoda_target', {
+  repo_name: 'yoda_model',
+});
+```
+
+</CodeGroup>
     
     <Info>
-    These jobs run asynchronously. In production, you'll want to poll for completion. See [Production Patterns](/guides/production-patterns) for polling examples.
+    These jobs run asynchronously. In production, you'll want to poll for completion. See [Production Patterns](/sdk/guides/production-patterns) for polling examples.
     </Info>
   </Step>
 
   <Step title="Configure and Run Bake">
-    Lastly, configure your bake hyperparameters with `client.bakes.set()`. You may specify a variety of traditional hyperparameters, as well as the concentration of [trajectories](/understanding-baking#key-terminology) in your final bake dataset.
+    Lastly, configure your bake hyperparameters. You may specify a variety of traditional hyperparameters, as well as the concentration of [trajectories](/understanding-baking#key-terminology) in your final bake dataset.
     
-    ```python
-    # Configure bake
-    bake = client.bakes.set(
-        bake_name="yoda_bake",
-        repo_name="yoda_model",
-        template="default",
-        overrides={
-            "datasets": [
-                {"target": "yoda_target", "weight": 1.0}
-            ],
-            "epochs": 3,
-            "micro_batch_size": 1
-        }
-    )
-    
-    # Start training
-    client.bakes.run(
-        bake_name="yoda_bake",
-        repo_name="yoda_model"
-    )
-    ```
+    <CodeGroup>
+
+```python Python
+# Configure bake
+bake = client.bakes.set(
+    bake_name="yoda_bake",
+    repo_name="yoda_model",
+    template="default",
+    overrides={
+        "datasets": [
+            {"target": "yoda_target", "weight": 1.0}
+        ],
+        "epochs": 3,
+        "micro_batch_size": 1
+    }
+)
+
+# Run training
+client.bakes.run(
+    bake_name="yoda_bake",
+    repo_name="yoda_model"
+)
+```
+
+```typescript TypeScript
+// Configure bake
+await client.bakes.create('yoda_model', {
+  bake_name: 'yoda_bake',
+  template: 'default',
+  overrides: {
+    datasets: [
+      { target: 'yoda_target', weight: 1.0 },
+    ],
+    epochs: 3,
+    micro_batch_size: 1,
+  },
+});
+
+// Run training
+await client.bakes.run('yoda_bake', {
+  repo_name: 'yoda_model',
+});
+```
+
+</CodeGroup>
     
     <Success>
-    Training started! Your model is now learning to be Yoda. Check [Bake Configuration](/configuration/bake-config) to customize hyperparameters.
+    Training started! Your model is now learning to be Yoda. Check [Bake Configuration](/sdk/configuration/bake-config) to customize hyperparameters.
     </Success>
   </Step>
 </Steps>
@@ -240,28 +345,28 @@ Update model weights so it behaves like Yoda without needing the prompt.
   <Card
     title="Using Your Baked Model"
     icon="comments"
-    href="/guides/using-baked-models"
+    href="/sdk/guides/using-baked-models"
   >
     Load your trained model and chat with it
   </Card>
   <Card
     title="Multi-Target Baking"
     icon="layer-group"
-    href="/guides/multi-target-baking"
+    href="/sdk/guides/multi-target-baking"
   >
     Combine multiple prompts in a single bake
   </Card>
   <Card
     title="Iterative Baking"
     icon="rotate"
-    href="/guides/iterative-baking"
+    href="/sdk/guides/iterative-baking"
   >
     Refine your baked model with additional training
   </Card>
   <Card
     title="Production Patterns"
     icon="shield"
-    href="/guides/production-patterns"
+    href="/sdk/guides/production-patterns"
   >
     Add polling, error handling, and monitoring
   </Card>

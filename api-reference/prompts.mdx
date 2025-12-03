@@ -7,42 +7,46 @@ description: "Prompt template management API reference"
 
 Prompts are reusable message templates used for stimulus generation. They consist of a sequence of messages with roles (system, user, assistant) and content.
 
-**Resource**: `client.prompts`
+## Endpoints
 
-## Methods
-
-### list()
+### List Prompts
 
 List all prompts in a repository.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/prompts`
 
-```python
-prompts = client.prompts.list("my_repo")
-for item in prompts.items:
-    print(item.prompt_name)
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/prompts" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="repo_name" type="string" required>
   Repository name
 </ParamField>
 
-**Returns**: `PromptListResponse`
+**Response**: `200 OK`
+
+```json
+{
+  "prompts": ["system_prompt", "user_prompt", "assistant_prompt"]
+}
+```
 
 ---
 
-### get()
+### Get Prompt
 
 Get a specific prompt's definition and metadata.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/prompts/{prompt_name}`
 
-```python
-prompt = client.prompts.get(
-    prompt_name="system_prompt_coding",
-    repo_name="my_repo"
-)
-print(prompt.messages)
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/system_prompt_coding" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="prompt_name" type="string" required>
@@ -53,35 +57,59 @@ print(prompt.messages)
   Repository name
 </ParamField>
 
-**Returns**: `PromptResponse`
-- `prompt_name`: `str` - Prompt identifier
-- `messages`: `List[Message]` - List of messages in the prompt
+**Response**: `200 OK`
+
+```json
+{
+  "prompt_name": "system_prompt_coding",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant."
+    }
+  ]
+}
+```
+
+**Response Fields**:
+- `prompt_name`: `string` - Prompt identifier
+- `messages`: `Array<Message>` - List of messages in the prompt
 
 ---
 
-### set()
+### Create or Update Prompt
 
 Create or update a prompt. This operation is idempotent.
 
-**Endpoint**: `PUT /v1/repo/{repo_name}/prompts/{prompt_name}`
+**Endpoint**: `POST /v1/repo/{repo_name}/prompts`
 
-```python
-prompt = client.prompts.set(
-    prompt_name="system_prompt_coding",
-    repo_name="my_repo",
-    messages=[
-        {"role": "system", "content": "You are a helpful coding assistant."},
-        {"role": "user", "content": "Write a function to {task}"}
+**Request**:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt_name": "system_prompt_coding",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful coding assistant."
+      },
+      {
+        "role": "user",
+        "content": "Write a function to {task}"
+      }
     ]
-)
+  }'
 ```
-
-<ParamField path="prompt_name" type="string" required>
-  Prompt name
-</ParamField>
 
 <ParamField path="repo_name" type="string" required>
   Repository name
+</ParamField>
+
+<ParamField path="prompt_name" type="string" required>
+  Prompt name
 </ParamField>
 
 <ParamField path="messages" type="array" required>
@@ -94,26 +122,48 @@ prompt = client.prompts.set(
 Invalid prompt names return a **422 Unprocessable Entity** error.
 </Note>
 
-**Returns**: `PromptResponse`
+**Response**: `200 OK`
+
+```json
+{
+  "prompt_name": "system_prompt_coding",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant."
+    },
+    {
+      "role": "user",
+      "content": "Write a function to {task}"
+    }
+  ]
+}
+```
 
 ---
 
-### batch_set()
+### Batch Create or Update Prompts
 
 Create or update multiple prompts in a single request.
 
-**Endpoint**: `PUT /v1/repo/{repo_name}/prompts/batch`
+**Endpoint**: `POST /v1/repo/{repo_name}/prompts/batch`
 
-```python
-result = client.prompts.batch_set(
-    repo_name="my_repo",
-    prompts={
-        "system_prompt": [{"role": "system", "content": "Hello"}],
-        "user_prompt": [{"role": "user", "content": "World"}]
+**Request**:
+
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/batch" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompts": {
+      "system_prompt": [
+        {"role": "system", "content": "Hello"}
+      ],
+      "user_prompt": [
+        {"role": "user", "content": "World"}
+      ]
     }
-)
-print(f"Created: {result.created}")
-print(f"Failed: {result.failed}")
+  }'
 ```
 
 <ParamField path="repo_name" type="string" required>
@@ -124,24 +174,83 @@ print(f"Failed: {result.failed}")
   Dictionary mapping prompt names to message arrays
 </ParamField>
 
-**Returns**: `PromptBatchSetResponse`
-- `created`: `List[str]` - Successfully created prompt names
-- `failed`: `Dict[str, str]` - Failed prompts with error messages
+**Response**: `200 OK`
+
+```json
+{
+  "created": ["system_prompt", "user_prompt"],
+  "failed": {}
+}
+```
+
+**Response Fields**:
+- `created`: `Array<string>` - Successfully created prompt names
+- `failed`: `Object<string, string>` - Failed prompts with error messages
 
 ---
 
-### delete()
+### Create or Update Prompt (Deprecated)
+
+<Warning>
+**Deprecated**: Use `POST /v1/repo/{repo_name}/prompts` instead. This endpoint will be removed in a future version.
+</Warning>
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/prompts/{prompt_name}`
+
+**Request**:
+
+```bash
+curl -X PUT "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/system_prompt_coding" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful coding assistant."
+      }
+    ]
+  }'
+```
+
+---
+
+### Batch Create or Update Prompts (Deprecated)
+
+<Warning>
+**Deprecated**: Use `POST /v1/repo/{repo_name}/prompts/batch` instead. This endpoint will be removed in a future version.
+</Warning>
+
+**Endpoint**: `PUT /v1/repo/{repo_name}/prompts/batch`
+
+**Request**:
+
+```bash
+curl -X PUT "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/batch" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompts": {
+      "system_prompt": [
+        {"role": "system", "content": "Hello"}
+      ]
+    }
+  }'
+```
+
+---
+
+### Delete Prompt
 
 Delete a prompt from the repository.
 
 **Endpoint**: `DELETE /v1/repo/{repo_name}/prompts/{prompt_name}`
 
-```python
-result = client.prompts.delete(
-    prompt_name="old_prompt",
-    repo_name="my_repo"
-)
-print(result.message)
+**Request**:
+
+```bash
+curl -X DELETE "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/old_prompt" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
 <ParamField path="prompt_name" type="string" required>
@@ -152,8 +261,16 @@ print(result.message)
   Repository name
 </ParamField>
 
-**Returns**: `PromptDeleteResponse`
-- `message`: `str` - Success confirmation
+**Response**: `200 OK`
+
+```json
+{
+  "message": "Prompt deleted successfully"
+}
+```
+
+**Response Fields**:
+- `message`: `string` - Success confirmation
 
 ---
 
@@ -161,32 +278,36 @@ print(result.message)
 
 ### Create System Prompt
 
-```python
-client.prompts.set(
-    prompt_name="system_prompt_coding",
-    repo_name="my_repo",
-    messages=[
-        {
-            "role": "system",
-            "content": "You are an expert Python programmer. Provide clear, concise, and well-documented code."
-        }
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt_name": "system_prompt_coding",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an expert Python programmer. Provide clear, concise, and well-documented code."
+      }
     ]
-)
+  }'
 ```
 
 ### Create User Prompt with Template Variables
 
-```python
-client.prompts.set(
-    prompt_name="user_prompt_task",
-    repo_name="my_repo",
-    messages=[
-        {
-            "role": "user",
-            "content": "Task: {task}\nDifficulty: {difficulty}\nProvide a solution."
-        }
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt_name": "user_prompt_task",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Task: {task}\nDifficulty: {difficulty}\nProvide a solution."
+      }
     ]
-)
+  }'
 ```
 
 <Tip>
@@ -195,41 +316,40 @@ Use template variables like `{task}` in your prompts. These will be filled in du
 
 ### Batch Create Prompts
 
-```python
-result = client.prompts.batch_set(
-    repo_name="my_repo",
-    prompts={
-        "system_assistant": [
-            {"role": "system", "content": "You are a helpful assistant"}
-        ],
-        "system_coder": [
-            {"role": "system", "content": "You are a coding expert"}
-        ],
-        "user_template": [
-            {"role": "user", "content": "Question: {question}"}
-        ]
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/batch" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompts": {
+      "system_assistant": [
+        {"role": "system", "content": "You are a helpful assistant"}
+      ],
+      "system_coder": [
+        {"role": "system", "content": "You are a coding expert"}
+      ],
+      "user_template": [
+        {"role": "user", "content": "Question: {question}"}
+      ]
     }
-)
-
-if result.failed:
-    print(f"Failed to create: {result.failed}")
-else:
-    print(f"Successfully created {len(result.created)} prompts")
+  }'
 ```
 
 ### Multi-Turn Conversation Prompt
 
-```python
-client.prompts.set(
-    prompt_name="conversation_starter",
-    repo_name="my_repo",
-    messages=[
-        {"role": "system", "content": "You are a friendly chatbot"},
-        {"role": "user", "content": "Hello!"},
-        {"role": "assistant", "content": "Hi! How can I help you today?"},
-        {"role": "user", "content": "{user_query}"}
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt_name": "conversation_starter",
+    "messages": [
+      {"role": "system", "content": "You are a friendly chatbot"},
+      {"role": "user", "content": "Hello!"},
+      {"role": "assistant", "content": "Hi! How can I help you today?"},
+      {"role": "user", "content": "{user_query}"}
     ]
-)
+  }'
 ```
 
 ## Message Roles
@@ -248,43 +368,68 @@ client.prompts.set(
 
 ## Error Handling
 
-```python
-import aibread
+### Unprocessable Entity (422)
 
-try:
-    prompt = client.prompts.set(
-        prompt_name="invalid name!",  # Invalid characters
-        repo_name="my_repo",
-        messages=[{"role": "system", "content": "Test"}]
-    )
-except aibread.UnprocessableEntityError:
-    print("Invalid prompt name format")
+Invalid prompt name format:
 
-try:
-    prompt = client.prompts.get(
-        prompt_name="nonexistent",
-        repo_name="my_repo"
-    )
-except aibread.NotFoundError:
-    print("Prompt not found")
+```bash
+curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/prompts" \
+  -H "Authorization: Bearer $BREAD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt_name": "invalid name!",
+    "messages": [{"role": "system", "content": "Test"}]
+  }'
+```
+
+**Response**: `422 Unprocessable Entity`
+
+```json
+{
+  "error": "Invalid prompt name format"
+}
+```
+
+### Not Found (404)
+
+Getting a non-existent prompt:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/prompts/nonexistent" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `404 Not Found`
+
+```json
+{
+  "error": "Prompt not found"
+}
 ```
 
 ## Response Types
 
 ### Message
 
-```python
-class Message:
-    role: str       # "system", "user", or "assistant"
-    content: str    # Message content
+```json
+{
+  "role": "system",
+  "content": "You are a helpful assistant."
+}
 ```
 
 ### PromptResponse
 
-```python
-class PromptResponse:
-    prompt_name: str           # Prompt identifier
-    messages: List[Message]    # List of messages
+```json
+{
+  "prompt_name": "system_prompt",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    }
+  ]
+}
 ```
 
 ## Best Practices
@@ -303,7 +448,7 @@ class PromptResponse:
   </Accordion>
 
   <Accordion title="Batch Operations" icon="layer-group">
-    Use `batch_set()` when creating multiple prompts to reduce API calls
+    Use `POST /v1/repo/{repo_name}/prompts/batch` when creating multiple prompts to reduce API calls
   </Accordion>
 
   <Accordion title="Version Your Prompts" icon="code-branch">
@@ -322,11 +467,11 @@ class PromptResponse:
     Use prompts in target configuration
   </Card>
   <Card
-    title="Workflows"
-    icon="diagram-project"
-    href="/guides/workflows"
+    title="SDK Quickstart"
+    icon="code"
+    href="/sdk/quickstart"
   >
-    See complete prompt workflow examples
+    Use the SDK for programmatic control
   </Card>
 </CardGroup>
 

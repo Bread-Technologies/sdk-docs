@@ -4,8 +4,8 @@ info:
   description: "\n    BReaDv3 Production API\n    \n    A git-centric AI model fine-tuning platform that uses distributed git repositories \n    for coordination instead of traditional databases.\n    \n    Key Features:\n    - Repository Management: Create and manage AI training repositories\n    - Prompt Management: Store and organize training prompts\n    - Target Management: Define training targets and configurations\n    - Async Workflows: Git-based coordination for distributed training\n    \n    Authentication:\n    All endpoints require authentication via Bearer token.\n    \n    API Structure:\n    - /v1/repo/* - Repository operations\n    - /v1/repo/{repo_name}/prompts/* - Prompt management\n    - /v1/repo/{repo_name}/targets/* - Target management\n    - /v1/repo/{repo_name}/bakes/* - Bake management\n    "
   version: 0.1.0
 servers:
-  - url: https://bapi.bread.com.ai
-    description: Production server
+  - url: http://localhost:8080
+    description: Development server
 paths:
   /v1/repo:
     get:
@@ -14,6 +14,29 @@ paths:
       summary: List Repos
       description: Returns repositories visible to the authenticated team. Use this to discover repo names for subsequent calls.
       operationId: list_repos_v1_repo_get
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -25,43 +48,80 @@ paths:
           description: Bad request - Invalid input
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Resource not found
                 code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Internal server error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Internal server error
                 code: INTERNAL_ERROR
-      security:
-        - HTTPBearer: []
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     put:
       tags:
         - repositories
       summary: Set Repo
-      description: Creates the repository if missing or returns the existing one. Idempotent; base_model cannot be changed (409 on conflict).
+      description: '[DEPRECATED] Use POST /v1/repo instead. Creates the repository if missing or returns the existing one. Idempotent; base_model cannot be changed (409 on conflict). This endpoint will be removed in a future version.'
       operationId: set_repo_v1_repo_put
+      deprecated: true
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RepoCreate'
-        required: true
       responses:
         "200":
           description: Successful Response
@@ -73,46 +133,146 @@ paths:
           description: Bad request - Invalid input
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Resource not found
                 code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Internal server error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Internal server error
                 code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "409":
           description: Repository already exists - base_model is immutable
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 message: Repository 'my-repo' already exists with base_model 'Qwen/Qwen3-32B'. Repository base_model is immutable and cannot be changed.
                 code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+        - repositories
+      summary: Create Repo
+      description: 'Creates a new repository. Idempotent: if repo exists with same base_model, returns existing (200). If exists with different base_model, returns 409 Conflict.'
+      operationId: create_repo_v1_repo_post
       security:
         - HTTPBearer: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepoCreate'
+      responses:
+        "201":
+          description: Repository created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Repository already exists with different base_model
+          content:
+            application/json:
+              example:
+                message: Repository 'my-repo' already exists with base_model 'Qwen/Qwen3-32B'. Repository base_model is immutable and cannot be changed.
+                code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/repo/{repo_name}:
     get:
       tags:
@@ -129,6 +289,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -145,6 +325,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -169,22 +358,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/prompts:
+  /v1/repo/{repo_name}/prompts:
     get:
       tags:
         - prompts
       summary: List Prompts
       description: Lists prompts in the repository for discovery and validation.
-      operationId: list_prompts_v1_repo___repo_name__prompts_get
+      operationId: list_prompts_v1_repo__repo_name__prompts_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -201,6 +410,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -225,28 +443,150 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/prompts/{prompt_name}:
+    post:
+      tags:
+        - prompts
+      summary: Create Prompt
+      description: 'Creates a new prompt. Idempotent: if prompt exists with same content, returns existing (200). If exists with different content, returns 409 Conflict.'
+      operationId: create_prompt_v1_repo__repo_name__prompts_post
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptCreate'
+      responses:
+        "201":
+          description: Prompt created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Prompt already exists with different content
+          content:
+            application/json:
+              example:
+                message: Prompt 'my-prompt' already exists with different content. Prompts are immutable and cannot be changed.
+                code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation error - invalid prompt name
+          content:
+            application/json:
+              example:
+                message: 'Name contains invalid character: ''/'''
+                code: VALIDATION_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/repo/{repo_name}/prompts/{prompt_name}:
     get:
       tags:
         - prompts
       summary: Get Prompt
       description: Returns the prompt definition and metadata.
-      operationId: get_prompt_v1_repo___repo_name__prompts__prompt_name__get
+      operationId: get_prompt_v1_repo__repo_name__prompts__prompt_name__get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: prompt_name
           in: path
           required: true
           schema:
             type: string
             title: Prompt Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -261,6 +601,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -291,23 +640,44 @@ paths:
       tags:
         - prompts
       summary: Set Prompt
-      description: Creates or updates a single prompt. Idempotent; invalid names return 422.
-      operationId: set_prompt_v1_repo___repo_name__prompts__prompt_name__put
+      description: '[DEPRECATED] Use POST /v1/repo/{repo_name}/prompts instead. Creates or updates a single prompt. Idempotent; invalid names return 422. This endpoint will be removed in a future version.'
+      operationId: set_prompt_v1_repo__repo_name__prompts__prompt_name__put
+      deprecated: true
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: prompt_name
           in: path
           required: true
           schema:
             type: string
             title: Prompt Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -330,6 +700,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -357,83 +736,43 @@ paths:
                 code: VALIDATION_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    delete:
-      tags:
-        - prompts
-      summary: Delete Prompt
-      description: Deletes a prompt from the repository.
-      operationId: delete_prompt_v1_repo___repo_name__prompts__prompt_name__delete
-      security:
-        - HTTPBearer: []
-      parameters:
-        - name: _repo_name
-          in: path
-          required: true
-          schema:
-            type: string
-            title: ' Repo Name'
-        - name: prompt_name
-          in: path
-          required: true
-          schema:
-            type: string
-            title: Prompt Name
-      responses:
-        "200":
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteResponse'
-        "400":
-          description: Bad request - Invalid input
-          content:
-            application/json:
-              example:
-                message: Invalid input parameters
-                code: INVALID_INPUT
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "404":
-          description: Resource not found
-          content:
-            application/json:
-              example:
-                message: Resource not found
-                code: RESOURCE_NOT_FOUND
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "500":
-          description: Internal server error
-          content:
-            application/json:
-              example:
-                message: Internal server error
-                code: INTERNAL_ERROR
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "422":
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/prompts/batch:
+  /v1/repo/{repo_name}/prompts/batch:
     put:
       tags:
         - prompts
       summary: Batch Set Prompts
-      description: Creates or updates multiple prompts. Idempotent; invalid names return 422.
-      operationId: batch_set_prompts_v1_repo___repo_name__prompts_batch_put
+      description: '[DEPRECATED] Use POST /v1/repo/{repo_name}/prompts/batch instead. Creates or updates multiple prompts. Idempotent; invalid names return 422.'
+      operationId: batch_set_prompts_v1_repo__repo_name__prompts_batch_put
+      deprecated: true
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -456,6 +795,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -483,22 +831,135 @@ paths:
                 code: VALIDATION_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/repo/{_repo_name}/targets:
+    post:
+      tags:
+        - prompts
+      summary: Batch Create Prompts
+      description: Creates or updates multiple prompts. Idempotent; invalid names return 422.
+      operationId: batch_create_prompts_v1_repo__repo_name__prompts_batch_post
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchPromptSet'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchPromptResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation error - invalid prompt name
+          content:
+            application/json:
+              example:
+                message: 'Name contains invalid character: ''/'''
+                code: VALIDATION_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/repo/{repo_name}/targets:
     get:
       tags:
         - targets
       summary: List Targets
       description: Lists targets in the repository for discovery and validation.
-      operationId: list_targets_v1_repo___repo_name__targets_get
+      operationId: list_targets_v1_repo__repo_name__targets_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -513,6 +974,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -539,25 +1009,142 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/targets/batch:
-    put:
+    post:
       tags:
         - targets
-      summary: Batch Set Targets
-      description: |-
-        Create or update multiple targets (idempotent).
-
-        Targets are composed from a base template plus per-target overrides. The base template can be another target; overrides take precedence where specified.
-      operationId: batch_set_targets_v1_repo___repo_name__targets_batch_put
+      summary: Create Target
+      description: 'Creates a new target. Idempotent: if target exists with same config, returns existing (200). If exists with different config, returns 409 Conflict.'
+      operationId: create_target_v1_repo__repo_name__targets_post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetCreate'
+      responses:
+        "201":
+          description: Target created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TargetResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Target already exists with different configuration
+          content:
+            application/json:
+              example:
+                message: Target 'my-target' already exists with different configuration. Targets are immutable and cannot be changed.
+                code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/targets/batch:
+    put:
+      tags:
+        - targets
+      summary: Batch Set Targets
+      description: '[DEPRECATED] Use POST /v1/repo/{repo_name}/targets/batch instead. Create or update multiple targets (idempotent).'
+      operationId: batch_set_targets_v1_repo__repo_name__targets_batch_put
+      deprecated: true
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -580,6 +1167,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -598,37 +1194,160 @@ paths:
                 code: INTERNAL_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Target already exists with different configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/targets/{target_name}:
-    put:
+    post:
       tags:
         - targets
-      summary: Set Target
-      description: |-
-        Create or update a target (idempotent).
-
-        Targets are composed from a base template plus per-target overrides. The base template can be another target; overrides take precedence where specified.
-      operationId: set_target_v1_repo___repo_name__targets__target_name__put
+      summary: Batch Create Targets
+      description: 'Creates multiple targets. Idempotent: if target exists with same config, returns existing. If exists with different config, returns 409 Conflict.'
+      operationId: batch_create_targets_v1_repo__repo_name__targets_batch_post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchTargetCreate'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchTargetResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Target already exists with different configuration
+          content:
+            application/json:
+              example:
+                message: Target 'my-target' already exists with different configuration. Targets are immutable and cannot be changed.
+                code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/targets/{target_name}:
+    put:
+      tags:
+        - targets
+      summary: Set Target
+      description: '[DEPRECATED] Use POST /v1/repo/{repo_name}/targets instead. Create or update a target (idempotent). This endpoint will be removed in a future version.'
+      operationId: set_target_v1_repo__repo_name__targets__target_name__put
+      deprecated: true
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -651,6 +1370,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -669,6 +1397,12 @@ paths:
                 code: INTERNAL_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Target already exists with different configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation Error
           content:
@@ -680,22 +1414,42 @@ paths:
         - targets
       summary: Get Target
       description: Get target definition and metadata.
-      operationId: get_target_v1_repo___repo_name__targets__target_name__get
+      operationId: get_target_v1_repo__repo_name__targets__target_name__get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -710,6 +1464,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -741,22 +1504,42 @@ paths:
         - targets
       summary: Delete Target
       description: Deletes a target from the repository.
-      operationId: delete_target_v1_repo___repo_name__targets__target_name__delete
+      operationId: delete_target_v1_repo__repo_name__targets__target_name__delete
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -771,6 +1554,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -797,28 +1589,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/targets/{target_name}/stim:
+  /v1/repo/{repo_name}/targets/{target_name}/stim:
     get:
       tags:
         - targets
       summary: Get Stim Status
       description: Returns the stim job status.
-      operationId: get_stim_status_v1_repo___repo_name__targets__target_name__stim_get
+      operationId: get_stim_status_v1_repo__repo_name__targets__target_name__stim_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -833,6 +1645,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -870,22 +1691,42 @@ paths:
         Idempotent: repeated calls while a job exists return the current state (no duplicate jobs).
 
         Async: returns immediately. Poll GET stim status to monitor and fetch results via GET stim output (paginated).
-      operationId: run_stim_v1_repo___repo_name__targets__target_name__stim_post
+      operationId: run_stim_v1_repo__repo_name__targets__target_name__stim_post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -900,6 +1741,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -926,7 +1776,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/targets/{target_name}/stim/output:
+  /v1/repo/{repo_name}/targets/{target_name}/stim/output:
     get:
       tags:
         - targets
@@ -936,16 +1786,16 @@ paths:
 
         Returns the generated stimuli from the stim job.
         Use offset and limit parameters to paginate through large datasets.
-      operationId: get_stim_output_v1_repo___repo_name__targets__target_name__stim_output_get
+      operationId: get_stim_output_v1_repo__repo_name__targets__target_name__stim_output_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
@@ -973,6 +1823,26 @@ paths:
             default: 100
             title: Limit
           description: Number of lines to return (max 1000)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -987,6 +1857,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -1013,28 +1892,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/targets/{target_name}/rollout:
+  /v1/repo/{repo_name}/targets/{target_name}/rollout:
     get:
       tags:
         - targets
       summary: Get Rollout Status
       description: Get rollout job status.
-      operationId: get_rollout_status_v1_repo___repo_name__targets__target_name__rollout_get
+      operationId: get_rollout_status_v1_repo__repo_name__targets__target_name__rollout_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1049,6 +1948,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -1085,24 +1993,45 @@ paths:
         The target must have:
         - Completed stim job (stim output must exist)
         - Configured rollout parameters (model_name is required)
+        - Sufficient credit balance (prepaid credits required)
 
         This endpoint creates a job marker and returns immediately - job execution is asynchronous.
-      operationId: run_rollout_v1_repo___repo_name__targets__target_name__rollout_post
+      operationId: run_rollout_v1_repo__repo_name__targets__target_name__rollout_post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1117,6 +2046,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -1143,22 +2081,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/targets/{target_name}/rollout/output:
+  /v1/repo/{repo_name}/targets/{target_name}/rollout/output:
     get:
       tags:
         - targets
       summary: Get Rollout Output
       description: "Get paginated rollout output data.\n    \n    Returns the generated trajectories/responses from the rollout job.\n    Use offset and limit parameters to paginate through large datasets."
-      operationId: get_rollout_output_v1_repo___repo_name__targets__target_name__rollout_output_get
+      operationId: get_rollout_output_v1_repo__repo_name__targets__target_name__rollout_output_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: target_name
           in: path
           required: true
@@ -1186,6 +2124,26 @@ paths:
             default: 100
             title: Limit
           description: Number of lines to return (max 1000)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1202,6 +2160,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -1226,22 +2193,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/bakes:
+  /v1/repo/{repo_name}/bakes:
     get:
       tags:
         - bakes
       summary: List Bakes
       description: Lists bakes in the repository for discovery and validation.
-      operationId: list_bakes_v1_repo___repo_name__bakes_get
+      operationId: list_bakes_v1_repo__repo_name__bakes_get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1258,6 +2245,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -1282,25 +2278,142 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/bakes/batch:
-    put:
+    post:
       tags:
         - bakes
-      summary: Batch Set Bakes
-      description: |-
-        Create or update multiple bakes (idempotent).
-
-        Bakes are composed from a base template plus per-bake overrides. The base template can be another bake; overrides take precedence where specified.
-      operationId: batch_set_bakes_v1_repo___repo_name__bakes_batch_put
+      summary: Create Bake
+      description: 'Creates a new bake. Idempotent: if bake exists with same config, returns existing (200). If exists with different config, returns 409 Conflict.'
+      operationId: create_bake_v1_repo__repo_name__bakes_post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BakeCreate'
+      responses:
+        "201":
+          description: Bake created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BakeResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Bake already exists with different configuration
+          content:
+            application/json:
+              example:
+                message: Bake 'my-bake' already exists with different configuration. Bakes are immutable and cannot be changed.
+                code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/bakes/batch:
+    put:
+      tags:
+        - bakes
+      summary: Batch Set Bakes
+      description: '[DEPRECATED] Use POST /v1/repo/{repo_name}/bakes/batch instead. Create or update multiple bakes (idempotent).'
+      operationId: batch_set_bakes_v1_repo__repo_name__bakes_batch_put
+      deprecated: true
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -1323,6 +2436,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -1341,37 +2463,160 @@ paths:
                 code: INTERNAL_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Bake already exists with different configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/bakes/{bake_name}:
-    put:
+    post:
       tags:
         - bakes
-      summary: Set Bake
-      description: |-
-        Create or update a bake (idempotent).
-
-        Bakes are composed from a base template plus per-bake overrides. The base template can be another bake; overrides take precedence where specified.
-      operationId: set_bake_v1_repo___repo_name__bakes__bake_name__put
+      summary: Batch Create Bakes
+      description: 'Creates multiple bakes. Idempotent: if bake exists with same config, returns existing. If exists with different config, returns 409 Conflict.'
+      operationId: batch_create_bakes_v1_repo__repo_name__bakes_batch_post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchBakeCreate'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchBakeResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Bake already exists with different configuration
+          content:
+            application/json:
+              example:
+                message: Bake 'my-bake' already exists with different configuration. Bakes are immutable and cannot be changed.
+                code: RESOURCE_CONFLICT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/bakes/{bake_name}:
+    put:
+      tags:
+        - bakes
+      summary: Set Bake
+      description: '[DEPRECATED] Use POST /v1/repo/{repo_name}/bakes instead. Create or update a bake (idempotent). This endpoint will be removed in a future version.'
+      operationId: set_bake_v1_repo__repo_name__bakes__bake_name__put
+      deprecated: true
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
         - name: bake_name
           in: path
           required: true
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -1394,6 +2639,15 @@ paths:
                 code: INVALID_INPUT
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "404":
           description: Resource not found
           content:
@@ -1412,6 +2666,12 @@ paths:
                 code: INTERNAL_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Bake already exists with different configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "422":
           description: Validation Error
           content:
@@ -1423,22 +2683,42 @@ paths:
         - bakes
       summary: Get Bake
       description: Get bake definition and metadata.
-      operationId: get_bake_v1_repo___repo_name__bakes__bake_name__get
+      operationId: get_bake_v1_repo__repo_name__bakes__bake_name__get
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: bake_name
           in: path
           required: true
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1453,6 +2733,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -1484,22 +2773,42 @@ paths:
         - bakes
       summary: Delete Bake
       description: Deletes a bake from the repository.
-      operationId: delete_bake_v1_repo___repo_name__bakes__bake_name__delete
+      operationId: delete_bake_v1_repo__repo_name__bakes__bake_name__delete
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: bake_name
           in: path
           required: true
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1514,6 +2823,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -1540,7 +2858,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/repo/{_repo_name}/bakes/{bake_name}/start:
     post:
       tags:
         - bakes
@@ -1548,33 +2865,53 @@ paths:
       description: |-
         Queue a bake (model training) job for the specified bake.
 
-        Prereqs: bake config is complete (datasets + training settings); all referenced targets have completed rollouts.
+        Prereqs: bake config is complete (datasets + training settings); all referenced targets have completed rollouts; sufficient credit balance.
         Idempotent: repeated calls while a job exists return the current state (no duplicate jobs).
 
         Async: returns immediately. Poll GET bake to monitor (status/job) and access artifacts after completion.
-      operationId: start_bake_v1_repo___repo_name__bakes__bake_name__start_post
+      operationId: start_bake_v1_repo__repo_name__bakes__bake_name__post
       security:
         - HTTPBearer: []
       parameters:
-        - name: _repo_name
+        - name: repo_name
           in: path
           required: true
           schema:
             type: string
-            title: ' Repo Name'
+            title: Repo Name
         - name: bake_name
           in: path
           required: true
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BakeJobResponse'
+                $ref: '#/components/schemas/BakeResponse'
         "400":
           description: Bad request - Invalid input
           content:
@@ -1582,6 +2919,15 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         "404":
@@ -1602,6 +2948,311 @@ paths:
                 code: INTERNAL_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/recipe/{bake_name}/dependency-graph:
+    get:
+      tags:
+        - recipes
+      summary: Get Dependency Graph
+      description: "Get the dependency graph for a bake.\n    \n    Returns all resources (bakes, targets, prompts) and their dependencies\n    needed to recreate this bake, including parent bakes and all transitive dependencies.\n    The graph is built using BFS traversal starting from the specified bake."
+      operationId: get_dependency_graph_v1_repo__repo_name__recipe__bake_name__dependency_graph_get
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: bake_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependencyGraph'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/recipe/{bake_name}/recreation-plan:
+    get:
+      tags:
+        - recipes
+      summary: Get Recreation Plan
+      description: "Get the recreation plan for a bake.\n    \n    Returns a step-by-step plan to recreate the bake, including all dependencies.\n    The plan includes all prompts, targets, and bakes needed, in the correct execution order.\n    Parent bake checkpoints are assumed to use the final checkpoint from each bake.\n    \n    The plan is topologically sorted to ensure dependencies are created before dependents.\n    All configurations are cleaned and ready for use (no internal file paths)."
+      operationId: get_recreation_plan_v1_repo__repo_name__recipe__bake_name__recreation_plan_get
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: bake_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecreationPlan'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/repo/{repo_name}/tree:
+    get:
+      tags:
+        - recipes
+      summary: Get Repo Tree
+      description: "Get the complete model lineage tree for a repository.\n    \n    Returns all bakes in the repository with their parent-child relationships,\n    status, checkpoints, and full model paths. This provides a complete view of\n    model evolution without requiring a specific starting bake.\n    \n    Unlike dependency-graph which starts from a specific bake, this endpoint\n    returns the entire repository's model lineage tree in a single call."
+      operationId: get_repo_tree_v1_repo__repo_name__tree_get
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: repo_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoTree'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/users:
+    post:
+      tags:
+        - admin
+      summary: Create User
+      description: |-
+        Admin endpoint to create a user with password.
+
+        Requires master API key for authentication.
+        Creates user in LiteLLM, sets up Lago billing, and sets password.
+      operationId: create_user_v1_admin_users_post
+      parameters:
+        - name: authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         "422":
           description: Validation Error
           content:
@@ -1636,6 +3287,76 @@ paths:
               example:
                 message: Invalid input parameters
                 code: INVALID_INPUT
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/model_ready:
+    post:
+      tags:
+        - admin
+      summary: Model Ready
+      description: "Admin endpoint to mark a bake as ready for inference.\n    \n    Creates a __model_ready__.txt file in the bake directory to signify\n    that the model is ready for inference."
+      operationId: model_ready_v1_admin_model_ready_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelReadyPayload'
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
         "404":
           description: Resource not found
           content:
@@ -1821,18 +3542,28 @@ components:
         - bake_name
       title: BakeConfigWithName
       description: Bake configuration with explicit name for batch operations
-    BakeJobResponse:
+    BakeCreate:
       properties:
-        message:
+        template:
           type: string
-          title: Message
-          description: Job execution message
+          title: Template
+          description: 'Template: ''default'' or existing bake name'
+        overrides:
+          anyOf:
+            - $ref: '#/components/schemas/BakeConfigBase'
+            - type: "null"
+          description: Fields to override from template
+        bake_name:
+          type: string
+          title: Bake Name
+          description: Name of the bake
       additionalProperties: false
       type: object
       required:
-        - message
-      title: BakeJobResponse
-      description: Bake job execution response
+        - template
+        - bake_name
+      title: BakeCreate
+      description: Bake create model (includes bake_name in body)
     BakeList:
       properties:
         bakes:
@@ -1852,6 +3583,23 @@ components:
           - bake_v1
           - bake_v2
           - bake_v3
+    BakeResource:
+      properties:
+        bake_name:
+          type: string
+          title: Bake Name
+          description: Name of the bake
+        model_names:
+          items:
+            type: string
+          type: array
+          title: Model Names
+          description: List of model names (checkpoints) for this bake
+      type: object
+      required:
+        - bake_name
+      title: BakeResource
+      description: Bake resource with model names
     BakeResponse:
       properties:
         status:
@@ -1889,20 +3637,82 @@ components:
             - type: "null"
           title: Progress Percent
           description: Job progress percentage (0-100) if job is running
+        model_name:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: "null"
+          title: Model Name
+          description: List of model names in format 'user/repo/bake_name/checkpoint'. Index 0 is the latest checkpoint. Only present when status is 'complete'
+        loss:
+          anyOf:
+            - additionalProperties:
+                type: number
+              type: object
+            - type: "null"
+          title: Loss
+          description: Loss values from training. Contains 'latest_loss', 'final_loss', 'min_loss', 'max_loss'. Present when status is 'running' or 'complete' and metrics are available
       additionalProperties: false
       type: object
       required:
         - status
       title: BakeResponse
-      description: |-
-        Bake response
-
-        Inherits all fields from JobStatus. Lines is not applicable for bakes.
+      description: 'Bake response: Inherits all fields from JobStatus'
       example:
-        config: {}
+        config:
+          epochs: 3
+          micro_batch_size: 8
+          model:
+            baked_adapter_config:
+              bias: none
+              lora_alpha: 32
+              lora_dropout: 0.05
+              r: 32
+              target_modules: all-linear
+            type: bake
+          type: single_baker
         job_id: 1
+        loss:
+          final_loss: 1.395237632095814e-07
+          latest_loss: 1.395237632095814e-07
+          max_loss: 1.5422701835632324e-06
+          min_loss: 1.314911060035229e-07
+        model_name:
+          - user/repo/bake_name/183
+          - user/repo/bake_name/100
         progress_percent: 100.0
         status: complete
+    BakeTreeNode:
+      properties:
+        status:
+          type: string
+          title: Status
+          description: 'Bake status: complete, failed, running, pending, unknown'
+        model_name:
+          items:
+            type: string
+          type: array
+          title: Model Name
+          description: List of full model paths with checkpoints
+        checkpoints:
+          items:
+            type: integer
+          type: array
+          title: Checkpoints
+          description: List of checkpoint numbers
+        config:
+          additionalProperties: true
+          type: object
+          title: Config
+          description: Bake configuration (bake.yml)
+      additionalProperties: false
+      type: object
+      required:
+        - status
+        - config
+      title: BakeTreeNode
+      description: A node in the repository tree representing a single bake.
     BatchBakeCreate:
       properties:
         bakes:
@@ -2062,7 +3872,7 @@ components:
           - target_beta
         failed:
           target_delta: Template 'nonexistent' not found
-          target_gamma: 'Missing required stim fields: [''u'', ''v'']'
+          target_gamma: 'Missing required stim fields: [''teacher_prompt'', ''student_prompt'']'
     CheckpointConfig:
       properties:
         type:
@@ -2116,6 +3926,29 @@ components:
       type: object
       title: CheckpointConfig
       description: Checkpoint configuration
+    CreateUserRequest:
+      properties:
+        user_id:
+          type: string
+          title: User Id
+        user_alias:
+          type: string
+          title: User Alias
+        user_email:
+          type: string
+          format: email
+          title: User Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - user_id
+        - user_alias
+        - user_email
+        - password
+      title: CreateUserRequest
+      description: Request to create a new user account.
     DataConfig:
       properties:
         type:
@@ -2316,6 +4149,62 @@ components:
       description: Standard delete operation response
       example:
         message: Resource deleted successfully
+    DependencyGraph:
+      properties:
+        base_model:
+          type: string
+          title: Base Model
+          description: Base model name
+        bakes:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          type: object
+          title: Bakes
+          description: Dictionary of bake configs (collation + bake)
+        targets:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          type: object
+          title: Targets
+          description: Dictionary of target configs (stim + rollout)
+        prompts:
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: "null"
+          type: object
+          title: Prompts
+          description: Dictionary of prompt names to file paths
+        edges:
+          items:
+            prefixItems:
+              - type: string
+              - type: string
+              - type: string
+              - type: string
+            type: array
+            maxItems: 4
+            minItems: 4
+          type: array
+          title: Edges
+          description: List of dependency edges (source_type, source_name, target_type, target_name)
+      additionalProperties: false
+      type: object
+      required:
+        - base_model
+        - bakes
+        - targets
+        - prompts
+        - edges
+      title: DependencyGraph
+      description: |-
+        Dependency graph for a bake.
+
+        Represents the complete dependency graph including all parent bakes,
+        targets, prompts, and their relationships. Built using BFS traversal
+        starting from the specified bake.
     DoneJobPayload:
       properties:
         file:
@@ -2380,6 +4269,13 @@ components:
             - type: "null"
           title: Temperature
           description: Generation temperature (0.0-2.0)
+        max_tokens:
+          anyOf:
+            - type: integer
+              minimum: 1.0
+            - type: "null"
+          title: Max Tokens
+          description: Maximum number of tokens to generate
         dataset:
           anyOf:
             - type: string
@@ -2399,7 +4295,13 @@ components:
             - type: string
             - type: "null"
           title: Template Path
-          description: Custom template path
+          description: Template filename for custom generator type. When template_content is provided, the file is written to the repo-level templates/ directory (same level as prompts/, bakes/, targets/). The path is normalized to templates/{filename} format. Used by bake_dataset_utils to reference the template file during dataset generation.
+        template_content:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Template Content
+          description: Template file content (for upload)
         seed:
           anyOf:
             - type: integer
@@ -2490,16 +4392,21 @@ components:
           title: Role
           description: Role of the message sender
         content:
-          type: string
+          anyOf:
+            - type: string
+            - items:
+                additionalProperties: true
+                type: object
+              type: array
+            - type: "null"
           title: Content
-          description: Content of the message
-      additionalProperties: false
+          description: Content of the message (can be null for assistant with tool_calls)
+      additionalProperties: true
       type: object
       required:
         - role
-        - content
       title: Message
-      description: Message model
+      description: Message model with flexible tool support
     ModelConfig:
       properties:
         type:
@@ -2508,26 +4415,12 @@ components:
             - type: "null"
           title: Type
           description: Model factory type
-        name_or_path:
+        parent_model_name:
           anyOf:
             - type: string
             - type: "null"
-          title: Name Or Path
-          description: Base model name or path
-        adapter_paths:
-          anyOf:
-            - items:
-                type: string
-              type: array
-            - type: "null"
-          title: Adapter Paths
-          description: Paths to adapter checkpoints
-        parent_peft_dir:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Parent Peft Dir
-          description: Parent PEFT directory
+          title: Parent Model Name
+          description: Parent model name (e.g., 'user/repo/bake_name/checkpoint' or base model like 'Qwen/Qwen3-32B')
         baked_adapter_config:
           anyOf:
             - $ref: '#/components/schemas/LoRAAdapterConfig'
@@ -2569,6 +4462,28 @@ components:
       type: object
       title: ModelConfig
       description: Model configuration for baking
+    ModelReadyPayload:
+      properties:
+        user:
+          type: string
+          title: User
+          description: User name
+        repo:
+          type: string
+          title: Repo
+          description: Repository name
+        bake_name:
+          type: string
+          title: Bake Name
+          description: Bake name
+      additionalProperties: false
+      type: object
+      required:
+        - user
+        - repo
+        - bake_name
+      title: ModelReadyPayload
+      description: Payload for model_ready admin endpoint
     OptimizerConfig:
       properties:
         type:
@@ -2605,6 +4520,34 @@ components:
       type: object
       title: OptimizerConfig
       description: Optimizer configuration
+    PromptCreate:
+      properties:
+        prompt_name:
+          type: string
+          title: Prompt Name
+          description: Name of the prompt
+        messages:
+          items:
+            $ref: '#/components/schemas/Message'
+          type: array
+          title: Messages
+          description: List of messages in the prompt
+        tools:
+          anyOf:
+            - items:
+                additionalProperties: true
+                type: object
+              type: array
+            - type: "null"
+          title: Tools
+          description: List of available tools/functions (OpenAI format)
+      additionalProperties: false
+      type: object
+      required:
+        - prompt_name
+        - messages
+      title: PromptCreate
+      description: Prompt create model (includes prompt_name in body)
     PromptList:
       properties:
         prompts:
@@ -2636,6 +4579,15 @@ components:
           type: array
           title: Messages
           description: List of messages in the prompt
+        tools:
+          anyOf:
+            - items:
+                additionalProperties: true
+                type: object
+              type: array
+            - type: "null"
+          title: Tools
+          description: List of available tools/functions (OpenAI format)
       additionalProperties: false
       type: object
       required:
@@ -2656,12 +4608,126 @@ components:
           type: array
           title: Messages
           description: List of messages in the prompt
+        tools:
+          anyOf:
+            - items:
+                additionalProperties: true
+                type: object
+              type: array
+            - type: "null"
+          title: Tools
+          description: List of available tools/functions (OpenAI format)
       additionalProperties: false
       type: object
       required:
         - messages
       title: PromptSet
       description: Prompt set model
+    RecreationPlan:
+      properties:
+        base_model:
+          type: string
+          title: Base Model
+          description: Base model name (e.g., 'Qwen/Qwen3-32B')
+        steps:
+          items:
+            $ref: '#/components/schemas/RecreationPlanStep'
+          type: array
+          title: Steps
+          description: Ordered list of steps to recreate the bake
+        total_steps:
+          type: integer
+          title: Total Steps
+          description: Total number of steps
+        resources:
+          $ref: '#/components/schemas/RecreationPlanResources'
+          description: Summary of all resources
+      additionalProperties: false
+      type: object
+      required:
+        - base_model
+        - steps
+        - total_steps
+        - resources
+      title: RecreationPlan
+      description: |-
+        Recreation plan for a bake.
+
+        A complete step-by-step plan to recreate a bake, including all dependencies
+        in the correct execution order. The plan is topologically sorted to ensure
+        dependencies are created before dependents.
+    RecreationPlanResources:
+      properties:
+        prompts:
+          items:
+            type: string
+          type: array
+          title: Prompts
+          description: List of prompt names
+        targets:
+          items:
+            type: string
+          type: array
+          title: Targets
+          description: List of target names
+        bakes:
+          items:
+            $ref: '#/components/schemas/BakeResource'
+          type: array
+          title: Bakes
+          description: List of bake resources with model names
+      additionalProperties: false
+      type: object
+      required:
+        - prompts
+        - targets
+        - bakes
+      title: RecreationPlanResources
+      description: Resources summary in recreation plan.
+    RecreationPlanStep:
+      properties:
+        step:
+          type: integer
+          title: Step
+          description: Step number in execution order
+        action:
+          type: string
+          title: Action
+          description: 'Action to perform: create_prompt, create_target, run_stim, run_rollout, create_bake, run_bake'
+        resource_type:
+          type: string
+          title: Resource Type
+          description: 'Type of resource: prompt, target, or bake'
+        resource_name:
+          type: string
+          title: Resource Name
+          description: Name of the resource
+        dependencies:
+          items:
+            type: string
+          type: array
+          title: Dependencies
+          description: List of dependencies in format 'resource_type:resource_name' or 'resource_type:resource_name:status'
+        config:
+          additionalProperties: true
+          type: object
+          title: Config
+          description: Configuration for this resource (cleaned, no internal paths)
+      additionalProperties: false
+      type: object
+      required:
+        - step
+        - action
+        - resource_type
+        - resource_name
+        - dependencies
+        - config
+      title: RecreationPlanStep
+      description: |-
+        A single step in the recreation plan.
+
+        Represents one action needed to recreate a bake, including its dependencies
+        and configuration.
     RepoCreate:
       properties:
         repo_name:
@@ -2720,6 +4786,38 @@ components:
       example:
         base_model: Qwen/Qwen3-32B
         repo_name: my-project
+    RepoTree:
+      properties:
+        base_model:
+          type: string
+          title: Base Model
+          description: Base model name (e.g., 'Qwen/Qwen3-32B')
+        bakes:
+          additionalProperties:
+            $ref: '#/components/schemas/BakeTreeNode'
+          type: object
+          title: Bakes
+          description: Dictionary of all bakes in the repository
+        edges:
+          items:
+            items:
+              type: string
+            type: array
+          type: array
+          title: Edges
+          description: 'List of parent-child edges: [source_type, source_name, target_type, target_name]'
+      additionalProperties: false
+      type: object
+      required:
+        - base_model
+        - bakes
+        - edges
+      title: RepoTree
+      description: |-
+        Complete model lineage tree for a repository.
+
+        Provides a full view of all bakes in the repository and their parent-child
+        relationships, showing the complete model evolution tree.
     RolloutOutputResponse:
       properties:
         status:
@@ -2964,8 +5062,8 @@ components:
               numq: 10
               temperature: 1.0
               type: oneshot_qs
-          u: system_prompt_v1
-          v: user_prompt_v1
+          student_prompt: user_prompt_v1
+          teacher_prompt: system_prompt_v1
         has_more: true
         limit: 100
         lines: 1500
@@ -3042,7 +5140,7 @@ components:
           description: 'Template: ''default'' or existing target name'
         overrides:
           anyOf:
-            - $ref: '#/components/schemas/TargetConfigBase'
+            - $ref: '#/components/schemas/TargetConfigBase-Input'
             - type: "null"
           description: Fields to override from template
       additionalProperties: false
@@ -3075,24 +5173,106 @@ components:
           max_tokens: 150
           model_name: Qwen/Qwen3-32B
           num_traj_per_stimulus: 5
+          student_prompt: user_prompt_v1
+          teacher_prompt: system_prompt_v1
           temperature: 1.0
-          u: system_prompt_v1
-          v: user_prompt_v1
         template: default
-    TargetConfigBase:
+    TargetConfigBase-Input:
       properties:
+        teacher_prompt:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Teacher Prompt
+          description: Teacher prompt name (unconditioned stimulus)
+        student_prompt:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Student Prompt
+          description: Student prompt name (conditioned stimulus)
         u:
           anyOf:
             - type: string
             - type: "null"
           title: U
-          description: Unconditioned stimulus prompt name
+          description: '[DEPRECATED] Use ''teacher_prompt'' instead. Unconditioned stimulus prompt name.'
+          deprecated: true
         v:
           anyOf:
             - type: string
             - type: "null"
           title: V
-          description: Conditioned stimulus prompt name
+          description: '[DEPRECATED] Use ''student_prompt'' instead. Conditioned stimulus prompt name.'
+          deprecated: true
+        generators:
+          anyOf:
+            - items:
+                $ref: '#/components/schemas/Generator'
+              type: array
+            - type: "null"
+          title: Generators
+          description: Data generation strategies
+        model_name:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Model Name
+          description: Base model for rollout
+        num_traj_per_stimulus:
+          anyOf:
+            - type: integer
+              minimum: 1.0
+            - type: "null"
+          title: Num Traj Per Stimulus
+          description: Number of trajectories per stimulus
+        max_concurrency:
+          anyOf:
+            - type: integer
+              minimum: 1.0
+            - type: "null"
+          title: Max Concurrency
+          description: Maximum concurrent requests
+        temperature:
+          anyOf:
+            - type: number
+              maximum: 2.0
+              minimum: 0.0
+            - type: "null"
+          title: Temperature
+          description: Generation temperature (0.0-2.0)
+        max_tokens:
+          anyOf:
+            - type: integer
+              minimum: 1.0
+            - type: "null"
+          title: Max Tokens
+          description: Maximum tokens to generate
+        extra_kwargs:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: "null"
+          title: Extra Kwargs
+          description: Additional kwargs passed to chat.completions.create()
+      additionalProperties: false
+      type: object
+      title: TargetConfigBase
+      description: Target configuration base model
+    TargetConfigBase-Output:
+      properties:
+        teacher_prompt:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Teacher Prompt
+          description: Teacher prompt name (unconditioned stimulus)
+        student_prompt:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Student Prompt
+          description: Student prompt name (conditioned stimulus)
         generators:
           anyOf:
             - items:
@@ -3155,7 +5335,7 @@ components:
           description: 'Template: ''default'' or existing target name'
         overrides:
           anyOf:
-            - $ref: '#/components/schemas/TargetConfigBase'
+            - $ref: '#/components/schemas/TargetConfigBase-Input'
             - type: "null"
           description: Fields to override from template
         target_name:
@@ -3193,9 +5373,59 @@ components:
           max_tokens: 150
           model_name: Qwen/Qwen3-32B
           num_traj_per_stimulus: 5
+          student_prompt: user_prompt_v1
+          teacher_prompt: system_prompt_v1
           temperature: 1.0
-          u: system_prompt_v1
-          v: user_prompt_v1
+        template: default
+    TargetCreate:
+      properties:
+        template:
+          type: string
+          title: Template
+          description: 'Template: ''default'' or existing target name'
+        overrides:
+          anyOf:
+            - $ref: '#/components/schemas/TargetConfigBase-Input'
+            - type: "null"
+          description: Fields to override from template
+        target_name:
+          type: string
+          title: Target Name
+          description: Name of the target
+      additionalProperties: false
+      type: object
+      required:
+        - template
+        - target_name
+      title: TargetCreate
+      description: Target create model (includes target_name in body)
+      example:
+        overrides:
+          generators:
+            - model: claude-3-5-sonnet-20241022
+              numq: 10
+              temperature: 1.0
+              type: oneshot_qs
+            - dataset: code_contests
+              numq: 15
+              seed: 42
+              type: from_dataset
+            - questions:
+                - Write a function to reverse a string
+                - Implement binary search
+                - Create a linked list class
+              type: hardcoded
+            - numq: 5
+              seed: 123
+              temperature: 0.9
+              type: persona
+          max_concurrency: 50
+          max_tokens: 150
+          model_name: Qwen/Qwen3-32B
+          num_traj_per_stimulus: 5
+          student_prompt: user_prompt_v1
+          teacher_prompt: system_prompt_v1
+          temperature: 1.0
         template: default
     TargetList:
       properties:
@@ -3222,7 +5452,7 @@ components:
           type: string
           title: Target Name
         config:
-          $ref: '#/components/schemas/TargetConfigBase'
+          $ref: '#/components/schemas/TargetConfigBase-Output'
       additionalProperties: false
       type: object
       required:
@@ -3294,5 +5524,7 @@ tags:
     description: Training target configuration and management
   - name: bakes
     description: Bake management operations
+  - name: recipes
+    description: Dependency graph and recreation plan operations
   - name: health
     description: System health and status

@@ -6,7 +6,7 @@ description: "Load, chat with, and integrate your baked models in applications"
 After your bake completes, your model contains the baked behavior in its weights. This guide shows how to use your baked model for inference, chat, and application integration.
 
 <Note>
-Completed [your first bake](/guides/single-prompt-bake)? Your trained model is ready to use.
+Completed [your first bake](/sdk/guides/single-prompt-bake)? Your trained model is ready to use.
 </Note>
 
 ## Model Path Format
@@ -42,7 +42,9 @@ Find your checkpoint number in the bake output or training logs. The final check
 
 Use your baked model through the Bread API with OpenAI-compatible endpoints:
 
-```python
+<CodeGroup>
+
+```python Python
 import os
 import requests
 
@@ -59,6 +61,26 @@ response = requests.post(
 print(response.json())
 ```
 
+```typescript TypeScript
+const response = await fetch('https://bapi.bread.com.ai/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.BREAD_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    model: 'johndoe/yoda_repo/yoda_bake_v1/35',
+    messages: [{ role: 'user', content: 'How do I master the Force?' }],
+    max_tokens: 1000,
+  }),
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
 <Info>
 **Key requirements:**
 - `BREAD_API_KEY` environment variable must be set
@@ -70,7 +92,9 @@ print(response.json())
 
 Enable streaming for real-time response generation:
 
-```python
+<CodeGroup>
+
+```python Python
 import os
 import requests
 import json
@@ -96,6 +120,49 @@ for line in response.iter_lines():
                 print(content, end="", flush=True)
 ```
 
+```typescript TypeScript
+const response = await fetch('https://bapi.bread.com.ai/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.BREAD_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    model: 'johndoe/yoda_repo/yoda_bake_v1/35',
+    messages: [{ role: 'user', content: 'I want to use the Force' }],
+    stream: true,
+  }),
+});
+
+const reader = response.body?.getReader();
+const decoder = new TextDecoder();
+
+if (reader) {
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n');
+    
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+        
+        const parsed = JSON.parse(data);
+        const content = parsed.choices?.[0]?.delta?.content;
+        if (content) {
+          process.stdout.write(content);
+        }
+      }
+    }
+  }
+}
+```
+
+</CodeGroup>
+
 ---
 
 ## Configuration Requirements
@@ -114,11 +181,24 @@ To use your baked model, you need three things:
 </CardGroup>
 
 **Example configuration:**
-```python
+
+<CodeGroup>
+
+```python Python
+import os
+
 BREAD_API_KEY = os.environ.get("BREAD_API_KEY")
 BASE_URL = "https://bapi.bread.com.ai/v1/chat/completions"
 MODEL_NAME = "johndoe/yoda_repo/yoda_bake_v1/35"
 ```
+
+```typescript TypeScript
+const BREAD_API_KEY = process.env.BREAD_API_KEY;
+const BASE_URL = 'https://bapi.bread.com.ai/v1/chat/completions';
+const MODEL_NAME = 'johndoe/yoda_repo/yoda_bake_v1/35';
+```
+
+</CodeGroup>
 
 <Warning>
 Always read `BREAD_API_KEY` from environment variables. Never hardcode API keys in your code.
@@ -132,20 +212,104 @@ Always read `BREAD_API_KEY` from environment variables. Never hardcode API keys 
 
 **Problem:** Model path is incorrect or checkpoint doesn't exist.
 
-**Solution:** 
-```python
+**Solution:**
+
+<CodeGroup>
+
+```python Python
+from aibread import Bread
+
+client = Bread()
+
 # Verify bake completed successfully
-status = client.bakes.get(bake_name="your_bake_name", repo_name="your_repo_name")
+status = client.bakes.get(
+    bake_name="your_bake_name",
+    repo_name="your_repo_name"
+)
 print(f"Status: {status.status}")  # Should be "complete"
+print(f"Checkpoint: {status.checkpoint}")  # Use this in model path
 ```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Verify bake completed successfully
+const status = await client.bakes.get('your_bake_name', {
+  repo_name: 'your_repo_name',
+});
+console.log(`Status: ${status.status}`);  // Should be "complete"
+console.log(`Checkpoint: ${status.checkpoint}`);  // Use this in model path
+```
+
+</CodeGroup>
 
 ### Model doesn't exhibit baked behavior
 
 **Problem:** Student prompt wasn't empty or bake didn't complete.
 
 **Solution:**
-- Check training completed: `status.status == "complete"`
-- Review training logs for convergence (a good loss is ~4e-7)
+
+<CodeGroup>
+
+```python Python
+from aibread import Bread
+
+client = Bread()
+
+# Check bake status
+status = client.bakes.get(
+    bake_name="your_bake_name",
+    repo_name="your_repo_name"
+)
+
+if status.status != "complete":
+    print(f"Bake not complete: {status.status}")
+    raise RuntimeError("Bake must be complete before using model")
+
+# Verify student prompt was empty (for always-on behavior)
+target = client.targets.get(
+    target_name="your_target_name",
+    repo_name="your_repo_name"
+)
+if target.v != "":
+    print("Warning: Student prompt is not empty. Model requires prompt trigger.")
+
+# Check training logs for convergence
+# A good loss is ~4e-7
+print(f"Final loss: {status.final_loss if hasattr(status, 'final_loss') else 'N/A'}")
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Check bake status
+const status = await client.bakes.get('your_bake_name', {
+  repo_name: 'your_repo_name',
+});
+
+if (status.status !== 'complete') {
+  console.log(`Bake not complete: ${status.status}`);
+  throw new Error('Bake must be complete before using model');
+}
+
+// Verify student prompt was empty (for always-on behavior)
+const target = await client.targets.get('your_target_name', {
+  repo_name: 'your_repo_name',
+});
+if (target.v !== '') {
+  console.log('Warning: Student prompt is not empty. Model requires prompt trigger.');
+}
+
+// Check training logs for convergence
+// A good loss is ~4e-7
+console.log(`Final loss: ${status.final_loss || 'N/A'}`);
+```
+
+</CodeGroup>
 
 ---
 
@@ -181,28 +345,28 @@ print(f"Status: {status.status}")  # Should be "complete"
   <Card
     title="Iterative Baking"
     icon="rotate"
-    href="/guides/iterative-baking"
+    href="/sdk/guides/iterative-baking"
   >
     Refine your baked model with additional training
   </Card>
   <Card
     title="Multi-Target Baking"
     icon="layer-group"
-    href="/guides/multi-target-baking"
+    href="/sdk/guides/multi-target-baking"
   >
     Bake multiple behaviors into one model
   </Card>
   <Card
     title="Production Patterns"
     icon="shield"
-    href="/guides/production-patterns"
+    href="/sdk/guides/production-patterns"
   >
     Add monitoring and error handling
   </Card>
   <Card
     title="Bake Configuration"
     icon="gear"
-    href="/configuration/bake-config"
+    href="/sdk/configuration/bake-config"
   >
     Customize training hyperparameters
   </Card>

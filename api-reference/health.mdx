@@ -7,27 +7,35 @@ description: "Check API health and status"
 
 The health check endpoint allows you to verify API connectivity and get API version information.
 
-**Resource**: `client.health`
+## Endpoint
 
-## Method
-
-### check()
+### Health Check
 
 Check API health and status.
 
 **Endpoint**: `GET /v1/health`
 
-```python
-health = client.health.check()
-print(f"Status: {health.status}")
-print(f"API: {health.api}")
-print(f"Version: {health.version}")
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/health" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
 
-**Returns**: `HealthCheckResponse`
-- `status`: `str` - 'healthy' or 'degraded'
-- `api`: `str` - API name
-- `version`: `str` - API version
+**Response**: `200 OK`
+
+```json
+{
+  "status": "healthy",
+  "api": "bread-api",
+  "version": "1.0.0"
+}
+```
+
+**Response Fields**:
+- `status`: `string` - 'healthy' or 'degraded'
+- `api`: `string` - API name
+- `version`: `string` - API version
 
 ---
 
@@ -35,132 +43,102 @@ print(f"Version: {health.version}")
 
 ### Basic Health Check
 
-```python
-from aibread import Bread
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/health" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
 
-client = Bread()
+**Response**:
 
-health = client.health.check()
-
-if health.status == "healthy":
-    print(f"✓ API is healthy (version {health.version})")
-else:
-    print(f"⚠ API is degraded")
+```json
+{
+  "status": "healthy",
+  "api": "bread-api",
+  "version": "1.0.0"
+}
 ```
 
 ### Connection Test
 
 Use health check to test connectivity:
 
-```python
-import aibread
+```bash
+# Test connection
+response=$(curl -s -w "\n%{http_code}" -X GET "https://bapi.bread.com.ai/v1/health" \
+  -H "Authorization: Bearer $BREAD_API_KEY")
 
-def test_connection():
-    try:
-        client = Bread()
-        health = client.health.check()
-        
-        return {
-            "connected": True,
-            "status": health.status,
-            "version": health.version
-        }
-    except aibread.APIConnectionError:
-        return {
-            "connected": False,
-            "error": "Cannot reach API server"
-        }
-    except aibread.AuthenticationError:
-        return {
-            "connected": True,
-            "authenticated": False,
-            "error": "Invalid API key"
-        }
-    except Exception as e:
-        return {
-            "connected": False,
-            "error": str(e)
-        }
+http_code=$(echo "$response" | tail -n1)
+body=$(echo "$response" | head -n-1)
 
-result = test_connection()
-print(result)
+if [ "$http_code" = "200" ]; then
+  status=$(echo "$body" | jq -r '.status')
+  version=$(echo "$body" | jq -r '.version')
+  echo "✓ API is healthy (version $version)"
+else
+  echo "✗ Connection failed (HTTP $http_code)"
+fi
 ```
 
 ### Application Startup Check
 
 Verify API connectivity during application initialization:
 
-```python
-from aibread import Bread
-import sys
+```bash
+#!/bin/bash
 
-def init_bread_client():
-    """Initialize Bread client with health check"""
-    client = Bread()
-    
-    try:
-        health = client.health.check()
-        
-        if health.status != "healthy":
-            print(f"Warning: API status is {health.status}")
-        
-        print(f"Connected to Bread API v{health.version}")
-        return client
-        
-    except Exception as e:
-        print(f"Failed to connect to Bread API: {e}")
-        sys.exit(1)
+# Health check script
+response=$(curl -s -w "\n%{http_code}" -X GET "https://bapi.bread.com.ai/v1/health" \
+  -H "Authorization: Bearer $BREAD_API_KEY")
 
-# Use in your app
-client = init_bread_client()
-```
+http_code=$(echo "$response" | tail -n1)
+body=$(echo "$response" | head -n-1)
 
-### Async Health Check
-
-```python
-import asyncio
-from aibread import AsyncBread
-
-async def check_health():
-    async with AsyncBread() as client:
-        health = await client.health.check()
-        return health
-
-health = asyncio.run(check_health())
-print(f"Status: {health.status}")
+if [ "$http_code" = "200" ]; then
+  status=$(echo "$body" | jq -r '.status')
+  version=$(echo "$body" | jq -r '.version')
+  
+  if [ "$status" != "healthy" ]; then
+    echo "Warning: API status is $status"
+  fi
+  
+  echo "Connected to Bread API v$version"
+else
+  echo "Failed to connect to Bread API (HTTP $http_code)"
+  exit 1
+fi
 ```
 
 ### Monitoring Script
 
 Continuous health monitoring:
 
-```python
-import time
-from aibread import Bread
-import aibread
+```bash
+#!/bin/bash
 
-client = Bread()
-
-def monitor_health(interval=60):
-    """Monitor API health every N seconds"""
-    while True:
-        try:
-            health = client.health.check()
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            print(f"[{timestamp}] Status: {health.status} | Version: {health.version}")
-            
-            if health.status != "healthy":
-                # Alert or log degraded status
-                print(f"⚠ API degraded at {timestamp}")
-        
-        except aibread.APIConnectionError as e:
-            timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-            print(f"[{timestamp}] ✗ Connection failed: {e}")
-        
-        time.sleep(interval)
-
-# Run monitor
-monitor_health(interval=60)  # Check every 60 seconds
+# Monitor API health every 60 seconds
+while true; do
+  timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  
+  response=$(curl -s -w "\n%{http_code}" -X GET "https://bapi.bread.com.ai/v1/health" \
+    -H "Authorization: Bearer $BREAD_API_KEY")
+  
+  http_code=$(echo "$response" | tail -n1)
+  body=$(echo "$response" | head -n-1)
+  
+  if [ "$http_code" = "200" ]; then
+    status=$(echo "$body" | jq -r '.status')
+    version=$(echo "$body" | jq -r '.version')
+    echo "[$timestamp] Status: $status | Version: $version"
+    
+    if [ "$status" != "healthy" ]; then
+      echo "⚠ API degraded at $timestamp"
+    fi
+  else
+    echo "[$timestamp] ✗ Connection failed (HTTP $http_code)"
+  fi
+  
+  sleep 60
+done
 ```
 
 ## Status Values
@@ -196,53 +174,88 @@ monitor_health(interval=60)  # Check every 60 seconds
 
 ## Error Handling
 
-```python
-import aibread
+### Connection Error
 
-try:
-    health = client.health.check()
-    print(f"API Status: {health.status}")
-    
-except aibread.APIConnectionError as e:
-    print(f"Cannot reach API: {e}")
-    print("Check network connectivity and base URL")
-    
-except aibread.AuthenticationError as e:
-    print(f"Authentication failed: {e}")
-    print("Verify your API key is correct")
-    
-except aibread.APITimeoutError as e:
-    print(f"Request timed out: {e}")
-    print("API may be slow or unresponsive")
+Cannot reach the API server:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/health" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
 ```
+
+**Response**: Connection timeout or network error
+
+**Troubleshooting**:
+- Check network connectivity
+- Verify base URL is correct
+- Check firewall/proxy settings
+
+### Authentication Error
+
+Invalid or missing API key:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/health" \
+  -H "Authorization: Bearer invalid_key"
+```
+
+**Response**: `401 Unauthorized`
+
+```json
+{
+  "error": "Invalid API key"
+}
+```
+
+**Troubleshooting**:
+- Verify your API key is correct
+- Check that `BREAD_API_KEY` environment variable is set
+- Ensure API key has proper permissions
+
+### Timeout Error
+
+API is slow or unresponsive:
+
+**Response**: Request timeout
+
+**Troubleshooting**:
+- API may be experiencing high load
+- Check API status page
+- Retry after a few seconds
 
 ## Response Type
 
 ### HealthCheckResponse
 
-```python
-class HealthCheckResponse:
-    status: str   # 'healthy' or 'degraded'
-    api: str      # API name
-    version: str  # API version
+```json
+{
+  "status": "healthy",
+  "api": "bread-api",
+  "version": "1.0.0"
+}
 ```
+
+**Fields**:
+- `status`: `string` - 'healthy' or 'degraded'
+- `api`: `string` - API name
+- `version`: `string` - API version
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card
-    title="Error Handling"
-    icon="triangle-exclamation"
-    href="/guides/error-handling"
+    title="SDK Quickstart"
+    icon="code"
+    href="/sdk/quickstart"
   >
-    Learn comprehensive error handling
+    Use the SDK for programmatic control
   </Card>
   <Card
-    title="Advanced Features"
-    icon="wand-magic-sparkles"
-    href="/guides/advanced-features"
+    title="API Reference"
+    icon="book"
+    href="/api-reference/repo"
   >
-    Explore advanced SDK capabilities
+    Explore all API endpoints
   </Card>
 </CardGroup>
 

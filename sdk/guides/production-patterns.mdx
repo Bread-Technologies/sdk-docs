@@ -6,7 +6,7 @@ description: "Battle-tested patterns for async workflows, error handling, and mo
 Production workflows need polling, error handling, retries, and monitoring. This guide shows battle-tested patterns for building robust baking pipelines.
 
 <Note>
-These patterns build on the [basic baking workflows](/guides/single-prompt-bake). Use them when deploying to production.
+These patterns build on the [basic baking workflows](/sdk/guides/single-prompt-bake). Use them when deploying to production.
 </Note>
 
 ## Overview
@@ -29,7 +29,7 @@ Stim, rollout, and bake jobs run asynchronously. You need to wait for completion
 
 ```python
 # This starts the job but doesn't wait
-client.targets.stim.run("my_target", "my_repo")
+client.targets.stim.run(target_name="my_target", repo_name="my_repo")
 
 # How do you know when it's done?
 ```
@@ -38,72 +38,118 @@ client.targets.stim.run("my_target", "my_repo")
 
 Poll for job status with proper intervals:
 
-```python
+<CodeGroup>
+
+```python Python
 import time
+from typing import Callable, Any
 
 def wait_for_job(
-    get_status_fn,
+    get_status_fn: Callable[[], Any],
     job_name: str,
     poll_interval: int = 5,
     timeout: int = 3600
-):
-    """
-    Poll job status until completion or timeout.
-    
-    Args:
-        get_status_fn: Function that returns job status
-        job_name: Job name for logging
-        poll_interval: Seconds between status checks
-        timeout: Maximum seconds to wait
-    
-    Returns:
-        Final job status
-    
-    Raises:
-        TimeoutError: If job exceeds timeout
-    """
-    print(f"Waiting for {job_name}...")
+) -> Any:
+    """Poll job status until completion or timeout."""
     start_time = time.time()
+    deadline = start_time + timeout
     
-    while True:
-        # Check timeout
-        if time.time() - start_time > timeout:
-            raise TimeoutError(f"{job_name} exceeded {timeout}s timeout")
-        
-        # Get status
-        status = get_status_fn()
-        
-        # Check completion
-        if status.status == "complete":
-            print(f"{job_name} complete ({status.lines} lines)")
-            return status
-        
-        # Check failure
-        if status.status == "failed":
-            raise RuntimeError(f"{job_name} failed: {status.error}")
-        
-        # Log progress
-        print(f"  {job_name}: {status.status}")
-        time.sleep(poll_interval)
+    while time.time() < deadline:
+        try:
+            status = get_status_fn()
+            
+            if status.status == "complete":
+                return status
+            
+            if status.status == "failed":
+                error_msg = getattr(status, "error", "Unknown error")
+                raise RuntimeError(f"{job_name} failed: {error_msg}")
+            
+            time.sleep(poll_interval)
+        except Exception as e:
+            if "timeout" in str(e).lower() or "connection" in str(e).lower():
+                raise
+            # Retry on transient errors
+            time.sleep(poll_interval)
+    
+    raise TimeoutError(f"{job_name} exceeded {timeout}s timeout")
+```
 
+```typescript TypeScript
+async function waitForJob(
+  getStatusFn: () => Promise<{ status: string; lines?: number; error?: string }>,
+  jobName: string,
+  pollInterval: number = 5,
+  timeout: number = 3600
+): Promise<{ status: string; lines?: number }> {
+  /** Poll job status until completion or timeout. */
+  const deadline = Date.now() + timeout * 1000;
+  
+  while (Date.now() < deadline) {
+    try {
+      const status = await getStatusFn();
+      
+      if (status.status === 'complete') {
+        return status;
+      }
+      
+      if (status.status === 'failed') {
+        throw new Error(`${jobName} failed: ${status.error || 'Unknown error'}`);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));
+    } catch (error: any) {
+      if (error.message?.includes('timeout') || error.message?.includes('connection')) {
+        throw error;
+      }
+      // Retry on transient errors
+      await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));
+    }
+  }
+  
+  throw new Error(`${jobName} exceeded ${timeout}s timeout`);
+}
+```
 
-# Usage
-import os
+</CodeGroup>
+
+**Usage:**
+
+<CodeGroup>
+
+```python Python
 from aibread import Bread
 
-client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+client = Bread()
 
-# Start job
-client.targets.stim.run("my_target", "my_repo")
-
-# Wait for completion
-wait_for_job(
-    lambda: client.targets.stim.get("my_target", "my_repo"),
+# Start job and wait for completion
+client.targets.stim.run(target_name="my_target", repo_name="my_repo")
+status = wait_for_job(
+    lambda: client.targets.stim.get("my_target", repo_name="my_repo"),
     job_name="Stim",
     poll_interval=5,
     timeout=3600
 )
+print(f"Generated {status.lines} lines")
 ```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Start job and wait for completion
+await client.targets.stim.run('my_target', { repo_name: 'my_repo' });
+const status = await waitForJob(
+  () => client.targets.stim.get('my_target', { repo_name: 'my_repo' }),
+  'Stim',
+  5,
+  3600
+);
+console.log(`Generated ${status.lines} lines`);
+```
+
+</CodeGroup>
 
 ### Recommended Poll Intervals
 
@@ -121,8 +167,9 @@ wait_for_job(
 
 Handle specific error types with appropriate responses:
 
-```python
-import os
+<CodeGroup>
+
+```python Python
 import aibread
 from aibread import Bread
 
@@ -131,7 +178,7 @@ def safe_bake_workflow(repo_name: str, target_name: str):
     Production workflow with comprehensive error handling.
     """
     try:
-        client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+        client = Bread()
         
         # Verify repository exists
         try:
@@ -142,9 +189,12 @@ def safe_bake_workflow(repo_name: str, target_name: str):
         
         # Run stim with error handling
         try:
-            client.targets.stim.run(target_name, repo_name)
+            client.targets.stim.run(
+                target_name=target_name,
+                repo_name=repo_name
+            )
             wait_for_job(
-                lambda: client.targets.stim.get(target_name, repo_name),
+                lambda: client.targets.stim.get(target_name, repo_name=repo_name),
                 "Stim",
                 timeout=3600
             )
@@ -154,9 +204,12 @@ def safe_bake_workflow(repo_name: str, target_name: str):
         
         # Run rollout with error handling
         try:
-            client.targets.rollout.run(target_name, repo_name)
+            client.targets.rollout.run(
+                target_name=target_name,
+                repo_name=repo_name
+            )
             wait_for_job(
-                lambda: client.targets.rollout.get(target_name, repo_name),
+                lambda: client.targets.rollout.get(target_name, repo_name=repo_name),
                 "Rollout",
                 timeout=7200
             )
@@ -193,6 +246,103 @@ def safe_bake_workflow(repo_name: str, target_name: str):
 safe_bake_workflow("my_repo", "my_target")
 ```
 
+```typescript TypeScript
+import Bread, { NotFoundError, AuthenticationError, APIConnectionError, RateLimitError, APIStatusError } from '@aibread/sdk';
+
+async function safeBakeWorkflow(repoName: string, targetName: string): Promise<void> {
+  /**
+   * Production workflow with comprehensive error handling.
+   */
+  try {
+    const client = new Bread();
+    
+    // Verify repository exists
+    try {
+      await client.repo.get(repoName);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        console.log(`Repository '${repoName}' not found, creating...`);
+        await client.repo.create({ repo_name: repoName });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Run stim with error handling
+    try {
+      await client.targets.stim.run(targetName, {
+        repo_name: repoName,
+      });
+      await waitForJob(
+        async () => await client.targets.stim.get(targetName, { repo_name: repoName }),
+        'Stim',
+        5,
+        3600
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.log(`Stim timed out: ${error.message}`);
+        throw error;
+      }
+      throw error;
+    }
+    
+    // Run rollout with error handling
+    try {
+      await client.targets.rollout.run(targetName, {
+        repo_name: repoName,
+      });
+      await waitForJob(
+        async () => await client.targets.rollout.get(targetName, { repo_name: repoName }),
+        'Rollout',
+        10,
+        7200
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.log(`Rollout timed out: ${error.message}`);
+        throw error;
+      }
+      throw error;
+    }
+    
+    console.log('Workflow completed successfully');
+    
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      console.log('Authentication failed - check BREAD_API_KEY');
+      throw error;
+    }
+    
+    if (error instanceof APIConnectionError) {
+      console.log(`Connection failed: ${error.message}`);
+      console.log('Check your internet connection and API endpoint');
+      throw error;
+    }
+    
+    if (error instanceof RateLimitError) {
+      console.log(`Rate limited: ${error.message}`);
+      console.log('Wait before retrying');
+      throw error;
+    }
+    
+    if (error instanceof APIStatusError) {
+      console.log(`API error ${error.statusCode}: ${error.response}`);
+      throw error;
+    }
+    
+    console.log(`Unexpected error: ${error}`);
+    throw error;
+  }
+}
+
+
+// Usage
+await safeBakeWorkflow('my_repo', 'my_target');
+```
+
+</CodeGroup>
+
 ---
 
 ## Retry Pattern
@@ -201,9 +351,12 @@ safe_bake_workflow("my_repo", "my_target")
 
 Some failures are temporary (network blips, rate limits). Retry with exponential backoff:
 
-```python
+<CodeGroup>
+
+```python Python
 import time
 from functools import wraps
+import aibread
 
 def retry_on_failure(max_attempts=3, backoff_factor=2):
     """
@@ -258,17 +411,77 @@ def create_target(client, target_name, repo_name, config):
 create_target(client, "my_target", "my_repo", {...})
 ```
 
+```typescript TypeScript
+import { APIConnectionError, RateLimitError } from '@aibread/sdk';
+
+function retryOnFailure<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  maxAttempts: number = 3,
+  backoffFactor: number = 2
+): T {
+  /** Wrapper for automatic retries with exponential backoff */
+  return (async (...args: Parameters<T>) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        return await fn(...args);
+      } catch (error) {
+        if (error instanceof APIConnectionError) {
+          if (attempt === maxAttempts - 1) {
+            throw error;
+          }
+          const waitTime = Math.pow(backoffFactor, attempt);
+          console.log(
+            `Connection error, retrying in ${waitTime}s... (attempt ${attempt + 1}/${maxAttempts})`
+          );
+          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+        } else if (error instanceof RateLimitError) {
+          if (attempt === maxAttempts - 1) {
+            throw error;
+          }
+          // Rate limit errors often include retry-after
+          const waitTime = (error as any).retryAfter || Math.pow(backoffFactor, attempt);
+          console.log(`Rate limited, retrying in ${waitTime}s...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+        } else {
+          throw error;
+        }
+      }
+    }
+    throw new Error('Max retries exceeded');
+  }) as T;
+}
+
+// Usage
+const createTarget = retryOnFailure(
+  async (client: any, targetName: string, repoName: string, config: any) => {
+    return await client.targets.create(repoName, {
+      target_name: targetName,
+      template: 'default',
+      overrides: config,
+    });
+  },
+  3,
+  2
+);
+
+// Calls will automatically retry on connection/rate limit errors
+await createTarget(client, 'my_target', 'my_repo', {});
+```
+
+</CodeGroup>
+
 ---
 
 ## Logging Pattern
 
 ### Structured Logging for Production
 
-Use Python's logging module for proper log levels and formatting:
+Use proper logging libraries for log levels and formatting:
 
-```python
+<CodeGroup>
+
+```python Python
 import logging
-import os
 from aibread import Bread
 
 # Configure logging
@@ -287,35 +500,35 @@ def production_bake_workflow(
     logger.info(f"Starting bake workflow: {bake_name}")
     
     try:
-        client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+        client = Bread()
         logger.info("Client initialized")
         
         # Stim
         logger.info(f"Starting stim for target: {target_name}")
-        client.targets.stim.run(target_name, repo_name)
+        client.targets.stim.run(target_name=target_name, repo_name=repo_name)
         
         status = wait_for_job(
-            lambda: client.targets.stim.get(target_name, repo_name),
+            lambda: client.targets.stim.get(target_name, repo_name=repo_name),
             "Stim"
         )
         logger.info(f"Stim completed: {status.lines} lines generated")
         
         # Rollout
         logger.info(f"Starting rollout for target: {target_name}")
-        client.targets.rollout.run(target_name, repo_name)
+        client.targets.rollout.run(target_name=target_name, repo_name=repo_name)
         
         status = wait_for_job(
-            lambda: client.targets.rollout.get(target_name, repo_name),
+            lambda: client.targets.rollout.get(target_name, repo_name=repo_name),
             "Rollout"
         )
         logger.info(f"Rollout completed: {status.lines} trajectories")
         
         # Bake
         logger.info(f"Starting bake: {bake_name}")
-        client.bakes.run(bake_name, repo_name)
+        client.bakes.run(bake_name=bake_name, repo_name=repo_name)
         
         status = wait_for_job(
-            lambda: client.bakes.get(bake_name, repo_name),
+            lambda: client.bakes.get(bake_name, repo_name=repo_name),
             "Bake",
             poll_interval=30
         )
@@ -332,6 +545,79 @@ def production_bake_workflow(
 production_bake_workflow("my_repo", "my_target", "my_bake")
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// Simple logger (use winston, pino, or similar in production)
+const logger = {
+  info: (msg: string) => console.log(`[INFO] ${new Date().toISOString()} - ${msg}`),
+  error: (msg: string, error?: Error) => {
+    console.error(`[ERROR] ${new Date().toISOString()} - ${msg}`);
+    if (error) console.error(error);
+  },
+};
+
+async function productionBakeWorkflow(
+  repoName: string,
+  targetName: string,
+  bakeName: string
+): Promise<any> {
+  /** Production workflow with comprehensive logging */
+  logger.info(`Starting bake workflow: ${bakeName}`);
+  
+  try {
+    const client = new Bread();
+    logger.info('Client initialized');
+    
+    // Stim
+    logger.info(`Starting stim for target: ${targetName}`);
+    await client.targets.stim.run(targetName, { repo_name: repoName });
+    
+    const stimStatus = await waitForJob(
+      () => client.targets.stim.get(targetName, { repo_name: repoName }),
+      'Stim',
+      5,
+      3600
+    );
+    logger.info(`Stim completed: ${stimStatus.lines} lines generated`);
+    
+    // Rollout
+    logger.info(`Starting rollout for target: ${targetName}`);
+    await client.targets.rollout.run(targetName, { repo_name: repoName });
+    
+    const rolloutStatus = await waitForJob(
+      () => client.targets.rollout.get(targetName, { repo_name: repoName }),
+      'Rollout',
+      10,
+      7200
+    );
+    logger.info(`Rollout completed: ${rolloutStatus.lines} trajectories`);
+    
+    // Bake
+    logger.info(`Starting bake: ${bakeName}`);
+    await client.bakes.run(bakeName, { repo_name: repoName });
+    
+    const bakeStatus = await waitForJob(
+      () => client.bakes.get(bakeName, { repo_name: repoName }),
+      'Bake',
+      30,
+      14400
+    );
+    logger.info(`Bake completed successfully: ${bakeName}`);
+    
+    return bakeStatus;
+  } catch (error) {
+    logger.error(`Workflow failed: ${error}`, error as Error);
+    throw error;
+  }
+}
+
+// Usage
+await productionBakeWorkflow('my_repo', 'my_target', 'my_bake');
+```
+
+</CodeGroup>
+
 ---
 
 ## Async Pattern
@@ -340,9 +626,10 @@ production_bake_workflow("my_repo", "my_target", "my_bake")
 
 Use async workflows when running multiple bakes in parallel:
 
-```python
+<CodeGroup>
+
+```python Python
 import asyncio
-import os
 from aibread import AsyncBread
 
 async def async_wait_for_job(
@@ -355,12 +642,9 @@ async def async_wait_for_job(
     """Async version of wait_for_job."""
     print(f"Waiting for {job_name}...")
     start_time = asyncio.get_event_loop().time()
+    deadline = start_time + timeout
     
-    while True:
-        # Check timeout
-        if asyncio.get_event_loop().time() - start_time > timeout:
-            raise TimeoutError(f"{job_name} exceeded timeout")
-        
+    while asyncio.get_event_loop().time() < deadline:
         # Get status
         status = await get_status_coro()
         
@@ -372,6 +656,8 @@ async def async_wait_for_job(
             raise RuntimeError(f"{job_name} failed")
         
         await asyncio.sleep(poll_interval)
+    
+    raise TimeoutError(f"{job_name} exceeded timeout")
 
 
 async def async_target_workflow(
@@ -379,20 +665,20 @@ async def async_target_workflow(
     target_name: str
 ):
     """Complete async target workflow."""
-    async with AsyncBread(api_key=os.environ.get("BREAD_API_KEY")) as client:
+    async with AsyncBread() as client:
         # Run stim
-        await client.targets.stim.run(target_name, repo_name)
+        await client.targets.stim.run(target_name=target_name, repo_name=repo_name)
         await async_wait_for_job(
             client,
-            lambda: client.targets.stim.get(target_name, repo_name),
+            lambda: client.targets.stim.get(target_name, repo_name=repo_name),
             "Stim"
         )
         
         # Run rollout
-        await client.targets.rollout.run(target_name, repo_name)
+        await client.targets.rollout.run(target_name=target_name, repo_name=repo_name)
         await async_wait_for_job(
             client,
-            lambda: client.targets.rollout.get(target_name, repo_name),
+            lambda: client.targets.rollout.get(target_name, repo_name=repo_name),
             "Rollout",
             poll_interval=10
         )
@@ -414,14 +700,90 @@ async def run_parallel_workflows():
 asyncio.run(run_parallel_workflows())
 ```
 
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+async function asyncWaitForJob(
+  getStatusFn: () => Promise<any>,
+  jobName: string,
+  pollInterval: number = 5,
+  timeout: number = 3600
+): Promise<any> {
+  /** Async version of waitForJob */
+  console.log(`Waiting for ${jobName}...`);
+  const deadline = Date.now() + timeout * 1000;
+  
+  while (Date.now() < deadline) {
+    const status = await getStatusFn();
+    
+    if (status.status === 'complete') {
+      console.log(`${jobName} complete`);
+      return status;
+    }
+    
+    if (status.status === 'failed') {
+      throw new Error(`${jobName} failed`);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));
+  }
+  
+  throw new Error(`${jobName} exceeded timeout`);
+}
+
+async function asyncTargetWorkflow(
+  repoName: string,
+  targetName: string
+): Promise<void> {
+  /** Complete async target workflow */
+  const client = new Bread();
+  
+  // Run stim
+  await client.targets.stim.run(targetName, { repo_name: repoName });
+  await asyncWaitForJob(
+    () => client.targets.stim.get(targetName, { repo_name: repoName }),
+    'Stim',
+    5,
+    3600
+  );
+  
+  // Run rollout
+  await client.targets.rollout.run(targetName, { repo_name: repoName });
+  await asyncWaitForJob(
+    () => client.targets.rollout.get(targetName, { repo_name: repoName }),
+    'Rollout',
+    10,
+    7200
+  );
+  
+  console.log(`Workflow complete: ${targetName}`);
+}
+
+// Run multiple workflows in parallel
+async function runParallelWorkflows(): Promise<void> {
+  /** Run multiple target workflows concurrently */
+  await Promise.all([
+    asyncTargetWorkflow('repo1', 'target1'),
+    asyncTargetWorkflow('repo2', 'target2'),
+    asyncTargetWorkflow('repo3', 'target3'),
+  ]);
+}
+
+// Usage
+await runParallelWorkflows();
+```
+
+</CodeGroup>
+
 ---
 
 ## Complete Production Example
 
 Putting it all together:
 
-```python
-import os
+<CodeGroup>
+
+```python Python
 import logging
 import time
 import aibread
@@ -441,11 +803,9 @@ def wait_for_job(
     """Poll job until completion with timeout."""
     logger.info(f"Waiting for {job_name}...")
     start_time = time.time()
+    deadline = start_time + timeout
     
-    while True:
-        if time.time() - start_time > timeout:
-            raise TimeoutError(f"{job_name} exceeded {timeout}s timeout")
-        
+    while time.time() < deadline:
         status = get_status_fn()
         
         if status.status == "complete":
@@ -457,6 +817,8 @@ def wait_for_job(
         
         logger.debug(f"{job_name}: {status.status}")
         time.sleep(poll_interval)
+    
+    raise TimeoutError(f"{job_name} exceeded {timeout}s timeout")
 
 
 def retry_on_failure(max_attempts=3):
@@ -500,7 +862,7 @@ def production_workflow(
     logger.info(f"Starting production workflow: {bake_name}")
     
     try:
-        client = Bread(api_key=os.environ.get("BREAD_API_KEY"))
+        client = Bread()
         
         # Create/verify repository
         try:
@@ -516,9 +878,9 @@ def production_workflow(
         
         # Run stim
         logger.info("Starting stim job")
-        client.targets.stim.run(target_name, repo_name)
+        client.targets.stim.run(target_name=target_name, repo_name=repo_name)
         wait_for_job(
-            lambda: client.targets.stim.get(target_name, repo_name),
+            lambda: client.targets.stim.get(target_name, repo_name=repo_name),
             "Stim",
             poll_interval=5,
             timeout=3600
@@ -526,9 +888,9 @@ def production_workflow(
         
         # Run rollout
         logger.info("Starting rollout job")
-        client.targets.rollout.run(target_name, repo_name)
+        client.targets.rollout.run(target_name=target_name, repo_name=repo_name)
         wait_for_job(
-            lambda: client.targets.rollout.get(target_name, repo_name),
+            lambda: client.targets.rollout.get(target_name, repo_name=repo_name),
             "Rollout",
             poll_interval=10,
             timeout=7200
@@ -544,9 +906,9 @@ def production_workflow(
         )
         
         logger.info("Starting bake")
-        client.bakes.run(bake_name, repo_name)
+        client.bakes.run(bake_name=bake_name, repo_name=repo_name)
         wait_for_job(
-            lambda: client.bakes.get(bake_name, repo_name),
+            lambda: client.bakes.get(bake_name, repo_name=repo_name),
             "Bake",
             poll_interval=30,
             timeout=14400  # 4 hours
@@ -590,6 +952,206 @@ production_workflow(
 )
 ```
 
+```typescript TypeScript
+import Bread, {
+  NotFoundError,
+  AuthenticationError,
+  APIConnectionError,
+  RateLimitError,
+} from '@aibread/sdk';
+
+// Simple logger (use winston, pino, or similar in production)
+const logger = {
+  info: (msg: string) => console.log(`[INFO] ${new Date().toISOString()} - ${msg}`),
+  warning: (msg: string) => console.warn(`[WARN] ${new Date().toISOString()} - ${msg}`),
+  error: (msg: string, error?: Error) => {
+    console.error(`[ERROR] ${new Date().toISOString()} - ${msg}`);
+    if (error) console.error(error);
+  },
+  debug: (msg: string) => console.debug(`[DEBUG] ${new Date().toISOString()} - ${msg}`),
+};
+
+async function waitForJob(
+  getStatusFn: () => Promise<any>,
+  jobName: string,
+  pollInterval: number = 5,
+  timeout: number = 3600
+): Promise<any> {
+  /** Poll job until completion with timeout */
+  logger.info(`Waiting for ${jobName}...`);
+  const deadline = Date.now() + timeout * 1000;
+  
+  while (Date.now() < deadline) {
+    const status = await getStatusFn();
+    
+    if (status.status === 'complete') {
+      logger.info(`${jobName} complete (${status.lines} lines)`);
+      return status;
+    }
+    
+    if (status.status === 'failed') {
+      throw new Error(`${jobName} failed: ${status.error}`);
+    }
+    
+    logger.debug(`${jobName}: ${status.status}`);
+    await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));
+  }
+  
+  throw new Error(`${jobName} exceeded ${timeout}s timeout`);
+}
+
+async function retryOnFailure<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = 3
+): Promise<T> {
+  /** Wrapper for automatic retries */
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error instanceof APIConnectionError || error instanceof RateLimitError) {
+        if (attempt === maxAttempts - 1) {
+          throw error;
+        }
+        const waitTime = Math.pow(2, attempt);
+        logger.warning(`Retry ${attempt + 1}/${maxAttempts} after ${waitTime}s`);
+        await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+async function createTargetWithRetry(
+  client: Bread,
+  targetName: string,
+  repoName: string,
+  config: any
+): Promise<any> {
+  /** Create target with automatic retries */
+  return await retryOnFailure(() =>
+    client.targets.create(repoName, {
+      target_name: targetName,
+      template: 'default',
+      overrides: config,
+    })
+  );
+}
+
+async function productionWorkflow(
+  repoName: string,
+  targetName: string,
+  targetConfig: any,
+  bakeName: string,
+  bakeConfig: any
+): Promise<boolean> {
+  /**
+   * Complete production workflow with error handling, retries, and logging.
+   */
+  logger.info(`Starting production workflow: ${bakeName}`);
+  
+  try {
+    const client = new Bread();
+    
+    // Create/verify repository
+    try {
+      await client.repo.get(repoName);
+      logger.info(`Repository '${repoName}' exists`);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        logger.info(`Creating repository: ${repoName}`);
+        await client.repo.create({ repo_name: repoName });
+      } else {
+        throw error;
+      }
+    }
+    
+    // Create target with retry
+    logger.info(`Creating target: ${targetName}`);
+    await createTargetWithRetry(client, targetName, repoName, targetConfig);
+    
+    // Run stim
+    logger.info('Starting stim job');
+    await client.targets.stim.run(targetName, { repo_name: repoName });
+    await waitForJob(
+      () => client.targets.stim.get(targetName, { repo_name: repoName }),
+      'Stim',
+      5,
+      3600
+    );
+    
+    // Run rollout
+    logger.info('Starting rollout job');
+    await client.targets.rollout.run(targetName, { repo_name: repoName });
+    await waitForJob(
+      () => client.targets.rollout.get(targetName, { repo_name: repoName }),
+      'Rollout',
+      10,
+      7200
+    );
+    
+    // Configure and run bake
+    logger.info(`Configuring bake: ${bakeName}`);
+    await client.bakes.create(repoName, {
+      bake_name: bakeName,
+      template: 'default',
+      overrides: bakeConfig,
+    });
+    
+    logger.info('Starting bake');
+    await client.bakes.run(bakeName, { repo_name: repoName });
+    await waitForJob(
+      () => client.bakes.get(bakeName, { repo_name: repoName }),
+      'Bake',
+      30,
+      14400  // 4 hours
+    );
+    
+    logger.info(`Production workflow completed: ${bakeName}`);
+    return true;
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      logger.error('Authentication failed - check BREAD_API_KEY', error);
+      throw error;
+    }
+    
+    if (error instanceof APIConnectionError) {
+      logger.error(`Connection failed: ${error.message}`, error);
+      throw error;
+    }
+    
+    if (error instanceof Error && error.message.includes('timeout')) {
+      logger.error(`Job timeout: ${error.message}`, error);
+      throw error;
+    }
+    
+    logger.error(`Workflow failed: ${error}`, error as Error);
+    throw error;
+  }
+}
+
+// Usage
+await productionWorkflow(
+  'production_repo',
+  'yoda_target',
+  {
+    generators: [],
+    model_name: 'Qwen/Qwen3-32B',
+    u: 'yoda_teacher',
+    v: 'empty_student',
+  },
+  'yoda_production_v1',
+  {
+    datasets: [{ target: 'yoda_target', weight: 1.0 }],
+    epochs: 3,
+  }
+);
+```
+
+</CodeGroup>
+
 ---
 
 ## Best Practices
@@ -616,7 +1178,7 @@ production_workflow(
   </Accordion>
 
   <Accordion title="Monitor with Weights & Biases" icon="chart-line">
-    Integrate [W&B](/configuration/bake-config#wandb-integration) for training metrics.
+    Integrate [W&B](/sdk/configuration/bake-config#wandb-integration) for training metrics.
   </Accordion>
 </AccordionGroup>
 
@@ -628,28 +1190,28 @@ production_workflow(
   <Card
     title="Error Handling Guide"
     icon="triangle-exclamation"
-    href="/guides/error-handling"
+    href="/sdk/guides/error-handling"
   >
     Deep dive on SDK error types
   </Card>
   <Card
     title="Bake Configuration"
     icon="gear"
-    href="/configuration/bake-config"
+    href="/sdk/configuration/bake-config"
   >
     Configure Weights & Biases integration
   </Card>
   <Card
     title="Single-Prompt Bake"
     icon="fire"
-    href="/guides/single-prompt-bake"
+    href="/sdk/guides/single-prompt-bake"
   >
     Review basic baking workflow
   </Card>
   <Card
     title="Multi-Target Baking"
     icon="layer-group"
-    href="/guides/multi-target-baking"
+    href="/sdk/guides/multi-target-baking"
   >
     Apply patterns to multi-target workflows
   </Card>

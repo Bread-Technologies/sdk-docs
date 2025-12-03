@@ -6,7 +6,7 @@ description: "Bake entire RAG knowledge bases worth of prompts into models. Info
 Multi-target baking lets you bake entire knowledge bases worth of prompts into a single model. Each piece of knowledge (a document, fact, procedure) becomes a [target](/understanding-baking#key-terminology), and you control how much each piece influences the final model through weighted datasets.
 
 <Note>
-Completed [your first bake](/guides/single-prompt-bake)? Multi-target baking builds on that foundation.
+Completed [your first bake](/sdk/guides/single-prompt-bake)? Multi-target baking builds on that foundation.
 </Note>
 
 ## Bake Any Knowledge Into Model Weights
@@ -108,22 +108,42 @@ Instead of RAG retrieval, bake each support document as a separate target.
   <Step title="Create Repository & Shared Student Prompt">
     Set up your repository and the shared empty student prompt:
     
-    ```python
-    import os
-    from aibread import Bread
-    
-    client = Bread()
-    
-    # Create repository
-    client.repo.set(repo_name="apple_support_agent")
-    
-    # Shared student prompt (empty for always-on)
-    client.prompts.set(
-        prompt_name="empty_student_prompt",
-        repo_name="apple_support_agent",
-        messages=[{"role": "system", "content": ""}]
-    )
-    ```
+    <CodeGroup>
+
+```python Python
+from aibread import Bread
+
+client = Bread()
+
+# Create repository
+client.repo.set(repo_name="apple_support_agent")
+
+# Shared student prompt (empty for always-on)
+client.prompts.set(
+    prompt_name="empty_student_prompt",
+    repo_name="apple_support_agent",
+    messages=[{"role": "system", "content": ""}]
+)
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Create repository
+await client.repo.create({
+  repo_name: 'apple_support_agent',
+});
+
+// Shared student prompt (empty for always-on)
+await client.prompts.create('apple_support_agent', {
+  prompt_name: 'empty_student_prompt',
+  messages: [{ role: 'system', content: '' }],
+});
+```
+
+</CodeGroup>
     
     <Info>
     In this example, we use a shared empty student prompt since we wish that this model always responds as an Apple customer support agent.
@@ -133,162 +153,341 @@ Instead of RAG retrieval, bake each support document as a separate target.
   <Step title="Create iPhone Support Target">
     Bake iPhone troubleshooting knowledge:
     
-    ```python
-    # iPhone Support Knowledge
-    client.prompts.set(
-        prompt_name="iphone_teacher_prompt",
-        repo_name="apple_support_agent",
-        messages=[{
-            "role": "system",
-            "content": """
-            You are an Apple iPhone support expert. You know:
-            
-            iPhone Troubleshooting:
-            - iPhone won't turn on: Hold Side + Volume Down for 10 seconds
-            - Battery drains quickly: In Settings, disable background refresh
-            - Can't connect to WiFi: Reset network settings in General → Reset
-            """
-        }]
-    )
-    
-    client.targets.set(
-        target_name="iphone_support",
-        repo_name="apple_support_agent",
-        template="default",
-        overrides={
-            "generators": [
-                {
-                    "type": "hardcoded",
-                    "numq": 3,
-                    "questions": [
-                        "My iPhone won't turn on",
-                        "Why is my iPhone battery draining so fast?",
-                        "My iPhone screen is frozen"
-                    ]
-                },
-                {
-                    "type": "oneshot_qs", # LLM-generated stim prompts
-                    "numq": 100,
-                    "model": "claude-sonnet-4-5-20250929",
-                    "temperature": 0.6
-                }
-            ],
-            "u": "iphone_teacher_prompt",
-            "v": "empty_student_prompt"
-        }
-    )
-    
-    # Generate stim data
-    client.targets.stim.run("iphone_support", "apple_support_agent")
-    # Once stim complete, generate rollout data
-    client.targets.rollout.run("iphone_support", "apple_support_agent")
-    ```
+    <CodeGroup>
+
+```python Python
+# iPhone Support Knowledge
+client.prompts.set(
+    prompt_name="iphone_teacher_prompt",
+    repo_name="apple_support_agent",
+    messages=[{
+        "role": "system",
+        "content": """
+        You are an Apple iPhone support expert. You know:
+        
+        iPhone Troubleshooting:
+        - iPhone won't turn on: Hold Side + Volume Down for 10 seconds
+        - Battery drains quickly: In Settings, disable background refresh
+        - Can't connect to WiFi: Reset network settings in General → Reset
+        """
+    }]
+)
+
+client.targets.set(
+    target_name="iphone_support",
+    repo_name="apple_support_agent",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "hardcoded",
+                "numq": 3,
+                "questions": [
+                    "My iPhone won't turn on",
+                    "Why is my iPhone battery draining so fast?",
+                    "My iPhone screen is frozen"
+                ]
+            },
+            {
+                "type": "oneshot_qs",  # LLM-generated stim prompts
+                "numq": 100,
+                "model": "claude-sonnet-4-5-20250929",
+                "temperature": 0.6
+            }
+        ],
+        "u": "iphone_teacher_prompt",
+        "v": "empty_student_prompt"
+    }
+)
+
+# Generate stim data
+client.targets.stim.run(
+    target_name="iphone_support",
+    repo_name="apple_support_agent"
+)
+# Once stim complete, generate rollout data
+client.targets.rollout.run(
+    target_name="iphone_support",
+    repo_name="apple_support_agent"
+)
+```
+
+```typescript TypeScript
+// iPhone Support Knowledge
+await client.prompts.create('apple_support_agent', {
+  prompt_name: 'iphone_teacher_prompt',
+  messages: [{
+    role: 'system',
+    content: `You are an Apple iPhone support expert. You know:
+
+iPhone Troubleshooting:
+- iPhone won't turn on: Hold Side + Volume Down for 10 seconds
+- Battery drains quickly: In Settings, disable background refresh
+- Can't connect to WiFi: Reset network settings in General → Reset`,
+  }],
+});
+
+await client.targets.create('apple_support_agent', {
+  target_name: 'iphone_support',
+  template: 'default',
+  overrides: {
+    generators: [
+      {
+        type: 'hardcoded',
+        numq: 3,
+        questions: [
+          'My iPhone won\'t turn on',
+          'Why is my iPhone battery draining so fast?',
+          'My iPhone screen is frozen',
+        ],
+      },
+      {
+        type: 'oneshot_qs',  // LLM-generated stim prompts
+        numq: 100,
+        model: 'claude-sonnet-4-5-20250929',
+        temperature: 0.6,
+      },
+    ],
+    u: 'iphone_teacher_prompt',
+    v: 'empty_student_prompt',
+  },
+});
+
+// Generate stim data
+await client.targets.stim.run('iphone_support', {
+  repo_name: 'apple_support_agent',
+});
+// Once stim complete, generate rollout data
+await client.targets.rollout.run('iphone_support', {
+  repo_name: 'apple_support_agent',
+});
+```
+
+</CodeGroup>
   </Step>
 
   <Step title="Create Mac Support Target">
     Bake Mac troubleshooting knowledge:
     
-    ```python
-    # Mac Support Knowledge
-    client.prompts.set(
-        prompt_name="mac_teacher_prompt",
-        repo_name="apple_support_agent",
-        messages=[{
-            "role": "system",
-            "content": """
-            You are an Apple Mac support expert. You know:
-            
-            Mac Troubleshooting:
-            - Mac won't start: Press and hold power button for 10 seconds
-            - Running slow: Check Activity Monitor for memory usage & clear cache
-            - Bluetooth issues: Turn Bluetooth off/on, remove and re-pair device
-            """
-        }]
-    )
-    
-    client.targets.set(
-        target_name="mac_support",
-        repo_name="apple_support_agent",
-        template="default",
-        overrides={
-            "generators": [
-                {
-                    "type": "hardcoded",
-                    "numq": 3,
-                    "questions": [
-                        "My Mac won't start up",
-                        "Why is my Mac running so slow?",
-                        "My Mac app keeps crashing"
-                    ]
-                },
-                {
-                    "type": "oneshot_qs", # LLM-generated stim prompts
-                    "numq": 100,
-                    "model": "claude-sonnet-4-5-20250929",
-                    "temperature": 0.6
-                }
-            ],
-            "u": "mac_teacher_prompt",
-            "v": "empty_student_prompt"
-        }
-    )
-    
-    client.targets.stim.run("mac_support", "apple_support_agent")
-    client.targets.rollout.run("mac_support", "apple_support_agent")
-    ```
+    <CodeGroup>
+
+```python Python
+# Mac Support Knowledge
+client.prompts.set(
+    prompt_name="mac_teacher_prompt",
+    repo_name="apple_support_agent",
+    messages=[{
+        "role": "system",
+        "content": """
+        You are an Apple Mac support expert. You know:
+        
+        Mac Troubleshooting:
+        - Mac won't start: Press and hold power button for 10 seconds
+        - Running slow: Check Activity Monitor for memory usage & clear cache
+        - Bluetooth issues: Turn Bluetooth off/on, remove and re-pair device
+        """
+    }]
+)
+
+client.targets.set(
+    target_name="mac_support",
+    repo_name="apple_support_agent",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "hardcoded",
+                "numq": 3,
+                "questions": [
+                    "My Mac won't start up",
+                    "Why is my Mac running so slow?",
+                    "My Mac app keeps crashing"
+                ]
+            },
+            {
+                "type": "oneshot_qs",  # LLM-generated stim prompts
+                "numq": 100,
+                "model": "claude-sonnet-4-5-20250929",
+                "temperature": 0.6
+            }
+        ],
+        "u": "mac_teacher_prompt",
+        "v": "empty_student_prompt"
+    }
+)
+
+client.targets.stim.run(
+    target_name="mac_support",
+    repo_name="apple_support_agent"
+)
+client.targets.rollout.run(
+    target_name="mac_support",
+    repo_name="apple_support_agent"
+)
+```
+
+```typescript TypeScript
+// Mac Support Knowledge
+await client.prompts.create('apple_support_agent', {
+  prompt_name: 'mac_teacher_prompt',
+  messages: [{
+    role: 'system',
+    content: `You are an Apple Mac support expert. You know:
+
+Mac Troubleshooting:
+- Mac won't start: Press and hold power button for 10 seconds
+- Running slow: Check Activity Monitor for memory usage & clear cache
+- Bluetooth issues: Turn Bluetooth off/on, remove and re-pair device`,
+  }],
+});
+
+await client.targets.create('apple_support_agent', {
+  target_name: 'mac_support',
+  template: 'default',
+  overrides: {
+    generators: [
+      {
+        type: 'hardcoded',
+        numq: 3,
+        questions: [
+          'My Mac won\'t start up',
+          'Why is my Mac running so slow?',
+          'My Mac app keeps crashing',
+        ],
+      },
+      {
+        type: 'oneshot_qs',  // LLM-generated stim prompts
+        numq: 100,
+        model: 'claude-sonnet-4-5-20250929',
+        temperature: 0.6,
+      },
+    ],
+    u: 'mac_teacher_prompt',
+    v: 'empty_student_prompt',
+  },
+});
+
+await client.targets.stim.run('mac_support', {
+  repo_name: 'apple_support_agent',
+});
+await client.targets.rollout.run('mac_support', {
+  repo_name: 'apple_support_agent',
+});
+```
+
+</CodeGroup>
   </Step>
 
   <Step title="Create AirPods Support Target">
     Bake AirPods troubleshooting knowledge:
     
-    ```python
-    # AirPods Support Knowledge
-    client.prompts.set(
-        prompt_name="airpods_teacher_prompt",
-        repo_name="apple_support_agent",
-        messages=[{
-            "role": "system",
-            "content": """
-            You are an Apple AirPods support expert. You know:
-            
-            AirPods Troubleshooting:
-            - Won't connect: Put in case, hold button on back for 15 seconds
-            - Audio cutting out: Clean AirPods speakers, check Bluetooth connection
-            - Battery drains fast: Disable automatic ear detection in Bluetooth settings
-            """
-        }]
-    )
-    
-    client.targets.set(
-        target_name="airpods_support",
-        repo_name="apple_support_agent",
-        template="default",
-        overrides={
-            "generators": [
-                {
-                    "type": "hardcoded",
-                    "numq": 3,
-                    "questions": [
-                        "My AirPods won't connect to my iPhone",
-                        "Why does the audio keep cutting out?",
-                        "One of my AirPods isn't working"
-                    ]
-                },
-                {
-                    "type": "oneshot_qs", # LLM-generated stim prompts
-                    "numq": 100,
-                    "model": "claude-sonnet-4-5-20250929",
-                    "temperature": 0.6
-                }
-            ],
-            "u": "airpods_teacher_prompt",
-            "v": "empty_student_prompt"
-        }
-    )
-    
-    client.targets.stim.run("airpods_support", "apple_support_agent")
-    client.targets.rollout.run("airpods_support", "apple_support_agent")
-    ```
+    <CodeGroup>
+
+```python Python
+# AirPods Support Knowledge
+client.prompts.set(
+    prompt_name="airpods_teacher_prompt",
+    repo_name="apple_support_agent",
+    messages=[{
+        "role": "system",
+        "content": """
+        You are an Apple AirPods support expert. You know:
+        
+        AirPods Troubleshooting:
+        - Won't connect: Put in case, hold button on back for 15 seconds
+        - Audio cutting out: Clean AirPods speakers, check Bluetooth connection
+        - Battery drains fast: Disable automatic ear detection in Bluetooth settings
+        """
+    }]
+)
+
+client.targets.set(
+    target_name="airpods_support",
+    repo_name="apple_support_agent",
+    template="default",
+    overrides={
+        "generators": [
+            {
+                "type": "hardcoded",
+                "numq": 3,
+                "questions": [
+                    "My AirPods won't connect to my iPhone",
+                    "Why does the audio keep cutting out?",
+                    "One of my AirPods isn't working"
+                ]
+            },
+            {
+                "type": "oneshot_qs",  # LLM-generated stim prompts
+                "numq": 100,
+                "model": "claude-sonnet-4-5-20250929",
+                "temperature": 0.6
+            }
+        ],
+        "u": "airpods_teacher_prompt",
+        "v": "empty_student_prompt"
+    }
+)
+
+client.targets.stim.run(
+    target_name="airpods_support",
+    repo_name="apple_support_agent"
+)
+client.targets.rollout.run(
+    target_name="airpods_support",
+    repo_name="apple_support_agent"
+)
+```
+
+```typescript TypeScript
+// AirPods Support Knowledge
+await client.prompts.create('apple_support_agent', {
+  prompt_name: 'airpods_teacher_prompt',
+  messages: [{
+    role: 'system',
+    content: `You are an Apple AirPods support expert. You know:
+
+AirPods Troubleshooting:
+- Won't connect: Put in case, hold button on back for 15 seconds
+- Audio cutting out: Clean AirPods speakers, check Bluetooth connection
+- Battery drains fast: Disable automatic ear detection in Bluetooth settings`,
+  }],
+});
+
+await client.targets.create('apple_support_agent', {
+  target_name: 'airpods_support',
+  template: 'default',
+  overrides: {
+    generators: [
+      {
+        type: 'hardcoded',
+        numq: 3,
+        questions: [
+          'My AirPods won\'t connect to my iPhone',
+          'Why does the audio keep cutting out?',
+          'One of my AirPods isn\'t working',
+        ],
+      },
+      {
+        type: 'oneshot_qs',  // LLM-generated stim prompts
+        numq: 100,
+        model: 'claude-sonnet-4-5-20250929',
+        temperature: 0.6,
+      },
+    ],
+    u: 'airpods_teacher_prompt',
+    v: 'empty_student_prompt',
+  },
+});
+
+await client.targets.stim.run('airpods_support', {
+  repo_name: 'apple_support_agent',
+});
+await client.targets.rollout.run('airpods_support', {
+  repo_name: 'apple_support_agent',
+});
+```
+
+</CodeGroup>
     
     <Tip>
     Each document from your knowledge base becomes a target. Scale to dozens or hundreds of targets - each Apple product, feature, or troubleshooting guide would get its own target.
@@ -298,42 +497,77 @@ Instead of RAG retrieval, bake each support document as a separate target.
   <Step title="Combine Targets & Configure Bake">
     Combine targets & specify bake config (in this example, set equal weightage to all baked prompts):
     
-    ```python
-    bake = client.bakes.set(
-        bake_name="apple_support_agent_v1",
-        repo_name="apple_support_agent",
-        template="default",
-        overrides={
-            "datasets": [
-                {
-                    "target": "iphone_support",
-                    "weight": 0.33
-                },
-                {
-                    "target": "mac_support",
-                    "weight": 0.33
-                },
-                {
-                    "target": "airpods_support",
-                    "weight": 0.33
-                }
-            ]
-        }
-    )
-    ```
-    
+    <CodeGroup>
+
+```python Python
+bake = client.bakes.set(
+    bake_name="apple_support_agent_v1",
+    repo_name="apple_support_agent",
+    template="default",
+    overrides={
+        "datasets": [
+            {
+                "target": "iphone_support",
+                "weight": 0.33
+            },
+            {
+                "target": "mac_support",
+                "weight": 0.33
+            },
+            {
+                "target": "airpods_support",
+                "weight": 0.33
+            }
+        ]
+    }
+)
+```
+
+```typescript TypeScript
+await client.bakes.create('apple_support_agent', {
+  bake_name: 'apple_support_agent_v1',
+  template: 'default',
+  overrides: {
+    datasets: [
+      {
+        target: 'iphone_support',
+        weight: 0.33,
+      },
+      {
+        target: 'mac_support',
+        weight: 0.33,
+      },
+      {
+        target: 'airpods_support',
+        weight: 0.33,
+      },
+    ],
+  },
+});
+```
+
+</CodeGroup>
   </Step>
 
   <Step title="Run Training">
     Start the multi-target bake:
     
-    ```python
-    client.bakes.run(
-        bake_name="apple_support_agent_v1",
-        repo_name="apple_support_agent"
-    )
-    ```
-    
+    <CodeGroup>
+
+```python Python
+client.bakes.run(
+    bake_name="apple_support_agent_v1",
+    repo_name="apple_support_agent"
+)
+```
+
+```typescript TypeScript
+await client.bakes.run('apple_support_agent_v1', {
+  repo_name: 'apple_support_agent',
+});
+```
+
+</CodeGroup>
   </Step>
 </Steps>
 
@@ -418,11 +652,11 @@ Instead of RAG retrieval, bake each support document as a separate target.
 
 <AccordionGroup>
   <Accordion title="Generate Diverse Training Data" icon="sparkles">
-    Use [good generators](/configuration/generators) for each target to create diverse, high-quality training examples.
+    Use [good generators](/sdk/configuration/generators) for each target to create diverse, high-quality training examples.
   </Accordion>
 
   <Accordion title="Monitor Target Balance" icon="chart-line">
-    Use [Weights & Biases integration](/configuration/bake-config#wandb-integration) to track how each target influences training.
+    Use [Weights & Biases integration](/sdk/configuration/bake-config#wandb-integration) to track how each target influences training.
   </Accordion>
 
   <Accordion title="Test Incrementally" icon="vial">
@@ -479,28 +713,28 @@ Build specialized legal assistants:
   <Card
     title="Iterative Baking"
     icon="rotate"
-    href="/guides/iterative-baking"
+    href="/sdk/guides/iterative-baking"
   >
     Refine multi-target models with additional bakes
   </Card>
   <Card
     title="Production Patterns"
     icon="shield"
-    href="/guides/production-patterns"
+    href="/sdk/guides/production-patterns"
   >
     Add polling and error handling for production
   </Card>
   <Card
     title="Bake Configuration"
     icon="gear"
-    href="/configuration/bake-config"
+    href="/sdk/configuration/bake-config"
   >
     Customize hyperparameters for multi-target training
   </Card>
   <Card
     title="Generators"
     icon="wand-sparkles"
-    href="/configuration/generators"
+    href="/sdk/configuration/generators"
   >
     Generate diverse training data for each target
   </Card>
