@@ -168,7 +168,10 @@
                   "api-playground/set-bake",
                   "api-playground/batch-set-bakes",
                   "api-playground/delete-bake",
-                  "api-playground/start-bake"
+                  "api-playground/start-bake",
+                  "api-playground/get-bake-metrics",
+                  "api-playground/get-bake-download",
+                  "api-playground/get-model-download"
                 ]
               },
               {
@@ -204,7 +207,7 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "openapi": "/openapi_spec.json",
+  "openapi": "openapi_spec.yaml",
   "api": {
     "baseUrl": "https://bapi.bread.com.ai",
     "auth": {

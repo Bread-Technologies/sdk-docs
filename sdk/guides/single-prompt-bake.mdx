@@ -31,7 +31,7 @@ client = Bread()
 # Create repository
 repo = client.repo.set(repo_name="yoda_model")
 
-# Teacher prompt (u): The personality to bake in
+# Teacher prompt: The personality to bake in
 client.prompts.set(
     prompt_name="yoda_teacher_prompt",
     repo_name="yoda_model",
@@ -41,7 +41,7 @@ client.prompts.set(
     }]
 )
 
-# Student prompt (v): Empty for always-on behavior
+# Student prompt: Empty for always-on behavior
 client.prompts.set(
     prompt_name="empty_student_prompt",
     repo_name="yoda_model",
@@ -62,7 +62,7 @@ await client.repo.create({
   repo_name: 'yoda_model',
 });
 
-// Teacher prompt (u): The personality to bake in
+// Teacher prompt: The personality to bake in
 await client.prompts.create('yoda_model', {
   prompt_name: 'yoda_teacher_prompt',
   messages: [{
@@ -71,7 +71,7 @@ await client.prompts.create('yoda_model', {
   }],
 });
 
-// Student prompt (v): Empty for always-on behavior
+// Student prompt: Empty for always-on behavior
 await client.prompts.create('yoda_model', {
   prompt_name: 'empty_student_prompt',
   messages: [{
@@ -84,7 +84,7 @@ await client.prompts.create('yoda_model', {
 </CodeGroup>
     
     <Tip>
-    Empty student prompts (`v = ""`) mean the model exhibits the baked behavior with **zero input tokens**. The personality is truly in the weights, not the prompts.
+    Empty student prompts (`student_prompt = ""`) mean the model exhibits the baked behavior with **zero input tokens**. The personality is truly in the weights, not the prompts.
     </Tip>
   </Step>
 
@@ -116,8 +116,8 @@ target = client.targets.set(
             }
         ],
         "model_name": "Qwen/Qwen3-32B",
-        "u": "yoda_teacher_prompt",    # Teacher: Yoda personality
-        "v": "empty_student_prompt"    # Student: empty (always-on)
+        "teacher_prompt": "yoda_teacher_prompt",    # Teacher: Yoda personality
+        "student_prompt": "empty_student_prompt"    # Student: empty (always-on)
     }
 )
 ```
@@ -144,8 +144,8 @@ await client.targets.create('yoda_model', {
       },
     ],
     model_name: 'Qwen/Qwen3-32B',
-    u: 'yoda_teacher_prompt',    // Teacher: Yoda personality
-    v: 'empty_student_prompt',    // Student: empty (always-on)
+    teacher_prompt: 'yoda_teacher_prompt',    // Teacher: Yoda personality
+    student_prompt: 'empty_student_prompt',    // Student: empty (always-on)
   },
 });
 ```
@@ -322,10 +322,10 @@ After baking completes, your model will speak like Yoda automatically:
 
 ## Understanding the Workflow
 
-**1. Teacher (`u`) = What to bake in**  
+**1. Teacher prompt = What to bake in**  
 The detailed Yoda personality prompt that defines the desired behavior.
 
-**2. Student (`v`) = What triggers the behavior**  
+**2. Student prompt = What triggers the behavior**  
 Empty string means the model ALWAYS exhibits the baked behavior.
 
 **3. Stim = Generate situations**  

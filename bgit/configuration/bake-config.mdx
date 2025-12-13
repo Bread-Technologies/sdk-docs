@@ -115,14 +115,12 @@ Bake configuration controls model training behavior, including datasets, trainin
         target_modules: all-linear
   ```
   
-  **Important**: In bgit, you don't configure `name_or_path` or `parent_model_name` manually. These are handled automatically:
+  **Important**: In bgit, you don't configure `parent_model_name` manually. This is handled automatically:
   - **First bake**: Uses the repository's base model (set during `bgit init`)
   - **Sequential bakes**: Automatically uses `PARENT_MODEL` from `.bread` (set after previous bakes)
   
   **Fields you can configure**:
   - `baked_adapter_config`: LoRA configuration (see below)
-  - `adapter_paths`: List of adapter checkpoint paths (advanced)
-  - `parent_peft_dir`: Parent PEFT directory (advanced)
   - `type`: Model type (advanced, defaults to `"bake"`)
 </ParamField>
 

@@ -466,7 +466,9 @@ const allExtras = (response as any).extraFields || {};
     "type": "oneshot_qs",
     "model": str,
     "numq": int,
-    "temperature": float
+    "temperature": float,
+    "template_path": str | None,  # Optional: path normalized to /templates/{template_name}
+    "template_content": str | None  # Optional: template file content
 }
 
 # Hardcoded
@@ -492,11 +494,6 @@ const allExtras = (response as any).extraFields || {};
     "temperature": float
 }
 
-# Custom
-{
-    "type": "custom",
-    "template_path": str
-}
 ```
 
 ```typescript TypeScript
@@ -506,6 +503,8 @@ interface OneshotGenerator {
   model: string;
   numq: number;
   temperature: number;
+  template_path?: string | null;  // Optional: path normalized to /templates/{template_name}
+  template_content?: string | null;  // Optional: template file content
 }
 
 // Hardcoded
@@ -531,19 +530,12 @@ interface PersonaGenerator {
   temperature: number;
 }
 
-// Custom
-interface CustomGenerator {
-  type: 'custom';
-  template_path: string;
-}
-
 // Union type for all generators
 type Generator = 
   | OneshotGenerator 
   | HardcodedGenerator 
   | FromDatasetGenerator 
-  | PersonaGenerator 
-  | CustomGenerator;
+  | PersonaGenerator;
 ```
 
 </CodeGroup>

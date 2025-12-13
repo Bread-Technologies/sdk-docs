@@ -85,8 +85,8 @@ client.targets.set(
             {"type": "oneshot_qs", "model": "claude-sonnet-4-5-20250929", "numq": 100}
         ],
         "model_name": "Qwen/Qwen3-32B",
-        "u": "yoda_teacher",
-        "v": ""
+        "teacher_prompt": "yoda_teacher",
+        "student_prompt": ""
     }
 )
 
@@ -147,8 +147,8 @@ await client.targets.create('my_repo', {
       { type: 'oneshot_qs', model: 'claude-sonnet-4-5-20250929', numq: 100 }
     ],
     model_name: 'Qwen/Qwen3-32B',
-    u: 'yoda_teacher',
-    v: '',
+    teacher_prompt: 'yoda_teacher',
+    student_prompt: '',
   },
 });
 

@@ -29,7 +29,7 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/recipe/my_bake/dependency
 <Note>
 **SDK Usage**: 
 - TypeScript: `client.recipes.getDependencyGraph('my_bake', { repo_name: 'my_repo' })`
-- Python: Not yet available. Use REST API directly.
+- Python: `client.recipes.get_dependency_graph('my_bake', repo_name='my_repo')`
 
 See [SDK Guide](/sdk/guides/recipes) for detailed examples.
 </Note>
@@ -112,7 +112,7 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/recipe/my_bake/recreation
 <Note>
 **SDK Usage**: 
 - TypeScript: `client.recipes.getRecreationPlan('my_bake', { repo_name: 'my_repo' })`
-- Python: Not yet available. Use REST API directly.
+- Python: `client.recipes.get_recreation_plan('my_bake', repo_name='my_repo')`
 
 See [SDK Guide](/sdk/guides/recipes) for detailed examples.
 </Note>
@@ -230,7 +230,7 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/tree" \
 
 <Note>
 **SDK Usage**: 
-- TypeScript: Not yet available. Use REST API directly.
+- TypeScript: `client.repo.getTree('my_repo')`
 - Python: Not yet available. Use REST API directly.
 
 See [SDK Guide](/sdk/guides/recipes) for detailed examples.
@@ -244,32 +244,42 @@ See [SDK Guide](/sdk/guides/recipes) for detailed examples.
 
 ```json
 {
-  "bakes": [
-    {
-      "name": "parent_bake",
+  "base_model": "Qwen/Qwen3-32B",
+  "bakes": {
+    "parent_bake": {
       "status": "complete",
       "model_name": ["user/repo/parent_bake/42"],
-      "parent": null,
-      "children": ["my_bake"]
+      "checkpoints": [42],
+      "config": {
+        "datasets": [{"target": "coding_target", "weight": 1.0}],
+        "epochs": 3
+      }
     },
-    {
-      "name": "my_bake",
+    "my_bake": {
       "status": "running",
-      "model_name": null,
-      "parent": "parent_bake",
-      "children": []
+      "model_name": [],
+      "checkpoints": [],
+      "config": {
+        "datasets": [{"target": "advanced_target", "weight": 1.0}],
+        "epochs": 5
+      }
     }
+  },
+  "edges": [
+    ["bake", "my_bake", "bake", "parent_bake"]
   ]
 }
 ```
 
 **Response Fields**:
-- `bakes`: `Array<BakeNode>` - List of bakes with lineage information
-  - `name`: `string` - Bake name
-  - `status`: `string` - Bake status: 'not_started', 'running', 'complete', or 'failed'
-  - `model_name`: `Array<string> | null` - List of model checkpoints (when complete)
-  - `parent`: `string | null` - Parent bake name (if any)
-  - `children`: `Array<string>` - List of child bake names
+- `base_model`: `string` - Base model name (e.g., 'Qwen/Qwen3-32B')
+- `bakes`: `object` - Dictionary of all bakes in the repository, keyed by bake name
+  - Each bake has:
+    - `status`: `string` - Bake status: 'complete', 'failed', 'running', 'pending', or 'unknown'
+    - `model_name`: `Array<string>` - List of full model paths with checkpoints (e.g., `["user/repo/bake_name/checkpoint"]`)
+    - `checkpoints`: `Array<number>` - List of checkpoint numbers
+    - `config`: `object` - Bake configuration (bake.yml)
+- `edges`: `Array<[source_type, source_name, target_type, target_name]>` - List of parent-child edges representing model lineage relationships
 
 This provides a complete view of model evolution without requiring a specific starting bake. Unlike dependency-graph which starts from a specific bake, this endpoint returns the entire repository's model lineage tree in a single call.
 

@@ -245,11 +245,19 @@ See [Target Configuration Reference](/sdk/configuration/target-config) for detai
 </ParamField>
 
 <ParamField path="teacher_prompt" type="string">
-  Teacher prompt name - prompt that defines the target behavior being baked into the model. Also accepts deprecated `u` field.
+  Teacher prompt name - prompt that defines the target behavior being baked into the model.
+  
+  <Warning>
+  **Deprecated**: The `u` field is deprecated in favor of `teacher_prompt`. Please use `teacher_prompt` instead.
+  </Warning>
 </ParamField>
 
 <ParamField path="student_prompt" type="string">
-  Student prompt name - simplified prompt given at inference. After baking, this triggers the teacher behavior. Can be empty (`""`) for always-on behavior. Also accepts deprecated `v` field.
+  Student prompt name - simplified prompt given at inference. After baking, this triggers the teacher behavior. Can be empty (`""`) for always-on behavior.
+  
+  <Warning>
+  **Deprecated**: The `v` field is deprecated in favor of `student_prompt`. Please use `student_prompt` instead.
+  </Warning>
 </ParamField>
 
 <ParamField path="max_tokens" type="integer">
@@ -326,7 +334,7 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets" \
 ```
 
 <Tip>
-The student prompt (`v`) can be empty (`""`) for zero-token, always-on behavior. This proves the expertise is truly baked into the model weights!
+The student prompt can be empty (`""`) for zero-token, always-on behavior. This proves the expertise is truly baked into the model weights!
 </Tip>
 
 ## Target Lifecycle

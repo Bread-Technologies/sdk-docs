@@ -76,7 +76,7 @@ Bake configuration controls model training behavior, including datasets, trainin
   ```python
   "model": {
       "type": "bake",
-      "name_or_path": "Qwen/Qwen3-32B",
+      "parent_model_name": "Qwen/Qwen3-32B",
       "baked_adapter_config": {
           "r": 8,
           "lora_alpha": 16,
@@ -89,10 +89,12 @@ Bake configuration controls model training behavior, including datasets, trainin
   
   **Fields**:
   - `type`: Model type (e.g., `"bake"`)
-  - `name_or_path`: Base model identifier
-  - `adapter_paths`: List of adapter checkpoint paths
-  - `parent_peft_dir`: Parent PEFT directory
+  - `parent_model_name`: Parent model name (base model like `"Qwen/Qwen3-32B"` or baked model like `"user/repo/bake_name/checkpoint"`). Defaults to the repository's base model if not specified.
   - `baked_adapter_config`: LoRA configuration (see below)
+  - `dtype`: Data type for model weights (e.g., `"bf16"`, `"fp16"`, `"fp32"`)
+  - `attn_implementation`: Attention implementation (e.g., `"sdpa"`, `"flash_attention_2"`)
+  - `disable_activation_checkpoint`: Disable the use of activation checkpointing (default: `false`)
+  - `peft_config`: Configuration dictionary for Parameter Efficient Fine Tuning
 </ParamField>
 
 ### LoRA Configuration
@@ -178,6 +180,81 @@ Bake configuration controls model training behavior, including datasets, trainin
   - Stage 3: + Parameter partitioning
 </ParamField>
 
+### Checkpoint Configuration
+
+<ParamField path="checkpoint" type="array">
+  List of checkpoint engine configurations
+  
+  ```python
+  "checkpoint": [
+      {
+          "type": "huggingface",
+          "output_dir": "./checkpoints",
+          "enabled": True,
+          "auto_resume": False,
+          "save_every_n_steps": 1000,
+          "save_every_n_epochs": 1,
+          "save_end_of_training": True
+      }
+  ]
+  ```
+  
+  **Fields**:
+  - `type`: Checkpoint engine type (e.g., `"huggingface"`)
+  - `output_dir`: Output directory for checkpoints
+  - `enabled`: Enable this checkpoint engine (default: `True`)
+  - `auto_resume`: Resume training from checkpoint if found (default: `False`)
+  - `save_every_n_steps`: Save checkpoint every N training steps
+  - `save_every_n_epochs`: Save checkpoint every N epochs
+  - `save_end_of_training`: Save checkpoint at end of training (default: `False`)
+</ParamField>
+
+### Data Configuration
+
+<ParamField path="data" type="object">
+  Data loading and processing configuration
+  
+  ```python
+  "data": {
+      "type": "single_baker",
+      "sources": [
+          {
+              "type": "bake_jsonl",
+              "name_or_path": "data/train.jsonl",
+              "split": "train",
+              "max_samples": 10000
+          }
+      ],
+      "eval_sources": [
+          {
+              "type": "bake_jsonl",
+              "name_or_path": "data/eval.jsonl",
+              "split": "eval"
+          }
+      ],
+      "max_length": 2048,
+      "train_eval_split": [0.9, 0.1],
+      "cache_dir": "./cache",
+      "dl_num_workers": 4,
+      "num_proc": 8,
+      "seed": 42
+  }
+  ```
+  
+  **Fields**:
+  - `type`: Data type (e.g., `"single_baker"`)
+  - `sources`: List of training data sources
+  - `eval_sources`: List of evaluation data sources
+  - `max_length`: Maximum sequence length
+  - `train_eval_split`: Train/eval split ratio `[train, eval]` (must sum to 1.0)
+  - `cache_dir`: Cache directory for processed data
+  - `dl_num_workers`: Number of dataloader workers per GPU
+  - `num_proc`: Number of processes for data loading
+  - `seed`: Seed for data loading
+  - `beta`: Beta parameter for training
+  - `temperature`: Sampling temperature
+</ParamField>
+
 ## Complete Example
 
 <CodeGroup>
@@ -203,7 +280,7 @@ bake = client.bakes.set(
         # Model with LoRA
         "model": {
             "type": "bake",
-            "name_or_path": "Qwen/Qwen3-32B",
+            "parent_model_name": "Qwen/Qwen3-32B",
             "baked_adapter_config": {
                 "r": 16,
                 "lora_alpha": 32,
@@ -262,7 +339,7 @@ const bake = await client.bakes.create('my_repo', {
     // Model with LoRA
     model: {
       type: 'bake',
-      name_or_path: 'Qwen/Qwen3-32B',
+      parent_model_name: 'Qwen/Qwen3-32B',
       baked_adapter_config: {
         r: 16,
         lora_alpha: 32,
@@ -313,10 +390,12 @@ const bake = await client.bakes.create('my_repo', {
 | `gradient_accumulation_steps` | Integer | No | Gradient accumulation |
 | `seed` | Integer | No | Random seed |
 | `model` | Object | No | Model configuration |
+| `data` | Object | No | Data loading configuration |
 | `optimizer` | Object | No | Optimizer settings |
 | `scheduler` | Object | No | LR scheduler |
 | `wandb` | Object | No | W&B integration |
 | `deepspeed` | Object | No | DeepSpeed config |
+| `checkpoint` | Array | No | Checkpoint engine configuration |
 
 ## Template Inheritance
 

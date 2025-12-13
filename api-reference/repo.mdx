@@ -15,7 +15,15 @@ List all repositories visible to your team.
 
 **Endpoint**: `GET /v1/repo`
 
-**Request**:
+<Note>
+**SDK Usage**: 
+- TypeScript: `client.repo.list()` supports `include_metadata`, `offset`, and `limit` parameters (check SDK for latest support)
+- Python: `client.repo.list()` supports `include_metadata`, `offset`, and `limit` parameters (check SDK for latest support)
+
+See [SDK Quickstart](/sdk/quickstart) for examples.
+</Note>
+
+**Request** (default - simple list):
 
 ```bash
 curl -X GET "https://bapi.bread.com.ai/v1/repo" \
@@ -30,8 +38,56 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo" \
 }
 ```
 
-**Response Fields**:
+**Request** (with metadata):
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo?include_metadata=true" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `200 OK`
+
+```json
+{
+  "repos": [
+    {"repo_name": "my_repo", "base_model": "Qwen/Qwen3-32B"},
+    {"repo_name": "another_repo", "base_model": "Qwen/Qwen3-32B"},
+    {"repo_name": "project_v1", "base_model": "meta-llama/Llama-3.1-8B"}
+  ],
+  "offset": 0,
+  "limit": 50,
+  "has_more": false,
+  "total": 3
+}
+```
+
+**Query Parameters**:
+
+<ParamField path="include_metadata" type="boolean">
+  Include `base_model` metadata for each repository. Default: `false`
+  
+  When `true`, returns `PaginatedRepoList` with metadata. When `false`, returns simple `RepoList` (backward compatible).
+</ParamField>
+
+<ParamField path="offset" type="integer">
+  Starting offset for pagination. Only used when `include_metadata=true`. Default: `0`
+</ParamField>
+
+<ParamField path="limit" type="integer">
+  Page size for pagination. Only used when `include_metadata=true`. Default: all repositories
+</ParamField>
+
+**Response Fields** (simple list):
 - `repos`: `Array<string>` - List of repository names
+
+**Response Fields** (with metadata):
+- `repos`: `Array<RepoItem>` - List of repositories with metadata
+  - `repo_name`: `string` - Repository name
+  - `base_model`: `string` - Base model identifier
+- `offset`: `number` - Starting offset
+- `limit`: `number` - Page size
+- `has_more`: `boolean` - Whether more repositories are available
+- `total`: `number | null` - Total number of repositories (if available)
 
 ---
 
