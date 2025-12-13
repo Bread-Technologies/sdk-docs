@@ -76,10 +76,10 @@ Traditional prompting requires sending instructions with every request. Baking c
   <Accordion title="The Math: KL Divergence Minimization" icon="function">
     Baking works by minimizing the difference between two probability distributions:
     
-    - **P<sub>θ</sub>(·|u)**: Original model with prompt `u`
-    - **P<sub>θ_u</sub>(·)**: Baked model without prompt
+    - **P<sub>θ</sub>(·|teacher_prompt)**: Original model with teacher prompt
+    - **P<sub>θ_teacher</sub>(·)**: Baked model without prompt
     
-    We update weights `θ` → `θ_u` to minimize KL divergence between these distributions. The result: the baked model behaves identically to the prompted model, but without needing the prompt.
+    We update weights `θ` → `θ_teacher` to minimize KL divergence between these distributions. The result: the baked model behaves identically to the prompted model, but without needing the prompt.
     
     [Read the full paper →](https://arxiv.org/abs/2409.13697)
   </Accordion>
@@ -129,7 +129,7 @@ Baking consists of four phases that convert prompts into model weights:
 
 <Steps>
 <Step title="Define Prompts">
-    You define two prompts: the "teacher" prompt (`u`) and the "student" prompt (`v`). The teacher prompt is the prompt you want the baked model to exhibit while the student prompt is what the teacher prompt gets baked into.
+    You define two prompts: the "teacher" prompt and the "student" prompt. The teacher prompt is the prompt you want the baked model to exhibit while the student prompt is what the teacher prompt gets baked into.
     
     **Purpose:** Choose the prompted behavior as well as the "trigger" for the prompted behavior.
     
@@ -139,7 +139,7 @@ Baking consists of four phases that convert prompts into model weights:
     
   </Step>
   <Step title="Stim (Stimuli Generation)">
-    Stim generates a synthetic dataset of user prompts that would be asked of a model with the teacher prompt `u`.
+    Stim generates a synthetic dataset of user prompts that would be asked of a model with the teacher prompt.
     
     **Purpose:** Generate situations where the prompted behavior (teacher) is expected, covering diverse situations.
     

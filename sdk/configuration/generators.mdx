@@ -18,7 +18,9 @@ Let a LLM (Anthropic only) generate stimuli for you.
     "type": "oneshot_qs",
     "model": "claude-sonnet-4-5-20250929",
     "numq": 50,
-    "temperature": 1.0
+    "temperature": 1.0,
+    "template_path": "templates/my_template.txt",  # Optional: custom template
+    "template_content": "Generate exactly ${numq} questions about:\n\n${prompt_u}\n\nFormat as numbered list:"  # Optional: template content
 }
 ```
 
@@ -38,7 +40,51 @@ Let a LLM (Anthropic only) generate stimuli for you.
   Generation temperature (0.0-2.0). Higher = more creative/random
 </ParamField>
 
-**Use Case**: Generate diverse, AI-created questions based on your prompts
+<ParamField path="template_path" type="string">
+  **Optional**: Path to a custom template file for question generation. Paths are normalized to `/templates/{template_name}` format.
+  
+  When `template_content` is provided, the file is written to the repo-level `templates/` directory (same level as `prompts/`, `bakes/`, `targets/`). The path is automatically normalized to `templates/{filename}` format.
+  
+  **Best Practice**: Use just the filename (e.g., `"my_template.txt"`) or the full normalized path (e.g., `"templates/my_template.txt"`). The system will normalize it to `/templates/{template_name}`.
+  
+  ```python
+  {
+      "type": "oneshot_qs",
+      "model": "claude-sonnet-4-5-20250929",
+      "numq": 50,
+      "template_path": "templates/coding_template.txt"
+  }
+  ```
+  
+  **Template Requirements**:
+  - Must include `${numq}` variable (number of questions)
+  - Must include `${prompt_u}` variable (teacher prompt content)
+  - File size limit: 1MB
+  - Encoding: UTF-8
+  - Uses Python's `string.Template` format
+</ParamField>
+
+<ParamField path="template_content" type="string">
+  **Optional**: Template file content (for upload). When provided along with `template_path`, the content is written to the template file in the repository.
+  
+  If you provide `template_content` without `template_path`, a default filename will be generated. It's recommended to provide both `template_path` and `template_content` together.
+  
+  ```python
+  {
+      "type": "oneshot_qs",
+      "model": "claude-sonnet-4-5-20250929",
+      "numq": 50,
+      "template_path": "templates/my_template.txt",
+      "template_content": "Generate exactly ${numq} questions about:\n\n${prompt_u}\n\nFormat as numbered list:\n1. question1?\n2. question2?\n..."
+  }
+  ```
+  
+  **Template Variables**:
+  - `${numq}`: Number of questions to generate
+  - `${prompt_u}`: Teacher prompt content (unconditioned stimulus)
+</ParamField>
+
+**Use Case**: Generate diverse, AI-created questions based on your prompts. Use `template_path` and `template_content` to customize the question generation style and format.
 
 ---
 
@@ -107,6 +153,24 @@ Sample from established datasets like SQuAD, GSM8K, MMLU, HellaSwag.
 
 ---
 
+### Common Generator Fields
+
+These fields can be used with any generator type:
+
+<ParamField path="rollout_with_conditioned" type="boolean">
+  If `true`, use conditioned_stimulus (student_prompt) for trajectory generation instead of unconditioned_stimulus (teacher_prompt). When set, adds `trajectory_override_stimulus` field to stimulus output. Default: `false` (trajectories use unconditioned stimulus).
+  
+  ```python
+  {
+      "type": "hardcoded",
+      "questions": ["Question 1"],
+      "rollout_with_conditioned": true
+  }
+  ```
+</ParamField>
+
+---
+
 ### Persona
 
 A dataset curated specifically to bake personas.
@@ -140,29 +204,6 @@ A dataset curated specifically to bake personas.
 
 ---
 
-### Custom Template
-
-Write your own prompt to a language model to generate stimuli prompts on your behalf.
-
-```python
-{
-    "type": "custom",
-    "template_path": "/path/to/template.yaml"
-}
-```
-
-<ParamField path="type" type="string" required>
-  Must be `"custom"`
-</ParamField>
-
-<ParamField path="template_path" type="string" required>
-  Path to custom template file
-</ParamField>
-
-**Use Case**: Advanced custom generation logic
-
----
-
 ## Combining Generators
 
 Combining multiple generators creates more diverse training datasets. Use multiple generators for a target:
@@ -179,7 +220,8 @@ target = client.targets.set(
             {
                 "type": "oneshot_qs",
                 "model": "claude-sonnet-4-5-20250929",
-                "numq": 30
+                "numq": 30,
+                "template_path": "templates/coding_template.txt"  # Optional: custom template
             },
             {
                 "type": "from_dataset",
@@ -196,8 +238,8 @@ target = client.targets.set(
             }
         ],
         "model_name": "Qwen/Qwen3-32B",
-        "u": "system_prompt",  # Teacher: behavior to bake
-        "v": "user_prompt"     # Student: trigger (or "" for empty)
+        "teacher_prompt": "system_prompt",  # Teacher: behavior to bake
+        "student_prompt": "user_prompt"     # Student: trigger (or "" for empty)
     }
 )
 ```
@@ -212,6 +254,7 @@ const target = await client.targets.create('my_repo', {
         type: 'oneshot_qs',
         model: 'claude-sonnet-4-5-20250929',
         numq: 30,
+        template_path: 'templates/coding_template.txt',  // Optional: custom template
       },
       {
         type: 'from_dataset',
@@ -228,8 +271,8 @@ const target = await client.targets.create('my_repo', {
       },
     ],
     model_name: 'Qwen/Qwen3-32B',
-    u: 'system_prompt',  // Teacher: behavior to bake
-    v: 'user_prompt',    // Student: trigger (or '' for empty)
+    teacher_prompt: 'system_prompt',  // Teacher: behavior to bake
+    student_prompt: 'user_prompt',    // Student: trigger (or '' for empty)
   },
 });
 ```
@@ -249,7 +292,21 @@ Combined generators create a diverse dataset with AI-generated, benchmark, and c
     "type": "oneshot_qs",
     "model": "claude-sonnet-4-5-20250929",
     "numq": 100,
-    "temperature": 1.2
+    "temperature": 1.2,
+    "template_path": "templates/coding_template.txt"  # Optional: custom template
+}
+```
+
+### Code Generation with Custom Template
+
+```python
+{
+    "type": "oneshot_qs",
+    "model": "claude-sonnet-4-5-20250929",
+    "numq": 100,
+    "temperature": 1.2,
+    "template_path": "templates/coding_template.txt",
+    "template_content": "Generate exactly ${numq} coding questions about:\n\n${prompt_u}\n\nFormat as numbered list:\n1. question1?\n2. question2?\n..."
 }
 ```
 
@@ -295,6 +352,10 @@ Combined generators create a diverse dataset with AI-generated, benchmark, and c
 
   <Accordion title="Tune Temperature" icon="temperature-half">
     Adjust temperature based on creativity needs (lower = more focused, higher = more creative)
+  </Accordion>
+
+  <Accordion title="Use Custom Templates" icon="file-code">
+    For `oneshot_qs` generators, use `template_path` and `template_content` to customize question generation style. Templates use Python's `string.Template` format with `${numq}` and `${prompt_u}` variables. Paths are normalized to `/templates/{template_name}` format.
   </Accordion>
 </AccordionGroup>
 

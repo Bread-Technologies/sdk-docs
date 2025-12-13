@@ -24,30 +24,34 @@ Target configuration controls stimulus and rollout generation behavior. Targets 
 
 ### Prompts
 
-<ParamField path="u" type="string">
+<ParamField path="teacher_prompt" type="string">
   Teacher prompt name - defines the expert behavior to bake into the model
   
   ```python
-  "u": "expert_python_developer"
+  "teacher_prompt": "expert_python_developer"
   ```
   
   This prompt contains detailed, expert-level instructions that define how the model should respond. After baking, the model will exhibit this behavior when given the student prompt (or always, if student is empty).
 </ParamField>
 
-<ParamField path="v" type="string">
+<ParamField path="student_prompt" type="string">
   Student prompt name - what the model receives at inference time
   
   ```python
-  "v": "simple_coding_assistant"
+  "student_prompt": "simple_coding_assistant"
   # Or "" for empty (always-on behavior)
   ```
   
-  After baking, providing this simple prompt (or empty string) makes the model respond as if it received the teacher prompt (`u`). Empty student prompts result in zero-token, always-on expert behavior.
+  After baking, providing this simple prompt (or empty string) makes the model respond as if it received the teacher prompt. Empty student prompts result in zero-token, always-on expert behavior.
 </ParamField>
 
 <Tip>
-Use empty `v` (`""`) to permanently bake behavior into the model without needing any prompt trigger at inference time. This is the ultimate proof that baking modifies model weights!
+Use empty `student_prompt` (`""`) to permanently bake behavior into the model without needing any prompt trigger at inference time. This is the ultimate proof that baking modifies model weights!
 </Tip>
+
+<Warning>
+**Deprecated Fields**: The `u` and `v` fields are deprecated in favor of `teacher_prompt` and `student_prompt`. Please update your code to use the new field names. The deprecated fields will be removed in a future version.
+</Warning>
 
 ### Model Configuration
 
@@ -135,8 +139,8 @@ target = client.targets.set(
         ],
         
         # Prompts
-        "u": "system_prompt_expert",
-        "v": "user_prompt_detailed",
+        "teacher_prompt": "system_prompt_expert",
+        "student_prompt": "user_prompt_detailed",
         
         # Model
         "model_name": "Qwen/Qwen3-32B",
@@ -180,8 +184,8 @@ const target = await client.targets.create('my_repo', {
     ],
     
     // Prompts
-    u: 'system_prompt_expert',
-    v: 'user_prompt_detailed',
+    teacher_prompt: 'system_prompt_expert',
+    student_prompt: 'user_prompt_detailed',
     
     // Model
     model_name: 'Qwen/Qwen3-32B',
@@ -210,8 +214,8 @@ const target = await client.targets.create('my_repo', {
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `generators` | Array | No | `[]` | List of generator configs |
-| `u` | String | Stim only | - | System prompt name |
-| `v` | String | Stim only | - | User prompt name |
+| `teacher_prompt` | String | Stim only | - | Teacher prompt name |
+| `student_prompt` | String | Stim only | - | Student prompt name |
 | `model_name` | String | Rollout only | - | Base model identifier |
 | `max_tokens` | Integer | No | - | Max tokens per generation |
 | `temperature` | Float | No | `1.0` | Generation temperature |

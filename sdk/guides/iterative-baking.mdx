@@ -172,8 +172,8 @@ client.targets.set(
             "temperature": 0.6
         }],
         "model_name": previous_baked_model,  # Use Yoda v1 as base
-        "u": "yoda_teacher_prompt_2",
-        "v": "empty_student"
+        "teacher_prompt": "yoda_teacher_prompt_2",
+        "student_prompt": "empty_student"
     }
 )
 
@@ -210,8 +210,8 @@ await client.targets.create('yoda_v2', {
       temperature: 0.6,
     }],
     model_name: previousBakedModel,  // Use Yoda v1 as base
-    u: 'yoda_teacher_prompt_2',
-    v: 'empty_student',
+    teacher_prompt: 'yoda_teacher_prompt_2',
+    student_prompt: 'empty_student',
   },
 });
 
@@ -247,7 +247,7 @@ bake = client.bakes.set(
         ],
         "model": {
             "type": "bake",
-            "name_or_path": previous_baked_model,  # Start from Yoda v1
+            "parent_model_name": previous_baked_model,  # Start from Yoda v1
             "baked_adapter_config": {
                 "r": 8,
                 "lora_alpha": 16
@@ -272,7 +272,7 @@ await client.bakes.create('yoda_v2', {
     ],
     model: {
       type: 'bake',
-      name_or_path: previousBakedModel,  // Start from Yoda v1
+      parent_model_name: previousBakedModel,  // Start from Yoda v1
       baked_adapter_config: {
         r: 8,
         lora_alpha: 16,

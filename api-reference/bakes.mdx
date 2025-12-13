@@ -59,19 +59,47 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
 {
   "status": "complete",
   "config": {
+    "type": "single_baker",
+    "micro_batch_size": 8,
+    "epochs": 3,
     "datasets": [{"target": "coding_target", "weight": 1.0}],
-    "epochs": 3
+    "model": {
+      "type": "bake",
+      "parent_model_name": "Qwen/Qwen3-32B",
+      "baked_adapter_config": {
+        "r": 32,
+        "lora_alpha": 32,
+        "target_modules": "all-linear",
+        "lora_dropout": 0.05,
+        "bias": "none"
+      }
+    }
   },
-  "model_name": ["user/repo/bake_name/35"],
-  "progress_percent": 100.0
+  "job_id": 12345,
+  "progress_percent": 100.0,
+  "model_name": ["user/repo/bake_name/183", "user/repo/bake_name/100"],
+  "loss": {
+    "latest_loss": 1.395237632095814e-7,
+    "final_loss": 1.395237632095814e-7,
+    "min_loss": 1.314911060035229e-7,
+    "max_loss": 0.0000015422701835632324
+  }
 }
 ```
 
 **Response Fields**:
-- `status`: `string` - 'not_started', 'running', 'complete', or 'failed'
-- `config`: `object` - Bake configuration
-- `model_name`: `Array<string>` - List of model checkpoints (when complete)
-- `progress_percent`: `number` - Job progress (0-100)
+- `status`: `string` - Bake status: `'not_started'`, `'running'`, `'complete'`, or `'failed'`
+- `config`: `object` - Complete bake configuration (datasets, model, optimizer, etc.)
+- `job_id`: `integer | null` - Coordinator job ID (present when status is `'running'` or `'complete'`)
+- `progress_percent`: `number | null` - Training progress percentage (0-100, present when running)
+- `model_name`: `Array<string> | null` - List of model checkpoint paths in format `'user/repo/bake_name/checkpoint'`. Index 0 is the latest checkpoint. Only present when `status` is `'complete'`
+- `loss`: `object | null` - Training loss metrics (present when status is `'running'` or `'complete'` and metrics are available)
+  - `latest_loss`: Latest training loss value
+  - `final_loss`: Final training loss value
+  - `min_loss`: Minimum loss encountered during training
+  - `max_loss`: Maximum loss encountered during training
+- `error`: `string | null` - Error message if bake failed (present when `status` is `'failed'`)
+- `lines`: `integer | null` - Not applicable for bakes (always null)
 
 ---
 
@@ -99,7 +127,7 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
       "gradient_accumulation_steps": 4,
       "model": {
         "type": "bake",
-        "name_or_path": "Qwen/Qwen3-32B",
+        "parent_model_name": "Qwen/Qwen3-32B",
         "baked_adapter_config": {
           "r": 8,
           "lora_alpha": 16,
@@ -135,6 +163,8 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
 
 <ParamField path="overrides" type="object">
   Bake configuration overrides. See [Bake Configuration](/sdk/configuration/bake-config).
+  
+  **Model Configuration**: The `model.parent_model_name` field defaults to the repository's base model if not specified. You can override it with a base model (e.g., `"Qwen/Qwen3-32B"`) or a previously baked model (e.g., `"user/repo/bake_name/checkpoint"`).
 </ParamField>
 
 ---
@@ -157,8 +187,16 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake" \
 ```json
 {
   "status": "running",
+  "config": {
+    "datasets": [{"target": "coding_target", "weight": 1.0}],
+    "epochs": 3,
+    "micro_batch_size": 1
+  },
   "job_id": 12345,
-  "progress_percent": 0
+  "progress_percent": 0.0,
+  "model_name": null,
+  "loss": null,
+  "error": null
 }
 ```
 
@@ -184,9 +222,12 @@ Ensure all target rollouts are complete before starting bake
 - Poll `get()` to monitor status
 
 **Returns**: `BakeResponse`
-- `status`: Job status ('not_started', 'running', 'complete', 'failed')
+- `status`: Bake status ('not_started', 'running', 'complete', 'failed')
 - `job_id`: Coordinator job ID (if queued/running)
-- `progress_percent`: Job progress (0-100)
+- `progress_percent`: Training progress (0-100)
+- `model_name`: List of checkpoint paths (when complete)
+- `loss`: Training loss metrics (when available)
+- `error`: Error message (if failed)
 
 ---
 
@@ -272,6 +313,118 @@ curl -X PUT "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/batch" \
 
 ---
 
+### Get Bake Metrics
+
+Get training metrics for a bake. Returns all metrics from `train_log_metrics.jsonl` as a JSON array.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/bakes/{bake_name}/metrics`
+
+**Request**:
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/metrics" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `200 OK`
+
+```json
+[
+  {
+    "iter": 0,
+    "loss": 0.5,
+    "train_loss": 0.5,
+    "lr": 0.0001,
+    "epoch": 0
+  },
+  {
+    "iter": 100,
+    "loss": 0.3,
+    "train_loss": 0.3,
+    "lr": 0.00009,
+    "epoch": 0.5
+  }
+]
+```
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+<Info>
+**Use Case**: Useful for plotting loss curves and other training metrics on the frontend. Each entry contains metrics like `iter`, `loss`, `train_loss`, `lr`, `epoch`, etc.
+</Info>
+
+---
+
+### Get Bake Download URL
+
+Get a presigned URL for downloading model weights.
+
+**Endpoint**: `GET /v1/repo/{repo_name}/bakes/{bake_name}/download`
+
+**Request** (latest checkpoint):
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Request** (specific checkpoint):
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download?checkpoint=35" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Request** (custom expiry):
+
+```bash
+curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download?expires_in=86400" \
+  -H "Authorization: Bearer $BREAD_API_KEY"
+```
+
+**Response**: `200 OK`
+
+```json
+{
+  "url": "https://presigned-url-to-model-weights.tar.gz",
+  "checkpoint": 35,
+  "expires_in": 3600,
+  "bake_name": "my_bake"
+}
+```
+
+<ParamField path="repo_name" type="string" required>
+  Repository name
+</ParamField>
+
+<ParamField path="bake_name" type="string" required>
+  Bake name
+</ParamField>
+
+<ParamField path="checkpoint" type="integer">
+  Checkpoint number (defaults to latest checkpoint)
+</ParamField>
+
+<ParamField path="expires_in" type="integer">
+  URL expiry in seconds (1-604800, default: 3600). Maximum: 7 days (604800 seconds)
+</ParamField>
+
+<Info>
+**Important**: 
+- Presigned URLs expire after the specified time (default: 1 hour)
+- URLs are single-use and provide direct access to model weights
+- Download the weights promptly after receiving the URL
+- Model weights are typically large files (several GB), ensure sufficient storage space
+</Info>
+
+---
+
 ### Delete Bake
 
 Delete a bake from the repository.
@@ -314,7 +467,7 @@ curl -X DELETE "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/old_bake" \
           "micro_batch_size": 1,
           "model": {
             "type": "bake",
-            "name_or_path": "Qwen/Qwen3-32B"
+            "parent_model_name": "Qwen/Qwen3-32B"
           },
           "optimizer": {
             "learning_rate": 0.0001
@@ -338,7 +491,29 @@ curl -X DELETE "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/old_bake" \
       -H "Authorization: Bearer $BREAD_API_KEY"
     
     # Check status field: "not_started", "running", "complete", or "failed"
-    # Check progress_percent for completion percentage
+    # Check progress_percent for completion percentage (0-100)
+    # When complete, model_name contains checkpoint paths
+    # Check loss field for training metrics
+    ```
+  </Step>
+
+  <Step title="Check Training Metrics (Optional)">
+    ```bash
+    # Get detailed training metrics
+    curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/metrics" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
+    
+    # Returns array of metrics for plotting loss curves
+    ```
+  </Step>
+
+  <Step title="Download Model Weights (When Complete)">
+    ```bash
+    # Get download URL for latest checkpoint
+    curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download" \
+      -H "Authorization: Bearer $BREAD_API_KEY"
+    
+    # Use the returned URL to download model weights
     ```
   </Step>
 </Steps>
@@ -359,7 +534,7 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
       "epochs": 3,
       "model": {
         "type": "bake",
-        "name_or_path": "Qwen/Qwen3-32B",
+        "parent_model_name": "Qwen/Qwen3-32B",
         "baked_adapter_config": {
           "r": 16,
           "lora_alpha": 32,
@@ -414,11 +589,15 @@ See [Bake Configuration Reference](/sdk/configuration/bake-config) for complete 
 </ParamField>
 
 <ParamField path="micro_batch_size" type="integer">
-  Micro batch size
+  Micro batch size per device
 </ParamField>
 
 <ParamField path="gradient_accumulation_steps" type="integer">
-  Gradient accumulation steps
+  Gradient accumulation steps for effective batch size. Effective batch size = `micro_batch_size * gradient_accumulation_steps * num_gpus`
+</ParamField>
+
+<ParamField path="total_trajectories" type="integer">
+  Total number of trajectories to use for training. If not specified, uses all available trajectories from the datasets.
 </ParamField>
 
 <ParamField path="seed" type="integer">
@@ -445,7 +624,19 @@ See [Bake Configuration Reference](/sdk/configuration/bake-config) for complete 
   </Accordion>
 
   <Accordion title="Monitor Progress" icon="eye">
-    Check status periodically but not too frequently (every 30-60 seconds)
+    Check status periodically but not too frequently (every 30-60 seconds). Use the `loss` field to track training quality. A good final loss is typically around 4e-7.
+  </Accordion>
+
+  <Accordion title="Check Checkpoints" icon="list-check">
+    When a bake completes, `model_name` contains checkpoint paths. Index 0 is the latest checkpoint. Use this path for inference or downloading weights.
+  </Accordion>
+
+  <Accordion title="Download Weights" icon="download">
+    Use the download endpoint to get presigned URLs for model weights. URLs expire after 1 hour by default, so download promptly.
+  </Accordion>
+
+  <Accordion title="Track Metrics" icon="chart-line">
+    Use the metrics endpoint to get detailed training logs for plotting loss curves and analyzing training behavior.
   </Accordion>
 </AccordionGroup>
 
@@ -476,7 +667,49 @@ Starting a bake when rollouts aren't complete:
 
 ```json
 {
-  "error": "Target rollouts must complete before starting bake"
+  "message": "Target rollouts must complete before starting bake",
+  "code": "INVALID_INPUT"
+}
+```
+
+### Insufficient Credits
+
+Starting a bake without sufficient credit balance:
+
+**Response**: `402 Payment Required`
+
+```json
+{
+  "message": "Insufficient credits. Please add funds to continue.",
+  "code": "PAYMENT_REQUIRED"
+}
+```
+
+### Bake Already Exists
+
+Creating a bake that already exists with different configuration:
+
+**Response**: `409 Conflict`
+
+```json
+{
+  "message": "Bake 'my-bake' already exists with different configuration. Bakes are immutable and cannot be changed.",
+  "code": "RESOURCE_CONFLICT"
+}
+```
+
+### Bake Failed
+
+When a bake fails during training:
+
+**Response**: `200 OK` (status field indicates failure)
+
+```json
+{
+  "status": "failed",
+  "error": "Training failed: Out of memory",
+  "job_id": 12345,
+  "progress_percent": 45.0
 }
 ```
 

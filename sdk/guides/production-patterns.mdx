@@ -941,8 +941,8 @@ production_workflow(
     target_config={
         "generators": [...],
         "model_name": "Qwen/Qwen3-32B",
-        "u": "yoda_teacher",
-        "v": "empty_student"
+        "teacher_prompt": "yoda_teacher",
+        "student_prompt": "empty_student"
     },
     bake_name="yoda_production_v1",
     bake_config={
@@ -1139,8 +1139,8 @@ await productionWorkflow(
   {
     generators: [],
     model_name: 'Qwen/Qwen3-32B',
-    u: 'yoda_teacher',
-    v: 'empty_student',
+    teacher_prompt: 'yoda_teacher',
+    student_prompt: 'empty_student',
   },
   'yoda_production_v1',
   {
