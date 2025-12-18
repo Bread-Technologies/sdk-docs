@@ -43,6 +43,34 @@ Verify stim job is complete before running rollout
 - Job executes asynchronously in background
 - Idempotent: repeated calls return current state
 
+**SDK Usage**:
+
+<CodeGroup>
+
+```python Python
+# Python: repo_name must be a keyword argument
+client.targets.rollout.run(target_name="coding_target", repo_name="my_repo")
+
+# With polling (default poll=True)
+client.targets.rollout.run(target_name="coding_target", repo_name="my_repo", poll=True)
+```
+
+```typescript TypeScript
+// TypeScript: repo_name in options object
+await client.targets.rollout.run('coding_target', { repo_name: 'my_repo' });
+
+// With polling (default poll=true)
+await client.targets.rollout.run('coding_target', { repo_name: 'my_repo', poll: true });
+```
+
+</CodeGroup>
+
+<Note>
+**Python SDK**: The `repo_name` parameter must be passed as a keyword argument (not positional). This is intentional for API clarity and consistency.
+
+**Polling**: By default, `poll=True` automatically waits for the job to complete. Manual polling loops are no longer needed unless you set `poll=False`.
+</Note>
+
 **Response**: `200 OK`
 
 ```json
