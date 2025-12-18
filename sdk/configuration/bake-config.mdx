@@ -135,30 +135,7 @@ Bake configuration controls model training behavior, including datasets, trainin
   ```
 </ParamField>
 
-## Integrations
-
-### Weights & Biases
-
-<ParamField path="wandb" type="object">
-  W&B logging configuration
-  
-  ```python
-  "wandb": {
-      "enable": True,
-      "project": "bread-experiments",
-      "entity": "my-team",
-      "name": "coding-v1",
-      "tags": ["experiment", "lora", "v1"]
-  }
-  ```
-  
-  **Fields**:
-  - `enable` (boolean): Enable W&B logging
-  - `project` (string): Project name
-  - `entity` (string): Team/entity name
-  - `name` (string): Run name
-  - `tags` (array): Tags for this run
-</ParamField>
+## Advanced Configuration
 
 ### DeepSpeed
 
@@ -234,7 +211,6 @@ Bake configuration controls model training behavior, including datasets, trainin
       ],
       "max_length": 2048,
       "train_eval_split": [0.9, 0.1],
-      "cache_dir": "./cache",
       "dl_num_workers": 4,
       "num_proc": 8,
       "seed": 42
@@ -247,7 +223,6 @@ Bake configuration controls model training behavior, including datasets, trainin
   - `eval_sources`: List of evaluation data sources
   - `max_length`: Maximum sequence length
   - `train_eval_split`: Train/eval split ratio `[train, eval]` (must sum to 1.0)
-  - `cache_dir`: Cache directory for processed data
   - `dl_num_workers`: Number of dataloader workers per GPU
   - `num_proc`: Number of processes for data loading
   - `seed`: Seed for data loading
@@ -300,15 +275,6 @@ bake = client.bakes.set(
             "type": "huggingface"
         },
         
-        # W&B logging
-        "wandb": {
-            "enable": True,
-            "project": "my-project",
-            "entity": "my-team",
-            "name": "coding-lora-v1",
-            "tags": ["lora", "coding", "production"]
-        },
-        
         # DeepSpeed
         "deepspeed": {
             "zero_optimization": {
@@ -359,15 +325,6 @@ const bake = await client.bakes.create('my_repo', {
       type: 'huggingface',
     },
     
-    // W&B logging
-    wandb: {
-      enable: true,
-      project: 'my-project',
-      entity: 'my-team',
-      name: 'coding-lora-v1',
-      tags: ['lora', 'coding', 'production'],
-    },
-    
     // DeepSpeed
     deepspeed: {
       zero_optimization: {
@@ -393,7 +350,6 @@ const bake = await client.bakes.create('my_repo', {
 | `data` | Object | No | Data loading configuration |
 | `optimizer` | Object | No | Optimizer settings |
 | `scheduler` | Object | No | LR scheduler |
-| `wandb` | Object | No | W&B integration |
 | `deepspeed` | Object | No | DeepSpeed config |
 | `checkpoint` | Array | No | Checkpoint engine configuration |
 

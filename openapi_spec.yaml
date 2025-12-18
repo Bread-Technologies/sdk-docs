@@ -2460,85 +2460,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/models/download:
-    get:
-      tags:
-        - bakes
-      summary: Get Model Download Url
-      description: "Get presigned URL for downloading model weights by model name.\n    \n    Model name format: user/repo/bake_name/checkpoint\n    Returns a presigned URL valid for 1 hour (configurable via R2_PRESIGNED_URL_EXPIRY)."
-      operationId: get_model_download_url_v1_models_download_get
-      security:
-        - HTTPBearer: []
-      parameters:
-        - name: name
-          in: query
-          required: true
-          schema:
-            type: string
-            description: Model name in format 'user/repo/bake_name/checkpoint'
-            title: Name
-          description: Model name in format 'user/repo/bake_name/checkpoint'
-        - name: expires_in
-          in: query
-          required: false
-          schema:
-            anyOf:
-              - type: integer
-                maximum: 604800
-                minimum: 1
-              - type: "null"
-            description: URL expiry in seconds (1-604800, default 3600)
-            title: Expires In
-          description: URL expiry in seconds (1-604800, default 3600)
-      responses:
-        "200":
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DownloadUrlResponse'
-        "400":
-          description: Bad request - Invalid input
-          content:
-            application/json:
-              example:
-                message: Invalid input parameters
-                code: INVALID_INPUT
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "402":
-          description: Insufficient credits
-          content:
-            application/json:
-              example:
-                message: Insufficient credits. Please add funds to continue.
-                code: PAYMENT_REQUIRED
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "404":
-          description: Resource not found
-          content:
-            application/json:
-              example:
-                message: Resource not found
-                code: RESOURCE_NOT_FOUND
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "500":
-          description: Internal server error
-          content:
-            application/json:
-              example:
-                message: Internal server error
-                code: INTERNAL_ERROR
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        "422":
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /v1/repo/{repo_name}/bakes/{bake_name}/metrics:
     get:
       tags:
@@ -2945,11 +2866,6 @@ components:
             - $ref: '#/components/schemas/SchedulerConfig'
             - type: "null"
           description: Scheduler configuration
-        wandb:
-          anyOf:
-            - $ref: '#/components/schemas/WandbConfig'
-            - type: "null"
-          description: Wandb configuration
         deepspeed:
           anyOf:
             - $ref: '#/components/schemas/DeepSpeedConfig'
@@ -2975,6 +2891,12 @@ components:
             - type: "null"
           title: Eval Interval
           description: Evaluation interval
+        activation_checkpoint_cpu_offload:
+          anyOf:
+            - type: boolean
+            - type: "null"
+          title: Activation Checkpoint Cpu Offload
+          description: Offload activation checkpoints to CPU memory to save GPU memory
       additionalProperties: false
       type: object
       title: BakeConfigBase
@@ -3297,11 +3219,11 @@ components:
         targets:
           - overrides:
               temperature: 0.8
-              teacher_prompt: my_unconditioned_prompt
+              u: my_unconditioned_prompt
             target_name: target_alpha
             template: default
           - overrides:
-              student_prompt: my_conditioned_prompt
+              v: my_conditioned_prompt
             target_name: target_beta
             template: target_alpha
     BatchTargetResponse:
@@ -3435,12 +3357,6 @@ components:
             - type: "null"
           title: Train Eval Split
           description: Train/eval split ratio [train, eval]
-        cache_dir:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Cache Dir
-          description: Cache directory
         dl_num_workers:
           anyOf:
             - type: integer
@@ -3459,18 +3375,6 @@ components:
             - type: "null"
           title: Seed
           description: Seed for data loading
-        use_data_cache:
-          anyOf:
-            - type: boolean
-            - type: "null"
-          title: Use Data Cache
-          description: Whether to cache loaded data. Deprecated - data cache is used by default now.
-        cache_fs_type:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Cache Fs Type
-          description: 'Cache filesystem type: ''auto'', ''local'', or ''shared'''
       additionalProperties: false
       type: object
       title: DataConfig
@@ -3744,7 +3648,7 @@ components:
             - type: string
             - type: "null"
           title: Template Path
-          description: Template filename for custom generator type. When template_content is provided, the file is written to the repo-level templates/ directory (same level as prompts/, bakes/, targets/). The path is normalized to templates/{filename} format. Used by bake_dataset_utils to reference the template file during dataset generation.
+          description: Template filename for custom generator type. Used by bake_dataset_utils to reference the template file during dataset generation.
         template_content:
           anyOf:
             - type: string
@@ -4357,6 +4261,12 @@ components:
           type: boolean
           title: Has More
           description: Whether more data is available
+        total_expected:
+          anyOf:
+            - type: integer
+            - type: "null"
+          title: Total Expected
+          description: Total expected number of rollouts (num_stimuli * num_traj_per_stimulus). Used for progress calculation.
       additionalProperties: false
       type: object
       required:
@@ -4391,6 +4301,7 @@ components:
             tokens: 38
             trajectory_id: 1
         status: complete
+        total_expected: 15000
     RolloutResponse:
       properties:
         status:
@@ -4428,6 +4339,12 @@ components:
             - type: "null"
           title: Progress Percent
           description: Job progress percentage (0-100) if job is running
+        total_expected:
+          anyOf:
+            - type: integer
+            - type: "null"
+          title: Total Expected
+          description: Total expected number of rollouts (num_stimuli * num_traj_per_stimulus). Used for progress calculation.
       additionalProperties: false
       type: object
       required:
@@ -4447,6 +4364,7 @@ components:
           temperature: 1.0
         lines: 75
         status: running
+        total_expected: 150
     SchedulerConfig:
       properties:
         type:
@@ -4609,8 +4527,8 @@ components:
               numq: 10
               temperature: 1.0
               type: oneshot_qs
-          teacher_prompt: system_prompt_v1
-          student_prompt: user_prompt_v1
+          u: system_prompt_v1
+          v: user_prompt_v1
         lines: 150
         status: complete
     TargetConfig:
@@ -4965,36 +4883,6 @@ components:
         - msg
         - type
       title: ValidationError
-    WandbConfig:
-      properties:
-        enable:
-          anyOf:
-            - type: boolean
-            - type: "null"
-          title: Enable
-          description: Enable wandb logging
-        project:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Project
-          description: Wandb project name
-        name:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Name
-          description: Run name
-        entity:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Entity
-          description: Wandb entity/team
-      additionalProperties: false
-      type: object
-      title: WandbConfig
-      description: Weights & Biases configuration
   securitySchemes:
     HTTPBearer:
       type: http

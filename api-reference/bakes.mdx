@@ -5,7 +5,7 @@ description: "Configure and run model training jobs"
 
 ## Overview
 
-Bakes represent model training jobs that use rollout data as training datasets. They are composed from a base template plus per-bake overrides and support advanced features like LoRA adapters, DeepSpeed, and Weights & Biases integration.
+Bakes represent model training jobs that use rollout data as training datasets. They are composed from a base template plus per-bake overrides and support advanced features like LoRA adapters and DeepSpeed.
 
 ## Endpoints
 
@@ -138,12 +138,6 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
       },
       "optimizer": {
         "learning_rate": 0.0001
-      },
-      "wandb": {
-        "enable": true,
-        "project": "my-project",
-        "entity": "my-team",
-        "name": "my-run"
       }
     }
   }'
@@ -363,7 +357,7 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/metrics" \
 
 ### Get Bake Download URL
 
-Get a presigned URL for downloading model weights.
+Get a presigned URL for downloading model weights by repository and bake name.
 
 **Endpoint**: `GET /v1/repo/{repo_name}/bakes/{bake_name}/download`
 
@@ -414,14 +408,6 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download?ex
 <ParamField path="expires_in" type="integer">
   URL expiry in seconds (1-604800, default: 3600). Maximum: 7 days (604800 seconds)
 </ParamField>
-
-<Info>
-**Important**: 
-- Presigned URLs expire after the specified time (default: 1 hour)
-- URLs are single-use and provide direct access to model weights
-- Download the weights promptly after receiving the URL
-- Model weights are typically large files (several GB), ensure sufficient storage space
-</Info>
 
 ---
 
@@ -547,29 +533,6 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
   }'
 ```
 
-### Weights & Biases Integration
-
-```bash
-curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/bakes" \
-  -H "Authorization: Bearer $BREAD_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "bake_name": "wandb_bake",
-    "template": "default",
-    "overrides": {
-      "datasets": [{"target": "coding_target", "weight": 1.0}],
-      "epochs": 5,
-      "wandb": {
-        "enable": true,
-        "project": "bread-experiments",
-        "entity": "my-team",
-        "name": "coding-v1",
-        "tags": ["coding", "experiment", "v1"]
-      }
-    }
-  }'
-```
-
 ## Key Configuration Fields
 
 See [Bake Configuration Reference](/sdk/configuration/bake-config) for complete details.
@@ -613,10 +576,6 @@ See [Bake Configuration Reference](/sdk/configuration/bake-config) for complete 
 
   <Accordion title="Start Small" icon="chart-simple">
     Test with fewer epochs and smaller datasets first, then scale up
-  </Accordion>
-
-  <Accordion title="Use Weights & Biases" icon="chart-line">
-    Enable W&B logging to track training metrics and compare experiments
   </Accordion>
 
   <Accordion title="Version Your Bakes" icon="code-branch">

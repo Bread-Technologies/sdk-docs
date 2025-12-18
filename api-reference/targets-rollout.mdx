@@ -54,7 +54,7 @@ Verify stim job is complete before running rollout
 ```
 
 **Response Fields**:
-- `status`: `string` - Job status
+- `status`: `string` - Job status (`'not_started'`, `'running'`, `'complete'`, or `'failed'`)
 - `lines`: `number` - Number of trajectories generated
 - `parameters`: `object` - Job configuration
 
@@ -92,7 +92,7 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/rol
 ```
 
 **Response Fields**:
-- `status`: `string` - not_started | running | complete
+- `status`: `string` - `'not_started'`, `'running'`, `'complete'`, or `'failed'`
 - `lines`: `number` - Number of generated trajectories
 - `parameters`: `object` - Job configuration
 

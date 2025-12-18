@@ -1,0 +1,172 @@
+---
+title: "Client Configuration"
+description: "Configure timeouts, retries, proxies, and async performance"
+---
+
+## Timeout Configuration
+
+Model training and rollout operations can be long-running. Configure timeouts to match your workload:
+
+<CodeGroup>
+
+```python Python
+from aibread import Bread
+import httpx
+
+# Simple timeout (seconds)
+client = Bread(timeout=20.0)
+
+# Granular control
+client = Bread(
+    timeout=httpx.Timeout(
+        60.0,         # Total timeout
+        connect=2.0,  # Connection timeout
+        read=5.0,     # Read timeout
+        write=10.0    # Write timeout
+    )
+)
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// Simple timeout (milliseconds)
+const client = new Bread({ timeout: 20000 });
+
+// Granular control
+const client = new Bread({
+  timeout: {
+    total: 60000,    // Total timeout (ms)
+    connect: 2000,   // Connection timeout (ms)
+    read: 5000,      // Read timeout (ms)
+    write: 10000,    // Write timeout (ms)
+  },
+});
+```
+
+</CodeGroup>
+
+---
+
+## Retry Configuration
+
+The SDK automatically retries transient errors (408, 409, 429, 5xx) with exponential backoff and jitter.
+
+<CodeGroup>
+
+```python Python
+from aibread import Bread
+
+# Default is 2 retries. Increase for high-concurrency workloads:
+client = Bread(max_retries=5)
+
+# Disable retries entirely:
+client = Bread(max_retries=0)
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// Default is 2 retries. Increase for high-concurrency workloads:
+const client = new Bread({ maxRetries: 5 });
+
+// Disable retries entirely:
+const clientNoRetries = new Bread({ maxRetries: 0 });
+```
+
+</CodeGroup>
+
+---
+
+## Async Performance
+
+For high-performance applications managing multiple repositories or bakes concurrently, use the async client.
+
+<CodeGroup>
+
+```python Python
+import asyncio
+from aibread import AsyncBread
+
+async def main():
+    async with AsyncBread() as client:
+        # Run multiple operations in parallel
+        repos = await client.repo.list()
+        print(repos)
+
+asyncio.run(main())
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+// TypeScript SDK is async by default
+const client = new Bread();
+const repos = await client.repo.list();
+```
+
+</CodeGroup>
+
+---
+
+## Custom HTTP Client & Proxies
+
+Configure custom transports, proxies, or SSL certificates:
+
+<CodeGroup>
+
+```python Python
+import httpx
+from aibread import Bread, DefaultHttpxClient
+
+client = Bread(
+    http_client=DefaultHttpxClient(
+        proxy="http://my-proxy.com:8080",
+        transport=httpx.HTTPTransport(local_address="0.0.0.0")
+    )
+)
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+
+const client = new Bread({
+  httpClient: {
+    agent: new HttpsProxyAgent('http://proxy.example.com:8080'),
+  },
+});
+```
+
+</CodeGroup>
+
+---
+
+## Raw Response Access
+
+Access the underlying HTTP response metadata when you need to inspect headers or status codes directly:
+
+<CodeGroup>
+
+```python Python
+# Use .with_raw_response
+response = client.repo.with_raw_response.list()
+
+print(response.status_code)
+print(response.headers.get('X-Custom-Header'))
+
+# Parse to get the typed data
+repos = response.parse()
+```
+
+```typescript TypeScript
+// Access raw response properties on the result
+const response = await client.repo.list();
+
+console.log(response.statusCode);
+console.log(response.headers?.['X-Custom-Header']);
+```
+
+</CodeGroup>
+
+

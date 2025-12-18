@@ -43,7 +43,7 @@ Let a LLM (Anthropic only) generate stimuli for you.
 <ParamField path="template_path" type="string">
   **Optional**: Path to a custom template file for question generation. Paths are normalized to `/templates/{template_name}` format.
   
-  When `template_content` is provided, the file is written to the repo-level `templates/` directory (same level as `prompts/`, `bakes/`, `targets/`). The path is automatically normalized to `templates/{filename}` format.
+  When `template_content` is provided, the file is written to the repository.
   
   **Best Practice**: Use just the filename (e.g., `"my_template.txt"`) or the full normalized path (e.g., `"templates/my_template.txt"`). The system will normalize it to `/templates/{template_name}`.
   
@@ -355,7 +355,7 @@ Combined generators create a diverse dataset with AI-generated, benchmark, and c
   </Accordion>
 
   <Accordion title="Use Custom Templates" icon="file-code">
-    For `oneshot_qs` generators, use `template_path` and `template_content` to customize question generation style. Templates use Python's `string.Template` format with `${numq}` and `${prompt_u}` variables. Paths are normalized to `/templates/{template_name}` format.
+    For `oneshot_qs` generators, use `template_path` and `template_content` to customize question generation style. Templates use Python's `string.Template` format with `${numq}` and `${prompt_u}` variables.
   </Accordion>
 </AccordionGroup>
 

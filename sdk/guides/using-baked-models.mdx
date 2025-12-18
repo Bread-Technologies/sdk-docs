@@ -165,47 +165,104 @@ if (reader) {
 
 ---
 
+## Monitoring Training Metrics
+
+You can retrieve detailed training logs for your bakes to analyze loss curves, learning rate schedules, and overall training performance.
+
+### Get Metrics
+
+Use the SDK to fetch training metrics:
+
+<CodeGroup>
+
+```python Python
+from aibread import Bread
+
+client = Bread()
+
+# Get training metrics
+metrics = client.bakes.get_metrics(
+    bake_name="my_bake",
+    repo_name="my_repo"
+)
+
+for entry in metrics:
+    print(f"Iter: {entry['iter']}, Loss: {entry['loss']}, Epoch: {entry['epoch']}")
+```
+
+```typescript TypeScript
+import Bread from '@aibread/sdk';
+
+const client = new Bread();
+
+// Get training metrics
+const metrics = await client.bakes.getMetrics('my_bake', {
+  repo_name: 'my_repo',
+});
+
+metrics.forEach(entry => {
+  console.log(`Iter: ${entry.iter}, Loss: ${entry.loss}, Epoch: ${entry.epoch}`);
+});
+```
+
+</CodeGroup>
+
+**Metrics Data Format:**
+
+```json
+[
+  {
+    "iter": 100,
+    "loss": 0.3,
+    "train_loss": 0.3,
+    "lr": 0.00009,
+    "epoch": 0.5
+  }
+]
+```
+
+---
+
 ## Downloading Model Weights
 
 After your bake completes, you can download the model weights for local use or deployment. The API provides presigned URLs for secure, time-limited access to your model checkpoints.
 
 ### Get Download URL
 
-Use the REST API to get a presigned download URL for your baked model:
+Use the SDK to get a presigned download URL for your baked model:
 
 <CodeGroup>
 
 ```python Python
-import os
-import requests
+from aibread import Bread
+
+client = Bread()
 
 # Get download URL for latest checkpoint
-response = requests.get(
-    f"https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download",
-    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"}
+download_info = client.bakes.download(
+    bake_name="my_bake",
+    repo_name="my_repo"
 )
 
-download_info = response.json()
-print(f"Download URL: {download_info['url']}")
-print(f"Checkpoint: {download_info['checkpoint']}")
-print(f"Expires in: {download_info['expires_in']} seconds")
+print(f"Download URL: {download_info.url}")
+print(f"Checkpoint: {download_info.checkpoint}")
+print(f"Expires in: {download_info.expires_in} seconds")
 
 # Download the model weights
 import urllib.request
-urllib.request.urlretrieve(download_info['url'], 'model_weights.tar.gz')
+urllib.request.urlretrieve(download_info.url, 'model_weights.tar.gz')
 ```
 
 ```typescript TypeScript
-const response = await fetch(
-  'https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download',
-  {
-    headers: {
-      'Authorization': `Bearer ${process.env.BREAD_API_KEY}`,
-    },
-  }
-);
+import Bread from '@aibread/sdk';
 
-const downloadInfo = await response.json();
+const client = new Bread();
+
+// Get download URL for latest checkpoint
+const downloadInfo = await client.bakes.download('my_bake', {
+  repo_name: 'my_repo',
+});
+
 console.log(`Download URL: ${downloadInfo.url}`);
 console.log(`Checkpoint: ${downloadInfo.checkpoint}`);
 console.log(`Expires in: ${downloadInfo.expires_in} seconds`);
@@ -213,7 +270,7 @@ console.log(`Expires in: ${downloadInfo.expires_in} seconds`);
 // Download the model weights
 const downloadResponse = await fetch(downloadInfo.url);
 const blob = await downloadResponse.blob();
-// Save blob to file using FileSystem API or similar
+// Save blob to file...
 ```
 
 </CodeGroup>
@@ -225,31 +282,29 @@ To download a specific checkpoint instead of the latest:
 <CodeGroup>
 
 ```python Python
-import os
-import requests
+from aibread import Bread
+
+client = Bread()
 
 # Get download URL for checkpoint 35
-response = requests.get(
-    f"https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download",
-    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"},
-    params={"checkpoint": 35}
+download_info = client.bakes.download(
+    bake_name="my_bake",
+    repo_name="my_repo",
+    checkpoint=35
 )
-
-download_info = response.json()
-# Use download_info['url'] to download
+# Use download_info.url to download
 ```
 
 ```typescript TypeScript
-const response = await fetch(
-  'https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download?checkpoint=35',
-  {
-    headers: {
-      'Authorization': `Bearer ${process.env.BREAD_API_KEY}`,
-    },
-  }
-);
+import Bread from '@aibread/sdk';
 
-const downloadInfo = await response.json();
+const client = new Bread();
+
+// Get download URL for checkpoint 35
+const downloadInfo = await client.bakes.download('my_bake', {
+  repo_name: 'my_repo',
+  checkpoint: 35,
+});
 // Use downloadInfo.url to download
 ```
 
@@ -262,30 +317,28 @@ Control how long the presigned URL remains valid (default: 1 hour, max: 7 days):
 <CodeGroup>
 
 ```python Python
-import os
-import requests
+from aibread import Bread
+
+client = Bread()
 
 # Get download URL valid for 24 hours
-response = requests.get(
-    f"https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download",
-    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"},
-    params={"expires_in": 86400}  # 24 hours in seconds
+download_info = client.bakes.download(
+    bake_name="my_bake",
+    repo_name="my_repo",
+    expires_in=86400  # 24 hours in seconds
 )
-
-download_info = response.json()
 ```
 
 ```typescript TypeScript
-const response = await fetch(
-  'https://bapi.bread.com.ai/v1/repo/my_repo/bakes/my_bake/download?expires_in=86400',
-  {
-    headers: {
-      'Authorization': `Bearer ${process.env.BREAD_API_KEY}`,
-    },
-  }
-);
+import Bread from '@aibread/sdk';
 
-const downloadInfo = await response.json();
+const client = new Bread();
+
+// Get download URL valid for 24 hours
+const downloadInfo = await client.bakes.download('my_bake', {
+  repo_name: 'my_repo',
+  expires_in: 86400,
+});
 ```
 
 </CodeGroup>
@@ -304,14 +357,10 @@ const downloadInfo = await response.json();
 <Info>
 **Important Notes:**
 - Presigned URLs expire after the specified time (default: 1 hour)
-- URLs are single-use and provide direct access to model weights
+- URLs provide direct access to model weights
 - Download the weights promptly after receiving the URL
 - Model weights are typically large files (several GB), ensure sufficient storage space
 </Info>
-
-<Note>
-**SDK Support**: Direct SDK methods for downloading weights are coming soon. For now, use the REST API endpoint as shown above.
-</Note>
 
 ---
 

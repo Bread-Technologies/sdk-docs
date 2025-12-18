@@ -95,18 +95,18 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets" \
     "target_name": "coding_target",
     "template": "default",
     "overrides": {
-      "model_name": "Qwen/Qwen3-32B",
+        "model_name": "Qwen/Qwen3-32B",
       "teacher_prompt": "system_prompt_coding",
       "student_prompt": "user_prompt_python",
-      "generators": [
-        {
-          "type": "oneshot_qs",
-          "model": "claude-sonnet-4-5-20250929",
-          "numq": 10,
-          "temperature": 1.0
-        }
-      ],
-      "max_tokens": 150,
+        "generators": [
+            {
+                "type": "oneshot_qs",
+                "model": "claude-sonnet-4-5-20250929",
+                "numq": 10,
+                "temperature": 1.0
+            }
+        ],
+        "max_tokens": 150,
       "temperature": 1.0
     }
   }'
@@ -146,16 +146,16 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets/batch" \
   -H "Content-Type: application/json" \
   -d '{
     "targets": [
-      {
-        "target_name": "target_alpha",
-        "template": "default",
-        "overrides": {"model_name": "Qwen/Qwen3-32B"}
-      },
-      {
-        "target_name": "target_beta",
-        "template": "target_alpha",
-        "overrides": {"temperature": 0.7}
-      }
+        {
+            "target_name": "target_alpha",
+            "template": "default",
+            "overrides": {"model_name": "Qwen/Qwen3-32B"}
+        },
+        {
+            "target_name": "target_beta",
+            "template": "target_alpha",
+            "overrides": {"temperature": 0.7}
+        }
     ]
   }'
 ```
@@ -288,18 +288,18 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets" \
     "target_name": "simple_target",
     "template": "default",
     "overrides": {
-      "generators": [
-        {
-          "type": "hardcoded",
-          "numq": 3,
-          "questions": [
-            "Write a Python function to sort a list",
-            "Create a REST API endpoint",
-            "Implement a binary tree"
-          ]
-        }
-      ],
-      "model_name": "Qwen/Qwen3-32B",
+        "generators": [
+            {
+                "type": "hardcoded",
+                "numq": 3,
+                "questions": [
+                    "Write a Python function to sort a list",
+                    "Create a REST API endpoint",
+                    "Implement a binary tree"
+                ]
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
       "teacher_prompt": "system_prompt",
       "student_prompt": "user_prompt"
     }
@@ -316,17 +316,17 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets" \
     "target_name": "ai_generated_target",
     "template": "default",
     "overrides": {
-      "generators": [
-        {
-          "type": "oneshot_qs",
-          "model": "claude-sonnet-4-5-20250929",
-          "numq": 50,
-          "temperature": 1.0
-        }
-      ],
-      "model_name": "Qwen/Qwen3-32B",
-      "max_tokens": 200,
-      "temperature": 0.9,
+        "generators": [
+            {
+                "type": "oneshot_qs",
+                "model": "claude-sonnet-4-5-20250929",
+                "numq": 50,
+                "temperature": 1.0
+            }
+        ],
+        "model_name": "Qwen/Qwen3-32B",
+        "max_tokens": 200,
+        "temperature": 0.9,
       "teacher_prompt": "system_coding",
       "student_prompt": "user_task"
     }
