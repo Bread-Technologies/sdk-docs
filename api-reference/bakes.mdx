@@ -215,6 +215,34 @@ Ensure all target rollouts are complete before starting bake
 - Asynchronous: returns immediately
 - Poll `get()` to monitor status
 
+**SDK Usage**:
+
+<CodeGroup>
+
+```python Python
+# Python: repo_name must be a keyword argument
+client.bakes.run(bake_name="my_bake", repo_name="my_repo")
+
+# With polling (default poll=True)
+client.bakes.run(bake_name="my_bake", repo_name="my_repo", poll=True)
+```
+
+```typescript TypeScript
+// TypeScript: repo_name in options object
+await client.bakes.run('my_bake', { repo_name: 'my_repo' });
+
+// With polling (default poll=true)
+await client.bakes.run('my_bake', { repo_name: 'my_repo', poll: true });
+```
+
+</CodeGroup>
+
+<Note>
+**Python SDK**: The `repo_name` parameter must be passed as a keyword argument (not positional). This is intentional for API clarity and consistency.
+
+**Polling**: By default, `poll=True` automatically waits for the job to complete. Manual polling loops are no longer needed unless you set `poll=False`.
+</Note>
+
 **Returns**: `BakeResponse`
 - `status`: Bake status ('not_started', 'running', 'complete', 'failed')
 - `job_id`: Coordinator job ID (if queued/running)

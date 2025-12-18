@@ -153,13 +153,13 @@ await client.targets.create('my_repo', {
 });
 
 // Run stim
-await client.targets.stim.run('my_repo', {
-  target_name: 'main_target',
+await client.targets.stim.run('main_target', {
+  repo_name: 'my_repo',
 });
 
 // Run rollout
-await client.targets.rollout.run('my_repo', {
-  target_name: 'main_target',
+await client.targets.rollout.run('main_target', {
+  repo_name: 'my_repo',
 });
 
 // Create bake
@@ -178,6 +178,12 @@ await client.bakes.run('v1', {
 ```
 
 </CodeGroup>
+
+<Note>
+**Method Signatures**: In Python, `repo_name` must be passed as a keyword argument (e.g., `repo_name="my_repo"`). In TypeScript, it goes in the options object. This ensures API clarity and consistency across all `run()` methods (`stim.run()`, `rollout.run()`, `bakes.run()`).
+
+**Automatic Polling**: By default, `run()` methods automatically poll for completion (`poll=True`). Manual polling loops are no longer needed unless you explicitly set `poll=False`.
+</Note>
 
 ---
 

@@ -37,6 +37,34 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/st
 - Idempotent: repeated calls return current state (no duplicate jobs)
 - Asynchronous: returns immediately, job runs in background
 
+**SDK Usage**:
+
+<CodeGroup>
+
+```python Python
+# Python: repo_name must be a keyword argument
+client.targets.stim.run(target_name="coding_target", repo_name="my_repo")
+
+# With polling (default poll=True)
+client.targets.stim.run(target_name="coding_target", repo_name="my_repo", poll=True)
+```
+
+```typescript TypeScript
+// TypeScript: repo_name in options object
+await client.targets.stim.run('coding_target', { repo_name: 'my_repo' });
+
+// With polling (default poll=true)
+await client.targets.stim.run('coding_target', { repo_name: 'my_repo', poll: true });
+```
+
+</CodeGroup>
+
+<Note>
+**Python SDK**: The `repo_name` parameter must be passed as a keyword argument (not positional). This is intentional for API clarity and consistency.
+
+**Polling**: By default, `poll=True` automatically waits for the job to complete. Manual polling loops are no longer needed unless you set `poll=False`.
+</Note>
+
 **Response**: `200 OK`
 
 ```json
