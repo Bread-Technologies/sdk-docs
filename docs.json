@@ -83,7 +83,7 @@
             "pages": [
               "sdk/guides/error-handling",
               "sdk/guides/pagination",
-              "sdk/guides/advanced-features",
+              "sdk/guides/client-configuration",
               "sdk/guides/recipes"
             ]
           },
@@ -117,61 +117,60 @@
           {
             "group": "API Playground",
             "pages": [
-              {
-                "group": "Repositories",
-                "pages": [
-                  "api-playground/list-repos",
+          {
+            "group": "Repositories",
+            "pages": [
+              "api-playground/list-repos",
                   "api-playground/get-repo",
                   "api-playground/set-repo"
-                ]
-              },
-              {
-                "group": "Prompts",
-                "pages": [
-                  "api-playground/list-prompts",
-                  "api-playground/get-prompt",
-                  "api-playground/set-prompt",
+            ]
+          },
+          {
+            "group": "Prompts",
+            "pages": [
+              "api-playground/list-prompts",
+              "api-playground/get-prompt",
+              "api-playground/set-prompt",
                   "api-playground/batch-set-prompts"
-                ]
-              },
-              {
-                "group": "Targets",
-                "pages": [
-                  "api-playground/list-targets",
+            ]
+          },
+          {
+            "group": "Targets",
+            "pages": [
+              "api-playground/list-targets",
                   "api-playground/get-target",
-                  "api-playground/set-target",
-                  "api-playground/batch-set-targets",
-                  "api-playground/delete-target"
-                ]
-              },
-              {
+              "api-playground/set-target",
+              "api-playground/batch-set-targets",
+              "api-playground/delete-target"
+            ]
+          },
+          {
                 "group": "Stimulus Generation",
-                "pages": [
-                  "api-playground/run-stim",
-                  "api-playground/get-stim-status",
-                  "api-playground/get-stim-output"
-                ]
-              },
-              {
+            "pages": [
+              "api-playground/run-stim",
+              "api-playground/get-stim-status",
+              "api-playground/get-stim-output"
+            ]
+          },
+          {
                 "group": "Rollout Generation",
-                "pages": [
-                  "api-playground/run-rollout",
-                  "api-playground/get-rollout-status",
-                  "api-playground/get-rollout-output"
-                ]
-              },
-              {
-                "group": "Bakes",
-                "pages": [
-                  "api-playground/list-bakes",
-                  "api-playground/get-bake",
-                  "api-playground/set-bake",
-                  "api-playground/batch-set-bakes",
-                  "api-playground/delete-bake",
+            "pages": [
+              "api-playground/run-rollout",
+              "api-playground/get-rollout-status",
+              "api-playground/get-rollout-output"
+            ]
+          },
+          {
+            "group": "Bakes",
+            "pages": [
+              "api-playground/list-bakes",
+              "api-playground/get-bake",
+              "api-playground/set-bake",
+              "api-playground/batch-set-bakes",
+              "api-playground/delete-bake",
                   "api-playground/start-bake",
                   "api-playground/get-bake-metrics",
-                  "api-playground/get-bake-download",
-                  "api-playground/get-model-download"
+                  "api-playground/get-bake-download"
                 ]
               },
               {
@@ -180,12 +179,12 @@
                   "api-playground/get-dependency-graph",
                   "api-playground/get-recreation-plan",
                   "api-playground/get-repo-tree"
-                ]
-              },
-              {
-                "group": "Health",
-                "pages": [
-                  "api-playground/health-check"
+            ]
+          },
+          {
+            "group": "Health",
+            "pages": [
+              "api-playground/health-check"
                 ]
               }
             ]

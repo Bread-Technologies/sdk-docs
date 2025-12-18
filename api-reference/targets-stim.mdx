@@ -48,7 +48,7 @@ curl -X POST "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/st
 ```
 
 **Response Fields**:
-- `status`: `string` - Job status (not_started, running, complete)
+- `status`: `string` - Job status (`'not_started'`, `'running'`, `'complete'`, or `'failed'`)
 - `lines`: `number` - Number of output lines generated
 - `parameters`: `object` - Job parameters
 
@@ -86,7 +86,7 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/my_repo/targets/coding_target/sti
 ```
 
 **Response Fields**:
-- `status`: `string` - not_started | running | complete
+- `status`: `string` - `'not_started'`, `'running'`, `'complete'`, or `'failed'`
 - `lines`: `number` - Number of generated stimuli
 - `parameters`: `object` - Job configuration
 

@@ -900,6 +900,87 @@ bgit chat user/repo/v1/checkpoint_2
 
 ---
 
+### `bgit metrics [bake-name]`
+
+Display training metrics chart for a bake. Shows an ASCII chart of loss over iterations.
+
+```bash
+# Display metrics for the current bake (from .bread file)
+bgit metrics
+
+# Display metrics for a specific bake
+bgit metrics my_bake
+```
+
+**What it shows:**
+- Loss function over iterations as an ASCII chart
+- Min and max loss values
+- Training progress visualization
+
+**Example output:**
+```
+Bake Metrics: my_bake
+
+Loss Function Over Iterations
+Min: 1.23e-07 | Max: 5.67e-06
+    5.67e-06 ┤  ╭─╮
+    4.50e-06 ┤ ╭╯ ╰─╮
+    3.33e-06 ┤╭╯    ╰─╮
+    2.17e-06 ┤╯       ╰─╮
+    1.00e-06 ┤          ╰─╮
+    1.23e-07 ┤            ╰─
+```
+
+<Info>
+**Use Case**: Monitor training progress and analyze loss curves. Useful for understanding how your model is learning during the bake process.
+</Info>
+
+---
+
+### `bgit download [bake-name] [--checkpoint <number>]`
+
+Get presigned URL for downloading model weights.
+
+```bash
+# Get download URL for current bake (latest checkpoint)
+bgit download
+
+# Get download URL for a specific bake
+bgit download my_bake
+
+# Get download URL for a specific checkpoint
+bgit download my_bake --checkpoint 35
+```
+
+**What it does:**
+- Retrieves a presigned URL for downloading model weights
+- Displays download information (bake name, checkpoint, expiry time, URL)
+- Provides ready-to-use `wget` and `curl` commands
+
+**Example output:**
+```
+Bake: my_bake
+Checkpoint: 35
+Expires in: 3600s
+URL: https://presigned-url-to-model-weights.tar.gz
+
+To download, run:
+  wget -O my_bake_checkpoint_35.tar.gz "https://presigned-url-to-model-weights.tar.gz"
+
+Or using curl:
+  curl -o my_bake_checkpoint_35.tar.gz "https://presigned-url-to-model-weights.tar.gz"
+```
+
+<Info>
+**Important Notes:**
+- Presigned URLs expire after 1 hour by default
+- Download the weights promptly after receiving the URL
+- Model weights are typically large files (several GB), ensure sufficient storage space
+- The checkpoint number defaults to the latest checkpoint if not specified
+</Info>
+
+---
+
 ## Best Practices
 
 ### Commit Message Conventions

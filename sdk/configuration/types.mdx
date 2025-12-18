@@ -165,6 +165,163 @@ interface HealthCheckResponse {
 
 </CodeGroup>
 
+### BakeDownloadResponse
+
+<CodeGroup>
+
+```python Python
+class BakeDownloadResponse:
+    bake_name: str   # Bake name
+    checkpoint: int  # Checkpoint number
+    expires_in: int  # URL expiry time in seconds
+    url: str         # Presigned URL for downloading weights
+```
+
+```typescript TypeScript
+interface BakeDownloadResponse {
+  bake_name: string;   // Bake name
+  checkpoint: number;  // Checkpoint number
+  expires_in: number;  // URL expiry time in seconds
+  url: string;         // Presigned URL for downloading weights
+}
+```
+
+</CodeGroup>
+
+### BakeGetMetricsResponse
+
+<CodeGroup>
+
+```python Python
+# List of metrics entries
+BakeGetMetricsResponse = List[Dict[str, Any]]
+```
+
+```typescript TypeScript
+type BakeGetMetricsResponse = Array<{ [key: string]: unknown }>;
+```
+
+</CodeGroup>
+
+### RepoGetTreeResponse
+
+<CodeGroup>
+
+```python Python
+class RepoGetTreeResponse:
+    bakes: Dict[str, BakeTreeNode]  # Dictionary of all bakes in the repository
+    base_model: str                 # Base model name (e.g., 'Qwen/Qwen3-32B')
+    edges: List[List[str]]          # List of parent-child edges: [source_type, source_name, target_type, target_name]
+
+class BakeTreeNode:
+    config: Dict[str, object]       # Bake configuration (bake.yml)
+    status: str                    # Bake status: complete, failed, running, pending, unknown
+    checkpoints: Optional[List[int]] # List of checkpoint numbers
+    model_name: Optional[List[str]]  # List of full model paths with checkpoints
+```
+
+```typescript TypeScript
+interface RepoGetTreeResponse {
+  bakes: Record<string, BakeTreeNode>; // Dictionary of all bakes in the repository
+  base_model: string;                  // Base model name (e.g., 'Qwen/Qwen3-32B')
+  edges: string[][];                   // List of parent-child edges: [source_type, source_name, target_type, target_name]
+}
+
+interface BakeTreeNode {
+  config: Record<string, unknown>;     // Bake configuration (bake.yml)
+  status: string;                      // Bake status: complete, failed, running, pending, unknown
+  checkpoints?: number[] | null;       // List of checkpoint numbers
+  model_name?: string[] | null;        // List of full model paths with checkpoints
+}
+```
+
+</CodeGroup>
+
+### RecipeGetDependencyGraphResponse
+
+<CodeGroup>
+
+```python Python
+class RecipeGetDependencyGraphResponse:
+    bakes: Dict[str, Dict[str, object]]    # Dictionary of bake configs (collation + bake)
+    base_model: str                        # Base model name
+    edges: List[List[object]]              # List of dependency edges (source_type, source_name, target_type, target_name)
+    prompts: Dict[str, Optional[str]]      # Dictionary of prompt names to file paths
+    targets: Dict[str, Dict[str, object]]  # Dictionary of target configs (stim + rollout)
+```
+
+```typescript TypeScript
+interface RecipeGetDependencyGraphResponse {
+  bakes: Record<string, Record<string, unknown>>;    // Dictionary of bake configs (collation + bake)
+  base_model: string;                                // Base model name
+  edges: unknown[][];                                // List of dependency edges
+  prompts: Record<string, string | null>;            // Dictionary of prompt names to file paths
+  targets: Record<string, Record<string, unknown>>;  // Dictionary of target configs (stim + rollout)
+}
+```
+
+</CodeGroup>
+
+### RecipeGetRecreationPlanResponse
+
+<CodeGroup>
+
+```python Python
+class RecipeGetRecreationPlanResponse:
+    base_model: str        # Base model name (e.g., 'Qwen/Qwen3-32B')
+    resources: Resources   # Summary of all resources
+    steps: List[Step]      # Ordered list of steps to recreate the bake
+    total_steps: int       # Total number of steps
+
+class Resources:
+    bakes: List[ResourcesBake] # List of bake resources with model names
+    prompts: List[str]         # List of prompt names
+    targets: List[str]         # List of target names
+
+class ResourcesBake:
+    bake_name: str
+    model_names: Optional[List[str]]
+
+class Step:
+    action: str            # Action to perform: create_prompt, create_target, run_stim, run_rollout, create_bake, run_bake
+    config: Dict[str, Any] # Configuration for this resource (cleaned, no internal paths)
+    dependencies: List[str] # List of dependencies in format 'resource_type:resource_name'
+    resource_name: str
+    resource_type: str
+    step: int              # Step number in execution order
+```
+
+```typescript TypeScript
+interface RecipeGetRecreationPlanResponse {
+  base_model: string;     // Base model name (e.g., 'Qwen/Qwen3-32B')
+  resources: Resources;   // Summary of all resources
+  steps: Step[];         // Ordered list of steps to recreate the bake
+  total_steps: number;    // Total number of steps
+}
+
+interface Resources {
+  bakes: ResourcesBake[]; // List of bake resources with model names
+  prompts: string[];      // List of prompt names
+  targets: string[];      // List of target names
+}
+
+interface ResourcesBake {
+  bake_name: string;
+  model_names?: string[] | null;
+}
+
+interface Step {
+  action: string;         // Action to perform: create_prompt, create_target, run_stim, run_rollout, create_bake, run_bake
+  config: Record<string, unknown>; // Configuration for this resource (cleaned, no internal paths)
+  dependencies: string[]; // List of dependencies in format 'resource_type:resource_name'
+  resource_name: string;
+  resource_type: string;
+  step: number;           // Step number in execution order
+}
+```
+
+</CodeGroup>
+
 ## Request Parameter Types
 
 ### MessageParam
@@ -257,7 +414,6 @@ class BakeConfigBaseParam(TypedDict, total=False):
     model: Optional[ModelConfigParam]
     optimizer: Optional[OptimizerConfigParam]
     scheduler: Optional[SchedulerConfigParam]
-    wandb: Optional[WandbConfigParam]
     deepspeed: Optional[DeepspeedConfigParam]
     checkpoint: Optional[Iterable[CheckpointConfigParam]]
     data: Optional[DataConfigParam]
@@ -278,7 +434,6 @@ interface BakeConfigBase {
   model?: ModelConfig | null;
   optimizer?: OptimizerConfig | null;
   scheduler?: SchedulerConfig | null;
-  wandb?: WandbConfig | null;
   deepspeed?: DeepspeedConfig | null;
   checkpoint?: Array<CheckpointConfig> | null;
   data?: DataConfig | null;
@@ -467,15 +622,19 @@ const allExtras = (response as any).extraFields || {};
     "model": str,
     "numq": int,
     "temperature": float,
-    "template_path": str | None,  # Optional: path normalized to /templates/{template_name}
-    "template_content": str | None  # Optional: template file content
+    "max_tokens": int | None,
+    "rollout_with_conditioned": bool | None,
+    "template_path": str | None,
+    "template_content": str | None
 }
 
 # Hardcoded
 {
     "type": "hardcoded",
     "numq": int,
-    "questions": List[str]
+    "questions": List[str],
+    "max_tokens": int | None,
+    "rollout_with_conditioned": bool | None
 }
 
 # From Dataset
@@ -483,7 +642,9 @@ const allExtras = (response as any).extraFields || {};
     "type": "from_dataset",
     "dataset": str,
     "numq": int,
-    "seed": int
+    "seed": int,
+    "max_tokens": int | None,
+    "rollout_with_conditioned": bool | None
 }
 
 # Persona
@@ -491,7 +652,9 @@ const allExtras = (response as any).extraFields || {};
     "type": "persona",
     "numq": int,
     "seed": int,
-    "temperature": float
+    "temperature": float,
+    "max_tokens": int | None,
+    "rollout_with_conditioned": bool | None
 }
 
 ```
@@ -503,8 +666,10 @@ interface OneshotGenerator {
   model: string;
   numq: number;
   temperature: number;
-  template_path?: string | null;  // Optional: path normalized to /templates/{template_name}
-  template_content?: string | null;  // Optional: template file content
+  max_tokens?: number | null;
+  rollout_with_conditioned?: boolean | null;
+  template_path?: string | null;
+  template_content?: string | null;
 }
 
 // Hardcoded
@@ -512,6 +677,8 @@ interface HardcodedGenerator {
   type: 'hardcoded';
   numq: number;
   questions: string[];
+  max_tokens?: number | null;
+  rollout_with_conditioned?: boolean | null;
 }
 
 // From Dataset
@@ -520,6 +687,8 @@ interface FromDatasetGenerator {
   dataset: string;
   numq: number;
   seed: number;
+  max_tokens?: number | null;
+  rollout_with_conditioned?: boolean | null;
 }
 
 // Persona
@@ -528,6 +697,8 @@ interface PersonaGenerator {
   numq: number;
   seed: number;
   temperature: number;
+  max_tokens?: number | null;
+  rollout_with_conditioned?: boolean | null;
 }
 
 // Union type for all generators
@@ -587,6 +758,143 @@ async function createCodingPrompts(
   });
   
   return [response];
+}
+```
+
+</CodeGroup>
+
+## Configuration Sub-types
+
+These types are used within `BakeConfigBaseParam` and `TargetConfigBaseParam`.
+
+### ModelConfig
+
+<CodeGroup>
+
+```python Python
+class ModelConfigParam(TypedDict, total=False):
+    type: Optional[str]
+    parent_model_name: Optional[str]
+    baked_adapter_config: Optional[BakedAdapterConfig]
+    dtype: Optional[str]
+    attn_implementation: Optional[str]
+    disable_activation_checkpoint: Optional[bool]
+    peft_config: Optional[Dict[str, object]]
+
+class BakedAdapterConfig(TypedDict, total=False):
+    r: Optional[int]
+    lora_alpha: Optional[int]
+    lora_dropout: Optional[float]
+    bias: Optional[str]
+    target_modules: Optional[str]
+```
+
+```typescript TypeScript
+interface ModelConfig {
+  type?: string | null;
+  parent_model_name?: string | null;
+  baked_adapter_config?: BakedAdapterConfig | null;
+  dtype?: string | null;
+  attn_implementation?: string | null;
+  disable_activation_checkpoint?: boolean | null;
+  peft_config?: Record<string, unknown> | null;
+}
+
+interface BakedAdapterConfig {
+  r?: number | null;
+  lora_alpha?: number | null;
+  lora_dropout?: number | null;
+  bias?: string | null;
+  target_modules?: string | null;
+}
+```
+
+</CodeGroup>
+
+### DataConfig
+
+<CodeGroup>
+
+```python Python
+class DataConfigParam(TypedDict, total=False):
+    type: Optional[str]
+    sources: Optional[Iterable[DataSourceParam]]
+    eval_sources: Optional[Iterable[DataSourceParam]]
+    max_length: Optional[int]
+    train_eval_split: Optional[Iterable[float]]
+    dl_num_workers: Optional[int]
+    num_proc: Optional[int]
+    seed: Optional[int]
+    beta: Optional[float]
+    temperature: Optional[float]
+
+class DataSourceParam(TypedDict, total=False):
+    type: Optional[str]
+    name_or_path: Optional[str]
+    split: Optional[str]
+    max_samples: Optional[int]
+    process: Optional[bool]
+```
+
+```typescript TypeScript
+interface DataConfig {
+  type?: string | null;
+  sources?: DataSource[] | null;
+  eval_sources?: DataSource[] | null;
+  max_length?: number | null;
+  train_eval_split?: number[] | null;
+  dl_num_workers?: number | null;
+  num_proc?: number | null;
+  seed?: number | null;
+  beta?: number | null;
+  temperature?: number | null;
+}
+
+interface DataSource {
+  type?: string | null;
+  name_or_path?: string | null;
+  split?: string | null;
+  max_samples?: number | null;
+  process?: boolean | null;
+}
+```
+
+</CodeGroup>
+
+### Optimizer & Scheduler
+
+<CodeGroup>
+
+```python Python
+class OptimizerConfigParam(TypedDict, total=False):
+    type: Optional[str]
+    learning_rate: Optional[float]
+    weight_decay: Optional[float]
+    betas: Optional[Iterable[float]]
+
+class SchedulerConfigParam(TypedDict, total=False):
+    type: Optional[str]
+
+class DatasetItemParam(TypedDict, total=False):
+    target: Required[str]
+    weight: Optional[float]
+```
+
+```typescript TypeScript
+interface OptimizerConfig {
+  type?: string | null;
+  learning_rate?: number | null;
+  weight_decay?: number | null;
+  betas?: number[] | null;
+}
+
+interface SchedulerConfig {
+  type?: string | null;
+}
+
+interface DatasetItem {
+  target: string;
+  weight?: number;
 }
 ```
 

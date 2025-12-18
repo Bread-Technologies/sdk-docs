@@ -283,6 +283,23 @@ curl -X GET "https://bapi.bread.com.ai/v1/repo/nonexistent_repo" \
 }
 ```
 
+### PaginatedRepoList
+
+```json
+{
+  "repos": [
+    {
+      "repo_name": "string",
+      "base_model": "string"
+    }
+  ],
+  "offset": 0,
+  "limit": 50,
+  "has_more": false,
+  "total": 1
+}
+```
+
 ## Best Practices
 
 <AccordionGroup>

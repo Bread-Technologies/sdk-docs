@@ -167,37 +167,7 @@ Bake configuration controls model training behavior, including datasets, trainin
 
 ---
 
-## Integrations
-
-### Weights & Biases
-
-<Warning>
-**Currently in Development**: The Weights & Biases integration is currently in development and may not be fully available.
-</Warning>
-
-<ParamField path="wandb" type="object">
-  W&B logging configuration
-  
-  ```yaml
-  BAKE:
-    wandb:
-      enable: true
-      project: bread-experiments
-      entity: my-team
-      name: coding-v1
-      tags:
-        - experiment
-        - lora
-        - v1
-  ```
-  
-  **Fields**:
-  - `enable` (boolean): Enable W&B logging
-  - `project` (string): Project name
-  - `entity` (string): Team/entity name
-  - `name` (string): Run name
-  - `tags` (array): Tags for this run
-</ParamField>
+## Advanced Configuration
 
 ### DeepSpeed
 
@@ -250,16 +220,6 @@ BAKE:
   scheduler:
     type: huggingface
   
-  wandb:
-    enable: true
-    project: my-project
-    entity: my-team
-    name: coding-lora-v1
-    tags:
-      - lora
-      - coding
-      - production
-  
   deepspeed:
     zero_optimization:
       stage: 2
@@ -296,7 +256,6 @@ This uses default values for all other parameters. Note that `main_target` shoul
 | `model` | Object | No | Model configuration |
 | `optimizer` | Object | No | Optimizer settings |
 | `scheduler` | Object | No | LR scheduler |
-| `wandb` | Object | No | W&B integration |
 | `deepspeed` | Object | No | DeepSpeed config |
 
 ---

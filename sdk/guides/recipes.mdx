@@ -8,7 +8,7 @@ Recipe endpoints help you understand model lineage, visualize dependencies betwe
 <Note>
 **SDK Support**: 
 - **TypeScript SDK**: `getDependencyGraph()` and `getRecreationPlan()` are available via `client.recipes`. `getTree()` is available via `client.repo.getTree()`.
-- **Python SDK**: `get_dependency_graph()` and `get_recreation_plan()` are available via `client.recipes`. The tree endpoint is not yet available - use the REST API directly.
+- **Python SDK**: `get_dependency_graph()` and `get_recreation_plan()` are available via `client.recipes`. `get_tree()` is available via `client.repo.get_tree()`.
 </Note>
 
 ## Understanding Model Lineage
@@ -238,53 +238,48 @@ for (const bakeName of rootBakes) {
 ```
 
 ```python Python
-# Note: The tree endpoint is not yet available in the Python SDK.
-# Use the REST API directly or check for future SDK updates.
-
 import os
-import requests
+from aibread import Bread
 
-response = requests.get(
-    "https://bapi.bread.com.ai/v1/repo/my_repo/tree",
-    headers={"Authorization": f"Bearer {os.environ.get('BREAD_API_KEY')}"}
-)
+client = Bread(api_key=os.environ.get('BREAD_API_KEY'))
 
-tree = response.json()
+# Get repository tree
+tree = client.repo.get_tree('my_repo')
 
-# tree['bakes'] is a dictionary keyed by bake name
-# tree['edges'] contains parent-child relationships: [source_type, source_name, target_type, target_name]
+# tree.bakes is a dictionary keyed by bake name
+# tree.edges contains parent-child relationships: [source_type, source_name, target_type, target_name]
 def print_bake(bake_name, bake, indent=0):
     prefix = '  ' * indent
-    status_icon = '✓' if bake['status'] == 'complete' else '⟳' if bake['status'] == 'running' else '○'
-    print(f"{prefix}{status_icon} {bake_name} ({bake['status']})")
+    status_icon = '✓' if bake.status == 'complete' else '⟳' if bake.status == 'running' else '○'
+    print(f"{prefix}{status_icon} {bake_name} ({bake.status})")
     
-    if bake['model_name']:
-        print(f"{prefix}  Models: {', '.join(bake['model_name'])}")
+    if bake.api_model_name:
+        print(f"{prefix}  Models: {', '.join(bake.api_model_name)}")
     
     # Find children using edges
     children = [
-        edge[1] for edge in tree['edges']
+        edge[1] for edge in tree.edges
         if edge[0] == 'bake' and edge[2] == 'bake' and edge[3] == bake_name
     ]
     
     if children:
         print(f"{prefix}  Children:")
         for child_name in children:
-            if child_name in tree['bakes']:
-                print_bake(child_name, tree['bakes'][child_name], indent + 2)
+            if child_name in tree.bakes:
+                print_bake(child_name, tree.bakes[child_name], indent + 2)
 
 # Find root bakes (no incoming edges)
-all_bakes = set(tree['bakes'].keys())
+all_bakes = set(tree.bakes.keys())
 child_bakes = set(
-    edge[1] for edge in tree['edges']
+    edge[1] for edge in tree.edges
     if edge[0] == 'bake' and edge[2] == 'bake'
 )
 root_bakes = all_bakes - child_bakes
 
-print(f"Base model: {tree['base_model']}")
+print(f"Base model: {tree.base_model}")
 print('Model Lineage Tree:\n')
 for bake_name in root_bakes:
-    print_bake(bake_name, tree['bakes'][bake_name])
+    print_bake(bake_name, tree.bakes[bake_name])
 ```
 
 </CodeGroup>
