@@ -47,6 +47,26 @@ paths:
             description: Page size for pagination (only used with include_metadata=true)
             title: Limit
           description: Page size for pagination (only used with include_metadata=true)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -108,7 +128,27 @@ paths:
       deprecated: true
       security:
         - HTTPBearer: []
-      parameters: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -181,7 +221,27 @@ paths:
       operationId: create_repo_v1_repo_post
       security:
         - HTTPBearer: []
-      parameters: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -262,6 +322,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -327,6 +407,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -391,6 +491,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -480,6 +600,26 @@ paths:
           schema:
             type: string
             title: Prompt Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -551,6 +691,26 @@ paths:
           schema:
             type: string
             title: Prompt Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -626,6 +786,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -699,6 +879,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -773,6 +973,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -837,6 +1057,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -918,6 +1158,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -994,6 +1254,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -1081,6 +1361,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -1163,6 +1463,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1233,6 +1553,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1304,6 +1644,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1380,6 +1740,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1476,6 +1856,26 @@ paths:
             default: 100
             title: Limit
           description: Number of lines to return (max 1000)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1547,6 +1947,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1625,6 +2045,26 @@ paths:
           schema:
             type: string
             title: Target Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1717,6 +2157,26 @@ paths:
             default: 100
             title: Limit
           description: Number of lines to return (max 1000)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1782,6 +2242,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -1846,6 +2326,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -1927,6 +2427,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -2003,6 +2523,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -2090,6 +2630,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       requestBody:
         required: true
         content:
@@ -2172,6 +2732,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2242,6 +2822,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2318,6 +2918,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2411,6 +3031,125 @@ paths:
             description: URL expiry in seconds (1-604800, default 3600)
             title: Expires In
           description: URL expiry in seconds (1-604800, default 3600)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadUrlResponse'
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/models/download:
+    get:
+      tags:
+        - bakes
+      summary: Get Model Download Url
+      description: "Get presigned URL for downloading model weights by model name.\n    \n    Model name format: user/repo/bake_name/checkpoint\n    Returns a presigned URL valid for 1 hour (configurable via R2_PRESIGNED_URL_EXPIRY)."
+      operationId: get_model_download_url_v1_models_download_get
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Model name in format 'user/repo/bake_name/checkpoint'
+            title: Name
+          description: Model name in format 'user/repo/bake_name/checkpoint'
+        - name: expires_in
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+                maximum: 604800
+                minimum: 1
+              - type: "null"
+            description: URL expiry in seconds (1-604800, default 3600)
+            title: Expires In
+          description: URL expiry in seconds (1-604800, default 3600)
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2482,6 +3221,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2576,6 +3335,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2647,6 +3426,26 @@ paths:
           schema:
             type: string
             title: Bake Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2712,6 +3511,26 @@ paths:
           schema:
             type: string
             title: Repo Name
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override (requires master API key)
+            title: User Id
+          description: User ID override (requires master API key)
+        - name: X-User-Id
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: User ID override via header (requires master API key)
+            title: X-User-Id
+          description: User ID override via header (requires master API key)
       responses:
         "200":
           description: Successful Response
@@ -2755,6 +3574,166 @@ paths:
                 code: INTERNAL_ERROR
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/users:
+    post:
+      tags:
+        - admin
+      summary: Create User
+      description: |-
+        Admin endpoint to create a user with password.
+
+        Requires master API key for authentication.
+        Creates user in LiteLLM, sets up Lago billing, and sets password.
+      operationId: create_user_v1_admin_users_post
+      parameters:
+        - name: authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/done_job:
+    post:
+      tags:
+        - admin
+      summary: Done Job
+      description: "Admin endpoint called by coordinator when a job is complete.\n    \n    This endpoint pulls the repository to sync local state with remote changes.\n    Called automatically by the coordinator when __done_*.txt or __error_*.txt files are pushed."
+      operationId: done_job_v1_admin_done_job_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoneJobPayload'
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/admin/model_ready:
+    post:
+      tags:
+        - admin
+      summary: Model Ready
+      description: "Admin endpoint to mark a bake as ready for inference.\n    \n    Creates a __model_ready__.txt file in the bake directory to signify\n    that the model is ready for inference."
+      operationId: model_ready_v1_admin_model_ready_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelReadyPayload'
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid input parameters
+                code: INVALID_INPUT
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Insufficient credits. Please add funds to continue.
+                code: PAYMENT_REQUIRED
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Resource not found
+                code: RESOURCE_NOT_FOUND
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Internal server error
+                code: INTERNAL_ERROR
         "422":
           description: Validation Error
           content:
@@ -2866,6 +3845,11 @@ components:
             - $ref: '#/components/schemas/SchedulerConfig'
             - type: "null"
           description: Scheduler configuration
+        wandb:
+          anyOf:
+            - $ref: '#/components/schemas/WandbConfig'
+            - type: "null"
+          description: Wandb configuration
         deepspeed:
           anyOf:
             - $ref: '#/components/schemas/DeepSpeedConfig'
@@ -3307,6 +4291,29 @@ components:
       type: object
       title: CheckpointConfig
       description: Checkpoint configuration
+    CreateUserRequest:
+      properties:
+        user_id:
+          type: string
+          title: User Id
+        user_alias:
+          type: string
+          title: User Alias
+        user_email:
+          type: string
+          format: email
+          title: User Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+        - user_id
+        - user_alias
+        - user_email
+        - password
+      title: CreateUserRequest
+      description: Request to create a new user account.
     DataConfig:
       properties:
         type:
@@ -3357,6 +4364,12 @@ components:
             - type: "null"
           title: Train Eval Split
           description: Train/eval split ratio [train, eval]
+        cache_dir:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Cache Dir
+          description: Cache directory
         dl_num_workers:
           anyOf:
             - type: integer
@@ -3375,6 +4388,18 @@ components:
             - type: "null"
           title: Seed
           description: Seed for data loading
+        use_data_cache:
+          anyOf:
+            - type: boolean
+            - type: "null"
+          title: Use Data Cache
+          description: Whether to cache loaded data. Deprecated - data cache is used by default now.
+        cache_fs_type:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Cache Fs Type
+          description: 'Cache filesystem type: ''auto'', ''local'', or ''shared'''
       additionalProperties: false
       type: object
       title: DataConfig
@@ -3545,6 +4570,25 @@ components:
         Represents the complete dependency graph including all parent bakes,
         targets, prompts, and their relationships. Built using BFS traversal
         starting from the specified bake.
+    DoneJobPayload:
+      properties:
+        file:
+          type: string
+          title: File
+        user:
+          type: string
+          title: User
+        repo:
+          type: string
+          title: Repo
+      additionalProperties: false
+      type: object
+      required:
+        - file
+        - user
+        - repo
+      title: DoneJobPayload
+      description: Payload for done_job webhook from coordinator
     DownloadUrlResponse:
       properties:
         url:
@@ -3648,7 +4692,7 @@ components:
             - type: string
             - type: "null"
           title: Template Path
-          description: Template filename for custom generator type. Used by bake_dataset_utils to reference the template file during dataset generation.
+          description: Template filename for custom generator type. When template_content is provided, the file is written to the repo-level templates/ directory (same level as prompts/, bakes/, targets/). The path is normalized to templates/{filename} format. Used by bake_dataset_utils to reference the template file during dataset generation.
         template_content:
           anyOf:
             - type: string
@@ -3791,6 +4835,12 @@ components:
             - type: "null"
           title: Dtype
           description: Data type for model weights (e.g., 'bf16', 'fp16', 'fp32')
+        save_name:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Save Name
+          description: Name to use when saving the model
         attn_implementation:
           anyOf:
             - type: string
@@ -3811,10 +4861,38 @@ components:
             - type: "null"
           title: Peft Config
           description: Configuration for Parameter Efficient Fine Tuning
+        student_model_path:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Student Model Path
+          description: Name of student model if doing distill baking. This makes teacher and student different models (eg. 'Qwen/Qwen3-0.6B')
       additionalProperties: false
       type: object
       title: ModelConfig
       description: Model configuration for baking
+    ModelReadyPayload:
+      properties:
+        user:
+          type: string
+          title: User
+          description: User name
+        repo:
+          type: string
+          title: Repo
+          description: Repository name
+        bake_name:
+          type: string
+          title: Bake Name
+          description: Bake name
+      additionalProperties: false
+      type: object
+      required:
+        - user
+        - repo
+        - bake_name
+      title: ModelReadyPayload
+      description: Payload for model_ready admin endpoint
     OptimizerConfig:
       properties:
         type:
@@ -4883,6 +5961,36 @@ components:
         - msg
         - type
       title: ValidationError
+    WandbConfig:
+      properties:
+        enable:
+          anyOf:
+            - type: boolean
+            - type: "null"
+          title: Enable
+          description: Enable wandb logging
+        project:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Project
+          description: Wandb project name
+        name:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Name
+          description: Run name
+        entity:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Entity
+          description: Wandb entity/team
+      additionalProperties: false
+      type: object
+      title: WandbConfig
+      description: Weights & Biases configuration
   securitySchemes:
     HTTPBearer:
       type: http
